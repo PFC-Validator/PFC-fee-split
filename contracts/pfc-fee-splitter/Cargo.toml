@@ -1,0 +1,62 @@
+[package]
+
+name = "pfc-fee-splitter"
+version = "0.1.0"
+authors = ["PFC <pfc-validator@protonmail.com>"]
+edition = "2018"
+
+description = "smart contract to split incoming $ to multiple places"
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all init/handle/query exports
+library=[]
+
+[dependencies]
+# cw0="0.10.3"
+cw2 = "0.15.0"
+pfc-fee-split = { version = "0.1", path = "../../packages/pfc-fee-split" }
+
+cosmwasm-std = "1.0.0"
+cw-storage-plus = "0.15.0"
+cw-controllers = "0.15.0"
+schemars = "0.8.10"
+serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+# protobuf = { version = "2", features = ["with-bytes"] }
+thiserror = "1.0.23"
+
+[build-dependencies]
+protoc-rust = "2"
+
+[dev-dependencies]
+cosmwasm-schema = "1.0.0"
+serde_json = "1.0.85"
+convert_case = "0.6.0"
+
+#[profile.release]
+#overflow-checks = true
+
+[package.metadata.scripts]
+optimize = """docker run --rm -v "$(pwd)":/code \
+          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+              cosmwasm/rust-optimizer:0.12.6"""
+optimize-w32 = """docker run --rm -v c:\\pfc\\fractional\\fee-split:/code  \
+            --mount type=volume,source=pfc_fee_splitter_cache,target=/code/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+            cosmwasm/rust-optimizer:0.12.6"""
+#store = """terra-rust code store test-owner ..\\..\\artifacts\\pfc_fee_splitter.wasm"""
+# instantiate = """terra-rust code instantiate test ..\\..\\artifacts\\pfc_fractional_cw20.wasm .\\cw20_init.json --admin same"""
+#instantiate="""cargo-terra --sender test-owner instantiate  ..\\..\\artifacts\\pfc_fee_splitter.wasm cw20_init.json same"""
+#migrate = """terra-rust code migrate test-owner ..\\..\\artifacts\\pfc_fee_splitter.wasm"""
