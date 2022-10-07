@@ -86,7 +86,8 @@ pub enum ExecuteMsg {
     },
     /// Removes the 'fee', sending whatever balance is there over
     RemoveAllocationDetail { name: String },
-    /// Queries tokens held, and then re-assigns them to allocations, wiping out whatever was there
+    /// Queries tokens held, and then re-assigns them to allocations, wiping out whatever was there.
+    /// This is a ADMIN only function (must be called by current gov_contract)
     Reconcile {},
 
     /// Change the governance contract (must be called by current gov_contract)

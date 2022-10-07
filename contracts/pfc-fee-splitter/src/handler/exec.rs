@@ -16,11 +16,6 @@ pub fn execute_deposit(
     info: MessageInfo,
     flush: bool,
 ) -> Result<Response, ContractError> {
-    let funds_in: HashMap<String, Uint128> =
-        HashMap::from_iter(info.funds.iter().map(|c| (c.denom.clone(), c.amount)));
-
-    let total_allocation = get_total_weight(&deps)?;
-
     if info.funds.is_empty() && !flush {
         let res = Response::new()
             .add_attribute("action", "deposit")
@@ -30,54 +25,9 @@ pub fn execute_deposit(
         return Ok(res);
     }
 
-    let mut msgs: Vec<CosmosMsg> = Vec::new();
-
-    let keys = ALLOCATION_HOLDINGS
-        .keys(deps.storage, None, None, Order::Ascending)
-        .collect::<Vec<_>>();
-    if keys.is_empty() {
-        return Err(ContractError::NoFeesError {});
-    }
-    for key in keys {
-        let key_name = key?;
-        let mut allocation_holding = ALLOCATION_HOLDINGS.load(deps.storage, key_name.clone())?;
-
-        let merged_coins = determine_allocation(
-            allocation_holding.allocation,
-            total_allocation,
-            &funds_in,
-            &allocation_holding.balance,
-        )?;
-        if flush {
-            msgs.push(generate_cosmos_msg(
-                allocation_holding.send_type,
-                &allocation_holding.contract,
-                merged_coins,
-            )?);
-            allocation_holding.balance = vec![];
-        } else {
-            let check_coin = merged_coins
-                .iter()
-                .find(|c| c.denom == allocation_holding.send_after.denom);
-            if let Some(coin) = check_coin {
-                if coin.amount > allocation_holding.send_after.amount {
-                    msgs.push(generate_cosmos_msg(
-                        allocation_holding.send_type,
-                        &allocation_holding.contract,
-                        merged_coins,
-                    )?);
-                    allocation_holding.balance = vec![];
-                } else {
-                    allocation_holding.balance = merged_coins;
-                }
-            } else {
-                allocation_holding.balance = merged_coins;
-            }
-        }
-
-        // fee_holding.balance = vec![];
-        ALLOCATION_HOLDINGS.save(deps.storage, key_name, &allocation_holding)?;
-    }
+    let funds_in: HashMap<String, Uint128> =
+        HashMap::from_iter(info.funds.iter().map(|c| (c.denom.clone(), c.amount)));
+    let msgs = do_deposit(deps, funds_in, flush)?;
 
     let res = Response::new()
         .add_attribute("action", "deposit")
@@ -133,6 +83,7 @@ pub fn execute_add_allocation_detail(
         .add_attribute("send_type", send_type_unverified);
     Ok(res)
 }
+
 pub fn execute_modify_allocation_detail(
     deps: DepsMut,
     _env: Env,
@@ -215,6 +166,48 @@ pub fn execute_remove_allocation_detail(
     }
 }
 
+pub fn execute_reconcile(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
+
+    if !info.funds.is_empty() {
+        return Err(ContractError::ReconcileWithFunds {});
+    }
+    let keys = ALLOCATION_HOLDINGS
+        .keys(deps.storage, None, None, Order::Ascending)
+        .collect::<StdResult<Vec<_>>>()?;
+    if keys.is_empty() {
+        return Err(ContractError::NoFeesError {});
+    }
+    for key in keys {
+        ALLOCATION_HOLDINGS.update(deps.storage, key.clone(), |rec| {
+            if let Some(mut record) = rec {
+                record.balance = vec![];
+                Ok(record)
+            } else {
+                Err(StdError::NotFound { kind: key })
+            }
+        })?;
+    }
+    let funds = get_native_balances(&deps.querier, env.contract.address)?;
+    if funds.is_empty() {
+        return Ok(Response::new()
+            .add_attribute("action", "reconcile")
+            .add_attribute("info", "no funds. clearing balances"));
+    }
+    let funds_in: HashMap<String, Uint128> =
+        HashMap::from_iter(funds.iter().map(|c| (c.denom.clone(), c.amount)));
+
+    let msgs = do_deposit(deps, funds_in, false)?;
+    let res = Response::new()
+        .add_attribute("action", "reconcile")
+        .add_messages(msgs);
+    Ok(res)
+}
+
 pub fn execute_update_gov_contract(
     deps: DepsMut,
     _env: Env,
@@ -227,6 +220,7 @@ pub fn execute_update_gov_contract(
     CONFIG.save(deps.storage, &config)?;
     Ok(ADMIN.execute_update_admin(deps, info, Some(admin))?)
 }
+
 pub(crate) fn get_total_weight(deps: &DepsMut) -> Result<u8, ContractError> {
     Ok(ALLOCATION_HOLDINGS
         .range(deps.storage, None, None, Order::Ascending)
@@ -297,6 +291,63 @@ pub(crate) fn determine_allocation(
     Ok(send_coins)
 }
 
+pub(crate) fn do_deposit(
+    deps: DepsMut,
+    funds_in: HashMap<String, Uint128>,
+    flush: bool,
+) -> Result<Vec<CosmosMsg>, ContractError> {
+    let total_allocation = get_total_weight(&deps)?;
+
+    let mut msgs: Vec<CosmosMsg> = Vec::new();
+
+    let keys = ALLOCATION_HOLDINGS
+        .keys(deps.storage, None, None, Order::Ascending)
+        .collect::<Vec<_>>();
+    if keys.is_empty() {
+        return Err(ContractError::NoFeesError {});
+    }
+    for key in keys {
+        let key_name = key?;
+        let mut allocation_holding = ALLOCATION_HOLDINGS.load(deps.storage, key_name.clone())?;
+
+        let merged_coins = determine_allocation(
+            allocation_holding.allocation,
+            total_allocation,
+            &funds_in,
+            &allocation_holding.balance,
+        )?;
+        if flush {
+            msgs.push(generate_cosmos_msg(
+                allocation_holding.send_type,
+                &allocation_holding.contract,
+                merged_coins,
+            )?);
+            allocation_holding.balance = vec![];
+        } else {
+            let check_coin = merged_coins
+                .iter()
+                .find(|c| c.denom == allocation_holding.send_after.denom);
+            if let Some(coin) = check_coin {
+                if coin.amount > allocation_holding.send_after.amount {
+                    msgs.push(generate_cosmos_msg(
+                        allocation_holding.send_type,
+                        &allocation_holding.contract,
+                        merged_coins,
+                    )?);
+                    allocation_holding.balance = vec![];
+                } else {
+                    allocation_holding.balance = merged_coins;
+                }
+            } else {
+                allocation_holding.balance = merged_coins;
+            }
+        }
+
+        ALLOCATION_HOLDINGS.save(deps.storage, key_name, &allocation_holding)?;
+    }
+    Ok(msgs)
+}
+
 fn generate_cosmos_msg(
     send_type: SendType,
     recipient: &Addr,
@@ -313,7 +364,6 @@ fn generate_cosmos_msg(
     }
 }
 
-#[allow(dead_code)]
 pub(crate) fn get_native_balances(
     querier: &QuerierWrapper,
     account_addr: Addr,
@@ -331,12 +381,15 @@ mod exec {
     use cosmwasm_std::coin;
 
     use crate::contract::execute;
-    use crate::handler::query::query_allocation;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use crate::handler::query::{query_allocation, query_allocations};
+    use cosmwasm_std::testing::{
+        mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info,
+    };
     use pfc_fee_split::fee_split_msg::ExecuteMsg;
 
     use crate::test_helpers::{
-        do_instantiate, one_allocation, ALLOCATION_1, CREATOR, DENOM_1, DENOM_2, DENOM_3, USER_1,
+        do_instantiate, one_allocation, two_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR,
+        DENOM_1, DENOM_2, DENOM_3, GOV_CONTRACT, USER_1,
     };
     #[test]
     fn allocations_1() -> Result<(), ContractError> {
@@ -441,6 +494,7 @@ mod exec {
         );
         Ok(())
     }
+
     #[test]
     fn deposit_basic() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
@@ -470,6 +524,160 @@ mod exec {
         let allocation = query_allocation(deps.as_ref(), ALLOCATION_1.into())?.unwrap();
         assert!(allocation.balance.is_empty(), "no coins should be present");
 
+        Ok(())
+    }
+    #[test]
+    fn reconcile_basic() -> Result<(), ContractError> {
+        let mut deps = mock_dependencies_with_balance(&vec![
+            Coin::new(1_000_000, DENOM_2),
+            Coin::new(50_000, DENOM_1),
+        ]);
+        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let msg = ExecuteMsg::Reconcile {};
+        let info = mock_info(USER_1, &[]);
+        let env = mock_env();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
+            .err()
+            .unwrap();
+        match err {
+            ContractError::AdminError { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+        let info = mock_info(GOV_CONTRACT, &[Coin::new(1_000, DENOM_1)]);
+        let env = mock_env();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
+            .err()
+            .unwrap();
+        match err {
+            ContractError::ReconcileWithFunds { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+        let info = mock_info(GOV_CONTRACT, &[]);
+        let env = mock_env();
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
+        assert_eq!(res.attributes.len(), 1);
+        assert_eq!(res.attributes[0].value, "reconcile");
+        assert_eq!(res.messages.len(), 1);
+        //  eprintln!("{:?}", res.messages[0]);
+        match &res.messages[0].msg {
+            CosmosMsg::Bank(b) => match b {
+                BankMsg::Send { to_address, amount } => {
+                    assert_eq!(to_address, "allocation_1_addr");
+                    assert_eq!(amount.len(), 2);
+                    assert_eq!(
+                        amount.iter().find(|c| c.denom == DENOM_1),
+                        Some(&coin(25_000, DENOM_1))
+                    );
+                    assert_eq!(
+                        amount.iter().find(|c| c.denom == DENOM_2),
+                        Some(&coin(500_000, DENOM_2))
+                    )
+                }
+                _ => {
+                    assert!(false, "invalid bank message {:?} ", b)
+                }
+            },
+            _ => {
+                assert!(false, "invalid message {:?} ", res.messages[0])
+            }
+        }
+
+        let allocations = query_allocations(deps.as_ref(), None, None)?;
+        assert_eq!(allocations.allocations.len(), 2);
+        if allocations.allocations[0].name == ALLOCATION_1 {
+            assert_eq!(allocations.allocations[0].name, ALLOCATION_1);
+            assert_eq!(allocations.allocations[0].balance.is_empty(), true);
+            assert_eq!(allocations.allocations[1].name, ALLOCATION_2);
+            assert_eq!(allocations.allocations[1].balance.len(), 2);
+            assert_eq!(
+                allocations.allocations[1]
+                    .balance
+                    .iter()
+                    .find(|c| c.denom == DENOM_2),
+                Some(&coin(500_000, DENOM_2))
+            );
+            assert_eq!(
+                allocations.allocations[1]
+                    .balance
+                    .iter()
+                    .find(|c| c.denom == DENOM_1),
+                Some(&coin(25_000, DENOM_1))
+            );
+        } else {
+            assert_eq!(allocations.allocations[1].name, ALLOCATION_1);
+            assert_eq!(allocations.allocations[1].balance.is_empty(), true);
+            assert_eq!(allocations.allocations[0].name, ALLOCATION_2);
+            assert_eq!(
+                allocations.allocations[0]
+                    .balance
+                    .iter()
+                    .find(|c| c.denom == DENOM_2),
+                Some(&coin(500_000, DENOM_2))
+            );
+            assert_eq!(
+                allocations.allocations[0]
+                    .balance
+                    .iter()
+                    .find(|c| c.denom == DENOM_1),
+                Some(&coin(25_000, DENOM_1))
+            );
+        }
+        /* this will have to be tested on-chain. I don't think bank-sends actually debit in test
+        // so at this point we should have 500k DENOM2 & 25k DENOM1. this test is to ensure we 'ignore' the existing balances, and send stuff out.
+
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
+        assert_eq!(res.attributes.len(), 1);
+        assert_eq!(res.attributes[0].value, "reconcile");
+        assert_eq!(res.messages.len(), 1);
+        //  eprintln!("{:?}", res.messages[0]);
+        match &res.messages[0].msg {
+            CosmosMsg::Bank(b) => match b {
+                BankMsg::Send { to_address, amount } => {
+                    assert_eq!(to_address, "allocation_1_addr");
+                    assert_eq!(amount.len(), 2);
+                    assert_eq!(
+                        amount.iter().find(|c| c.denom == DENOM_1),
+                        Some(&coin(12_500, DENOM_1))
+                    );
+                    assert_eq!(
+                        amount.iter().find(|c| c.denom == DENOM_2),
+                        Some(&coin(250_000, DENOM_2))
+                    )
+                }
+                _ => {
+                    assert!(false, "invalid bank message {:?} ", b)
+                }
+            },
+            _ => {
+                assert!(false, "invalid message {:?} ", res.messages[0])
+            }
+        }
+
+        let allocations = query_allocations(deps.as_ref(), None, None)?;
+        assert_eq!(allocations.allocations.len(), 2);
+        if allocations.allocations[0].name == ALLOCATION_1 {
+            assert_eq!(allocations.allocations[0].name, ALLOCATION_1);
+            assert_eq!(allocations.allocations[0].balance.is_empty(), true);
+            assert_eq!(allocations.allocations[1].name, ALLOCATION_2);
+            assert_eq!(allocations.allocations[1].balance.len(), 2);
+            assert_eq!(
+                allocations.allocations[1].balance[0],
+                coin(500_000, DENOM_2)
+            );
+            assert_eq!(allocations.allocations[1].balance[1], coin(25_000, DENOM_1));
+        } else {
+            assert_eq!(allocations.allocations[1].name, ALLOCATION_1);
+            assert_eq!(allocations.allocations[1].balance.is_empty(), true);
+            assert_eq!(allocations.allocations[0].name, ALLOCATION_2);
+            assert_eq!(allocations.allocations[0].balance.len(), 2);
+            assert_eq!(
+                allocations.allocations[0].balance[0],
+                coin(500_000, DENOM_2)
+            );
+            assert_eq!(allocations.allocations[0].balance[1], coin(25_000, DENOM_1));
+        }
+
+         */
         Ok(())
     }
 }

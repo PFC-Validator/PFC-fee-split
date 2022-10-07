@@ -128,9 +128,7 @@ pub fn execute(
         } => ExecHandler::execute_modify_allocation_detail(
             deps, env, info, name, contract, allocation, send_after, send_type,
         ),
-        ExecuteMsg::Reconcile { .. } => {
-            todo!("todo")
-        }
+        ExecuteMsg::Reconcile {} => ExecHandler::execute_reconcile(deps, env, info),
     }
 }
 /*

@@ -26,11 +26,5 @@ code_id*.json
 #
 /*.json
 /contracts/*/.env
-/testing/*/.env
 
-notes.txt
-notes
-/testing
-/testing/pfc-fractional-testing/resources/pfc_*
-/testing/pfc-fractional-testing/code_id.*env
-/testing/pfc-fractional-testing/contracts.*env
+

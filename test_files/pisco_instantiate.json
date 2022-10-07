@@ -1,0 +1,22 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902",
+  "allocation": [
+    {
+      "name": "testnet",
+      "contract": "terra1pphdny9hgu3v59jhea6gaxjwrtguul6rqtwfqp",
+      "allocation": 1,
+      "send_after": {"denom": "uluna","amount": "100000"},
+      "send_type": "Wallet"
+    },
+    {
+      "name": "test",
+      "contract": "terra1n3g37dsdlv7ryqftlkef8mhgqj4ny7p8v78lg7",
+      "allocation": 1,
+      "send_after": {"denom": "uluna","amount": "0"},
+      "send_type": "Wallet"
+    }
+  ]
+
+}
+

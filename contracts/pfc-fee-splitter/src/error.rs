@@ -7,11 +7,11 @@ pub enum ContractError {
     #[error("PFC-FeeSplit: StdError:{0}")]
     Std(#[from] StdError),
 
-    #[error("PFC-FeeSplit:Overflow:{0}")]
+    #[error("PFC-FeeSplit: Overflow:{0}")]
     Overflow(#[from] OverflowError),
 
     #[error(
-        "PFC-FeeSplit:Unauthorized (action: {action:?}, expected: {expected:?}, actual: {actual:?})"
+        "PFC-FeeSplit: Unauthorized (action: {action:?}, expected: {expected:?}, actual: {actual:?})"
     )]
     Unauthorized {
         action: String,
@@ -33,7 +33,7 @@ pub enum ContractError {
     InvalidCoin { coin: Coin },
     #[error("PFC-FeeSplit: No fees are defined. Add one before sending deposits")]
     NoFeesError {},
-    #[error("PFC-FeeSplit:Allocation has to be greater than zero")]
+    #[error("PFC-FeeSplit: Allocation has to be greater than zero")]
     AllocationZero {},
 
     #[error("PFC-FeeSplit: Contract can't be migrated! {current_name:?} {current_version:?}")]
@@ -41,4 +41,6 @@ pub enum ContractError {
         current_name: String,
         current_version: String,
     },
+    #[error("PFC-FeeSplit: Reconcile should not be sent funds")]
+    ReconcileWithFunds {},
 }
