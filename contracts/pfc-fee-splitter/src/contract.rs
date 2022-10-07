@@ -2,7 +2,7 @@ use cw2::{get_contract_version, set_contract_version};
 use std::str::FromStr;
 
 /// Contract name that is used for migration.
-const CONTRACT_NAME: &str = "pfc-cw20-frac";
+const CONTRACT_NAME: &str = "pfc-fee-split";
 /// Contract version that is used for migration.
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 #[cfg(not(feature = "library"))]
@@ -168,6 +168,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
             _ => {}
         },
+        //   "pfc-cw20-frac" => {}
         _ => {
             return Err(ContractError::MigrationError {
                 current_name: contract_version.contract,
