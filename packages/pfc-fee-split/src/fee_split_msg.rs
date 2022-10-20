@@ -101,7 +101,11 @@ impl ExecuteMsg {
     }
 
     /// creates a cosmos_msg sending this struct to the named contract
-    pub fn into_cosmos_msg<T: Into<String>, C>(self, contract_addr: T) -> StdResult<CosmosMsg<C>>
+    pub fn into_cosmos_msg<T: Into<String>, C>(
+        self,
+        contract_addr: T,
+        funds: Vec<Coin>,
+    ) -> StdResult<CosmosMsg<C>>
     where
         C: Clone + std::fmt::Debug + PartialEq + JsonSchema,
     {
@@ -109,7 +113,7 @@ impl ExecuteMsg {
         let execute = WasmMsg::Execute {
             contract_addr: contract_addr.into(),
             msg,
-            funds: vec![],
+            funds,
         };
         Ok(execute.into())
     }

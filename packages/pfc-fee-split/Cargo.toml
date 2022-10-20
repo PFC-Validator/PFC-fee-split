@@ -1,6 +1,6 @@
 [package]
 name = "pfc-fee-split"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["PFC"]
 edition = "2021"
 description = "Common helpers for other contracts to use pfc-fee-split"
