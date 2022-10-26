@@ -17,6 +17,10 @@ pub fn execute_deposit(
     flush: bool,
 ) -> Result<Response, ContractError> {
     if info.funds.is_empty() && !flush {
+        // sometimes funds are empty.
+        // if we errored out here, the calling transaction will fail.
+        // so instead of forcing everyone calling us to make sure there is a fee, we just put a note
+
         let res = Response::new()
             .add_attribute("action", "deposit")
             .add_attribute("from", info.sender)
