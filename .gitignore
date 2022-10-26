@@ -28,3 +28,4 @@ code_id*.json
 /contracts/*/.env
 
 /test_files/phoenix_instantiate.json
+/notes.txt
