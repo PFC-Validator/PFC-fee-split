@@ -53,13 +53,26 @@
       "additionalProperties": false
     },
     {
-      "description": "returns contract config",
+      "description": "returns ownership",
       "type": "object",
       "required": [
-        "gov_contract"
+        "ownership"
       ],
       "properties": {
-        "gov_contract": {
+        "ownership": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "returns list of addresses allowed to flush",
+      "type": "object",
+      "required": [
+        "flush_whitelist"
+      ],
+      "properties": {
+        "flush_whitelist": {
           "type": "object"
         }
       },

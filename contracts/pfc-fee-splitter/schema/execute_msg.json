@@ -121,7 +121,7 @@
       "additionalProperties": false
     },
     {
-      "description": "Queries tokens held, and then re-assigns them to allocations, wiping out whatever was there",
+      "description": "Queries tokens held, and then re-assigns them to allocations, wiping out whatever was there. This is a ADMIN only function (must be called by current gov_contract)",
       "type": "object",
       "required": [
         "reconcile"
@@ -134,19 +134,80 @@
       "additionalProperties": false
     },
     {
-      "description": "Change the governance contract (must be called by current gov_contract)",
+      "description": "Transfer gov-contract to another account; will not take effect unless the new owner accepts",
       "type": "object",
       "required": [
-        "update_governance_contract"
+        "transfer_gov_contract"
       ],
       "properties": {
-        "update_governance_contract": {
+        "transfer_gov_contract": {
           "type": "object",
           "required": [
+            "blocks",
             "gov_contract"
           ],
           "properties": {
+            "blocks": {
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
             "gov_contract": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Accept an gov-contract transfer",
+      "type": "object",
+      "required": [
+        "accept_gov_contract"
+      ],
+      "properties": {
+        "accept_gov_contract": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "allow this address to flush funds",
+      "type": "object",
+      "required": [
+        "add_to_flush_whitelist"
+      ],
+      "properties": {
+        "add_to_flush_whitelist": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "remove this address from flush funds whitelist",
+      "type": "object",
+      "required": [
+        "remove_from_flush_whitelist"
+      ],
+      "properties": {
+        "remove_from_flush_whitelist": {
+          "type": "object",
+          "required": [
+            "address"
+          ],
+          "properties": {
+            "address": {
               "type": "string"
             }
           }
