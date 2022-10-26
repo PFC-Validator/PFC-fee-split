@@ -89,9 +89,14 @@ pub enum ExecuteMsg {
     /// Queries tokens held, and then re-assigns them to allocations, wiping out whatever was there.
     /// This is a ADMIN only function (must be called by current gov_contract)
     Reconcile {},
-
-    /// Change the governance contract (must be called by current gov_contract)
-    UpdateGovernanceContract { gov_contract: String },
+    /// Transfer gov-contract to another account; will not take effect unless the new owner accepts
+    TransferGovContract { gov_contract: String, blocks: u64 },
+    /// Accept an gov-contract transfer
+    AcceptGovContract {},
+    /// allow this address to flush funds
+    AddToFlushWhitelist { address: String },
+    /// remove this address from flush funds whitelist
+    RemoveFromFlushWhitelist { address: String },
 }
 impl ExecuteMsg {
     /// serializes the message
@@ -131,13 +136,23 @@ pub enum QueryMsg {
     /// Returns allocation with name 'name'
     /// Return Type: AllocationHolding
     Allocation { name: String },
-    /// returns contract config
-    GovContract {},
+    /// returns ownership
+    Ownership {},
+    /// returns list of addresses allowed to flush
+    FlushWhitelist {},
 }
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
-pub struct GovContractResponse {
-    pub gov_contract: String,
+pub struct OwnershipResponse {
+    pub owner: String,
+    pub new_owner: Option<String>,
+    pub block_height: Option<u64>,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
+pub struct WhitelistResponse {
+    pub allowed: Vec<String>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct AllocationResponse {
     pub allocations: Vec<AllocationHolding>,

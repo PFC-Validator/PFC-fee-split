@@ -1,5 +1,5 @@
 use crate::error::ContractError;
-use crate::state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG};
+use crate::state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG, FLUSH_WHITELIST};
 use cosmwasm_std::{
     Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal, DepsMut, Env,
     MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdError, StdResult, Uint128,
@@ -23,6 +23,16 @@ pub fn execute_deposit(
             .add_attribute("no-action", "no funds sent, and flush false");
 
         return Ok(res);
+    }
+    if flush
+        && !FLUSH_WHITELIST.contains(deps.storage, info.sender.clone())
+        && !ADMIN.is_admin(deps.as_ref(), &info.sender)?
+    {
+        return Err(ContractError::Unauthorized {
+            action: "sender is not on whitelist".to_string(),
+            expected: "flush:false".to_string(),
+            actual: "flush:true".to_string(),
+        });
     }
 
     let funds_in: HashMap<String, Uint128> =
@@ -166,6 +176,47 @@ pub fn execute_remove_allocation_detail(
     }
 }
 
+pub fn execute_add_flush_whitelist(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    address: String,
+) -> Result<Response, ContractError> {
+    ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
+    let address_addr = deps.api.addr_validate(address.as_str())?;
+    FLUSH_WHITELIST.insert(deps.storage, address_addr)?;
+    let res = Response::new()
+        .add_attribute("action", "add_flush_whitelist")
+        .add_attribute("from", info.sender);
+
+    Ok(res)
+}
+pub fn execute_remove_flush_whitelist(
+    deps: DepsMut,
+    _env: Env,
+    info: MessageInfo,
+    address: String,
+) -> Result<Response, ContractError> {
+    ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
+    let address_addr = deps.api.addr_validate(address.as_str())?;
+    if FLUSH_WHITELIST.contains(deps.storage, address_addr.clone()) {
+        FLUSH_WHITELIST.remove(deps.storage, address_addr);
+
+        let res = Response::new()
+            .add_attribute("action", "remove_flush_whitelist")
+            .add_attribute("from", info.sender);
+
+        Ok(res)
+    } else {
+        let res = Response::new()
+            .add_attribute("action", "remove_flush_whitelist")
+            .add_attribute("from", info.sender)
+            .add_attribute("not_there", address);
+
+        Ok(res)
+    }
+}
+
 pub fn execute_reconcile(
     deps: DepsMut,
     env: Env,
@@ -210,15 +261,64 @@ pub fn execute_reconcile(
 
 pub fn execute_update_gov_contract(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     gov_contract: String,
+    blocks: u64,
 ) -> Result<Response, ContractError> {
-    let admin = deps.api.addr_validate(&gov_contract)?;
+    ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
+    let new_admin = deps.api.addr_validate(&gov_contract)?;
     let mut config = CONFIG.load(deps.storage)?;
-    config.gov_contract = admin.clone();
+    config.new_gov_contract = Some(new_admin);
+    config.change_gov_contract_by_height = Some(env.block.height + blocks);
+
     CONFIG.save(deps.storage, &config)?;
-    Ok(ADMIN.execute_update_admin(deps, info, Some(admin))?)
+    let res = Response::new().add_attribute("action", "update_gov_contract");
+    Ok(res)
+}
+pub fn execute_accept_gov_contract(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let mut config = CONFIG.load(deps.storage)?;
+    if let Some(new_admin) = config.new_gov_contract {
+        if new_admin != info.sender {
+            Err(ContractError::Unauthorized {
+                action: "accept_gov_contract".to_string(),
+                expected: new_admin.to_string(),
+                actual: info.sender.to_string(),
+            })
+        } else if let Some(block_height) = config.change_gov_contract_by_height {
+            if block_height < env.block.height {
+                Err(ContractError::Unauthorized {
+                    action: "accept_gov_contract expired".to_string(),
+                    expected: format!("{}", block_height),
+                    actual: format!("{}", env.block.height),
+                })
+            } else {
+                config.gov_contract = new_admin.clone();
+                config.new_gov_contract = None;
+                config.change_gov_contract_by_height = None;
+                CONFIG.save(deps.storage, &config)?;
+                ADMIN.set(deps, Some(new_admin))?;
+                let res = Response::new().add_attribute("action", "accept_gov_contract");
+                Ok(res)
+            }
+        } else {
+            Err(ContractError::Unauthorized {
+                action: "accept_gov_contract no height".to_string(),
+                expected: "-missing-".to_string(),
+                actual: format!("{}", env.block.height),
+            })
+        }
+    } else {
+        Err(ContractError::Unauthorized {
+            action: "accept_gov_contract not set".to_string(),
+            expected: "-missing-".to_string(),
+            actual: "-missing-".to_string(),
+        })
+    }
 }
 
 pub(crate) fn get_total_weight(deps: &DepsMut) -> Result<u8, ContractError> {
@@ -239,22 +339,14 @@ pub(crate) fn determine_allocation(
     funds_held: &[Coin],
 ) -> Result<Vec<Coin>, ContractError> {
     let fraction = Decimal::from_ratio(allocation_amt, total_allocation);
-    //    eprintln!("fraction = {}", fraction);
-    //    eprintln!("funds_sent = {:?}", funds_sent);
     let funds_sent_alloc: HashMap<String, Uint128> = funds_sent
         .iter()
         .map(|(denom, amount)| {
             let dec_amt: Decimal = Decimal::from_atomics(amount.u128(), 0).unwrap();
             let portion = dec_amt.mul(fraction);
-            /*
-                       eprintln!(
-                           "dec_amt = {}, portion = {}",
-                           dec_amt.to_string(),
-                           portion.to_string()
-                       );
 
-            */
-            if portion.is_zero() && portion > Decimal::from_ratio(1u32, 10_000u32) {
+            // ignore dust
+            if portion.is_zero() || portion < Decimal::from_ratio(1u32, 10_000u32) {
                 (denom.clone(), Uint128::zero())
             } else {
                 let places = portion.decimal_places();
@@ -266,7 +358,7 @@ pub(crate) fn determine_allocation(
             }
         })
         .collect();
-    //eprintln!("funds_sent_alloc = {:?}", funds_sent_alloc);
+
     let bal: HashMap<String, Uint128> = funds_held
         .iter()
         .map(|c| {
@@ -682,7 +774,7 @@ mod exec {
     }
 }
 #[cfg(test)]
-mod crud {
+mod crud_allocations {
     use crate::contract::execute;
     use crate::error::ContractError;
     use crate::handler::query::{query_allocation, query_allocations};
@@ -985,6 +1077,260 @@ mod crud {
 
         let allocations = query_allocation(deps.as_ref(), String::from(ALLOCATION_1))?.unwrap();
         assert_eq!(allocations.balance.len(), 0);
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod flush_whitelist {
+    use crate::contract::execute;
+    use crate::error::ContractError;
+    use crate::handler::query::query_flush_whitelist;
+    use crate::test_helpers::{
+        do_instantiate, one_allocation, two_allocation, CREATOR, DENOM_1, GOV_CONTRACT, USER_1,
+    };
+    use cosmwasm_std::coin;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use pfc_fee_split::fee_split_msg::ExecuteMsg;
+
+    #[test]
+    fn add_remove_whitelists() -> Result<(), ContractError> {
+        let mut deps = mock_dependencies();
+        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let msg = ExecuteMsg::AddToFlushWhitelist {
+            address: "johnny".to_string(),
+        };
+        let info = mock_info(USER_1, &[]);
+        let env = mock_env();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
+            .err()
+            .unwrap();
+        match err {
+            ContractError::AdminError { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+        // the one creating it has no admin privs
+        let info = mock_info(CREATOR, &[]);
+        let env = mock_env();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
+            .err()
+            .unwrap();
+        match err {
+            ContractError::AdminError { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+
+        let info = mock_info(GOV_CONTRACT, &[]);
+        let env = mock_env();
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
+        let msg2 = ExecuteMsg::AddToFlushWhitelist {
+            address: "jimmy".to_string(),
+        };
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg2.clone())?;
+        // yes.. johnny was added twice intentionally\
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
+        let mut whitelist = query_flush_whitelist(deps.as_ref())?.allowed;
+        whitelist.sort();
+        assert_eq!(whitelist.len(), 2);
+        assert_eq!(whitelist.get(0).unwrap(), "jimmy");
+        assert_eq!(whitelist.get(1).unwrap(), "johnny");
+
+        let msg = ExecuteMsg::RemoveFromFlushWhitelist {
+            address: "johnny".to_string(),
+        };
+        let info = mock_info(USER_1, &[]);
+        let env = mock_env();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
+            .err()
+            .unwrap();
+        match err {
+            ContractError::AdminError { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+
+        // the one creating it has no admin privs
+        let info = mock_info(CREATOR, &[]);
+        let env = mock_env();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
+            .err()
+            .unwrap();
+        match err {
+            ContractError::AdminError { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+
+        let info = mock_info(GOV_CONTRACT, &[]);
+        let env = mock_env();
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
+        let msg2 = ExecuteMsg::RemoveFromFlushWhitelist {
+            address: "jason".to_string(),
+        };
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg2.clone())?;
+        // yes.. johnny was added twice intentionally\
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
+        let mut whitelist = query_flush_whitelist(deps.as_ref())?.allowed;
+        whitelist.sort();
+        assert_eq!(whitelist.len(), 1);
+        assert_eq!(whitelist.get(0).unwrap(), "jimmy");
+
+        Ok(())
+    }
+    #[test]
+    fn flush_deposit() -> Result<(), ContractError> {
+        let mut deps = mock_dependencies();
+        let _res = do_instantiate(deps.as_mut(), CREATOR, one_allocation())?;
+        let info = mock_info(GOV_CONTRACT, &[]);
+        let env = mock_env();
+        let msg_add = ExecuteMsg::AddToFlushWhitelist {
+            address: "jimmy".to_string(),
+        };
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg_add.clone())?;
+        let info_with_funds = mock_info(USER_1, &[coin(1_000_000u128, String::from(DENOM_1))]);
+        let msg_no_flush = ExecuteMsg::Deposit { flush: false };
+        let msg_flush = ExecuteMsg::Deposit { flush: true };
+        let res = execute(
+            deps.as_mut(),
+            env.clone(),
+            info_with_funds.clone(),
+            msg_no_flush,
+        )?;
+        assert_eq!(res.messages.len(), 1);
+
+        let err = execute(
+            deps.as_mut(),
+            env.clone(),
+            info_with_funds.clone(),
+            msg_flush.clone(),
+        )
+        .err()
+        .unwrap();
+        match err {
+            ContractError::Unauthorized { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+        let info_auth_with_funds =
+            mock_info("jimmy", &[coin(1_000_000u128, String::from(DENOM_1))]);
+
+        let res = execute(
+            deps.as_mut(),
+            env.clone(),
+            info_auth_with_funds.clone(),
+            msg_flush,
+        )?;
+        assert_eq!(res.messages.len(), 1);
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod ownership_changes {
+    use crate::contract::execute;
+    use crate::error::ContractError;
+    use crate::test_helpers::{do_instantiate, two_allocation, CREATOR, GOV_CONTRACT, USER_1};
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use pfc_fee_split::fee_split_msg::ExecuteMsg;
+
+    #[test]
+    fn change_owners() -> Result<(), ContractError> {
+        let mut deps = mock_dependencies();
+        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let msg_gov_transfer = ExecuteMsg::TransferGovContract {
+            gov_contract: "new_gov".to_string(),
+            blocks: 1000,
+        };
+        let info = mock_info(USER_1, &[]);
+        let env = mock_env();
+        let err = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            msg_gov_transfer.clone(),
+        )
+        .err()
+        .unwrap();
+        match err {
+            ContractError::AdminError { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+        let info = mock_info(GOV_CONTRACT, &[]);
+        let _res = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            msg_gov_transfer.clone(),
+        )?;
+        let msg_flush = ExecuteMsg::Deposit { flush: true };
+
+        //  not admin yet
+        let info = mock_info("new_gov", &[]);
+        let env = mock_env();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg_flush.clone())
+            .err()
+            .unwrap();
+        match err {
+            ContractError::Unauthorized { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+
+        // old gov still good
+        let info = mock_info(GOV_CONTRACT, &[]);
+        let env = mock_env();
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg_flush.clone())?;
+
+        let msg_accept_gov_transfer = ExecuteMsg::AcceptGovContract {};
+        let env = mock_env();
+        let info = mock_info(USER_1, &[]);
+        let err = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            msg_accept_gov_transfer.clone(),
+        )
+        .err()
+        .unwrap();
+        match err {
+            ContractError::Unauthorized { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+        let info = mock_info(GOV_CONTRACT, &[]);
+        let err = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            msg_accept_gov_transfer.clone(),
+        )
+        .err()
+        .unwrap();
+        match err {
+            ContractError::Unauthorized { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+        let info = mock_info("new_gov", &[]);
+        let _res = execute(
+            deps.as_mut(),
+            env.clone(),
+            info.clone(),
+            msg_accept_gov_transfer.clone(),
+        )?;
+
+        // no longer admin
+        let info = mock_info(GOV_CONTRACT, &[]);
+
+        let env = mock_env();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg_flush.clone())
+            .err()
+            .unwrap();
+        match err {
+            ContractError::Unauthorized { .. } => {}
+            _ => assert!(false, "wrong error {:?}", err),
+        }
+
+        // new gov is good
+        let info = mock_info("new_gov", &[]);
+        let env = mock_env();
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg_flush.clone())?;
 
         Ok(())
     }

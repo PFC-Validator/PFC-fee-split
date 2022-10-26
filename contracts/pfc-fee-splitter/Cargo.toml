@@ -1,7 +1,7 @@
 [package]
 
 name = "pfc-fee-splitter"
-version = "0.1.1"
+version = "0.2.1"
 authors = ["PFC <pfc-validator@protonmail.com>"]
 edition = "2018"
 
@@ -24,16 +24,15 @@ backtraces = ["cosmwasm-std/backtraces"]
 library=[]
 
 [dependencies]
-# cw0="0.10.3"
 cw2 = "0.15.0"
-pfc-fee-split = { version = "0.1", path = "../../packages/pfc-fee-split" }
+cw-item-set = "0.5.0"
+pfc-fee-split = { version = "0.2", path = "../../packages/pfc-fee-split" }
 
 cosmwasm-std = "1.0.0"
 cw-storage-plus = "0.15.0"
 cw-controllers = "0.15.0"
 schemars = "0.8.10"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-# protobuf = { version = "2", features = ["with-bytes"] }
 thiserror = "1.0.23"
 
 [build-dependencies]
@@ -51,12 +50,8 @@ convert_case = "0.6.0"
 optimize = """docker run --rm -v "$(pwd)":/code \
           --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-              cosmwasm/rust-optimizer:0.12.6"""
+              cosmwasm/rust-optimizer:0.12.9"""
 optimize-w32 = """docker run --rm -v c:\\pfc\\fractional\\fee-split:/code  \
             --mount type=volume,source=pfc_fee_splitter_cache,target=/code/target \
             --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-            cosmwasm/rust-optimizer:0.12.6"""
-#store = """terra-rust code store test-owner ..\\..\\artifacts\\pfc_fee_splitter.wasm"""
-# instantiate = """terra-rust code instantiate test ..\\..\\artifacts\\pfc_fractional_cw20.wasm .\\cw20_init.json --admin same"""
-#instantiate="""cargo-terra --sender test-owner instantiate  ..\\..\\artifacts\\pfc_fee_splitter.wasm cw20_init.json same"""
-#migrate = """terra-rust code migrate test-owner ..\\..\\artifacts\\pfc_fee_splitter.wasm"""
+            cosmwasm/rust-optimizer:0.12.9"""

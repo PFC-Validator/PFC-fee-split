@@ -1,19 +1,15 @@
 [package]
 name = "pfc-fee-split"
-version = "0.1.1"
+version = "0.2.1"
 authors = ["PFC"]
 edition = "2021"
 description = "Common helpers for other contracts to use pfc-fee-split"
 license = "Apache-2.0"
 repository = "https://github.com/PFC-Validator/pfc-fee-split"
-homepage = "https://TBD.example.com"
-documentation = "https://TBD.example.com"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+#homepage = "https://TBD.example.com"
+#documentation = "https://TBD.example.com"
 
 [features]
-# for quicker tests, cargo test --lib
-# for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]

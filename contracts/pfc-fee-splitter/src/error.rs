@@ -33,6 +33,9 @@ pub enum ContractError {
     InvalidCoin { coin: Coin },
     #[error("PFC-FeeSplit: No fees are defined. Add one before sending deposits")]
     NoFeesError {},
+    #[error("PFC-FeeSplit: Fund Allocation name must be unique")]
+    FundAllocationNotUnique {},
+
     #[error("PFC-FeeSplit: Allocation has to be greater than zero")]
     AllocationZero {},
 

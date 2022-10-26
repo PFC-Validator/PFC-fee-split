@@ -1,15 +1,27 @@
 # WARNING
-This has not been audited, or tested frankly.
+
+This has not been fully audited.
 Do not use it.
 
-As-is this will send your NFTs and CW20 tokens to my wallet.(It won't be it could.. so don't use it ok)
+# PFC-FEE Split
 
-# PFC-CW20-FRAC
-Contract to fractionalize collections of NFTs & CW20s.
+Split a collection of native tokens into multiple wallets.
+
+## how?
+
+- money comes in via Deposit messages. When it is called, it splits the funds sent (native only)
+  and sends them to the various allocation wallets based on the configured allocation ratios.
+  Each allocation has a minimum amount (configurable) where it won't send until it reaches that threshold. You can
+  bypass these thresholds by sending 'flush:true' if you are whitelisted.
+
+- There is also a 'reconcile' function that will take existing funds sitting in the contract, and redistibute them based
+  on allocation holdings. (note: It will ignore thresholds)
+
+# TODO
+
++ setup so it actually calls a message for a given contract.
++ CW20 disbursement
 
 
-## TODO
-* build factory
-* implement holding testing.
-* governance
-
+# Thank you
+The audit for this contract has been sponsored by [backbonelabs.io](https://backbonelabs.io).

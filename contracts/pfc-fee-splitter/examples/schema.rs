@@ -1,5 +1,5 @@
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use pfc_fee_split::fee_split_msg::{AllocationResponse, GovContractResponse};
+use pfc_fee_split::fee_split_msg::{AllocationResponse, OwnershipResponse};
 use pfc_fee_split::fee_split_msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
 use std::env::current_dir;
 use std::fs::create_dir_all;
@@ -13,6 +13,6 @@ fn main() {
     export_schema(&schema_for!(ExecuteMsg), &out_dir);
     export_schema(&schema_for!(QueryMsg), &out_dir);
 
-    export_schema(&schema_for!(GovContractResponse), &out_dir);
+    export_schema(&schema_for!(OwnershipResponse), &out_dir);
     export_schema(&schema_for!(AllocationResponse), &out_dir);
 }

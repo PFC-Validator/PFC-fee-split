@@ -1,4 +1,5 @@
 use cw2::{get_contract_version, set_contract_version};
+use std::collections::HashSet;
 use std::str::FromStr;
 
 /// Contract name that is used for migration.
@@ -15,9 +16,7 @@ use cosmwasm_std::{
 use crate::error::ContractError;
 use crate::handler::exec as ExecHandler;
 use crate::handler::query as QueryHandler;
-//use crate::handler::reply as ReplyHandler;
 use crate::migrations::ConfigV100;
-//use crate::response::MsgInstantiateContractResponse;
 use crate::state;
 use crate::state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG};
 
@@ -25,19 +24,12 @@ use crate::error::ContractError::SendTypeInvalid;
 use pfc_fee_split::fee_split_msg::{
     AllocationHolding, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SendType,
 };
-//use protobuf::Message;
-
-// this is used to create the anchor fund
-pub const INSTANTIATE_REPLY_ID: u64 = 22;
-// this one is to build the NFT
-pub const INSTANTIATE_NFT_REPLY_ID: u64 = 21;
-//pub const INSTANTIATE_REPLY_NFT_REDEEMED: u64 = 3;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     mut deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -45,13 +37,18 @@ pub fn instantiate(
         deps.storage,
         &state::Config {
             this: deps.api.addr_validate(env.contract.address.as_str())?,
-            owner: deps.api.addr_validate(info.sender.as_str())?,
             gov_contract: deps.api.addr_validate(msg.gov_contract.as_str())?,
+            new_gov_contract: None,
+            change_gov_contract_by_height: None,
         },
     )?;
 
     if msg.allocation.is_empty() {
         return Err(ContractError::NoFeesError {});
+    }
+    let dupe_check: HashSet<String> = msg.allocation.iter().map(|v| v.name.clone()).collect();
+    if dupe_check.len() != msg.allocation.len() {
+        return Err(ContractError::FundAllocationNotUnique {});
     }
     for row in msg.allocation {
         if row.send_after.denom.trim().is_empty() {
@@ -116,8 +113,12 @@ pub fn execute(
             ExecHandler::execute_remove_allocation_detail(deps, env, info, name)
         }
 
-        ExecuteMsg::UpdateGovernanceContract { gov_contract } => {
-            ExecHandler::execute_update_gov_contract(deps, env, info, gov_contract)
+        ExecuteMsg::TransferGovContract {
+            gov_contract,
+            blocks,
+        } => ExecHandler::execute_update_gov_contract(deps, env, info, gov_contract, blocks),
+        ExecuteMsg::AcceptGovContract {} => {
+            ExecHandler::execute_accept_gov_contract(deps, env, info)
         }
         ExecuteMsg::ModifyAllocationDetail {
             name,
@@ -129,27 +130,24 @@ pub fn execute(
             deps, env, info, name, contract, allocation, send_after, send_type,
         ),
         ExecuteMsg::Reconcile {} => ExecHandler::execute_reconcile(deps, env, info),
+        ExecuteMsg::AddToFlushWhitelist { address } => {
+            ExecHandler::execute_add_flush_whitelist(deps, env, info, address)
+        }
+        ExecuteMsg::RemoveFromFlushWhitelist { address } => {
+            ExecHandler::execute_remove_flush_whitelist(deps, env, info, address)
+        }
     }
 }
-/*
-#[allow(dead_code)]
-#[cfg_attr(not(feature = "library"), entry_point)]
-pub fn reply(_deps: DepsMut, _env: Env, msg: Reply) -> Result<Response, ContractError> {
-    match msg.id {
-        _ => Err(ContractError::InvalidReplyId { id: msg.id }),
-    }
-    Err(ContractError::InvalidReplyId { id: msg.id })
-}
-*/
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GovContract {} => to_binary(&QueryHandler::query_gov_contract(deps)?),
+        QueryMsg::Ownership {} => to_binary(&QueryHandler::query_gov_contract(deps)?),
         QueryMsg::Allocations { start_after, limit } => {
             to_binary(&QueryHandler::query_allocations(deps, start_after, limit)?)
         }
 
         QueryMsg::Allocation { name } => to_binary(&QueryHandler::query_allocation(deps, name)?),
+        QueryMsg::FlushWhitelist {} => to_binary(&QueryHandler::query_flush_whitelist(deps)?),
     }
 }
 
@@ -160,7 +158,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
     match contract_version.contract.as_ref() {
         #[allow(clippy::single_match)]
         "pfc-fee-split" => match contract_version.version.as_ref() {
-            "0.0.0" => {
+            "0.1.1" => {
                 let config_v100 = ConfigV100::load(deps.storage)?;
 
                 CONFIG.save(deps.storage, &config_v100.migrate_from())?;
@@ -168,7 +166,6 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
             _ => {}
         },
-        //   "pfc-cw20-frac" => {}
         _ => {
             return Err(ContractError::MigrationError {
                 current_name: contract_version.contract,
@@ -198,13 +195,16 @@ mod tests {
 
         use crate::error::ContractError;
         use crate::handler::query::query_allocation;
-        use crate::test_helpers::{one_allocation, ALLOCATION_1, CREATOR, DENOM_1, GOV_CONTRACT};
-        use pfc_fee_split::fee_split_msg::{AllocationHolding, InitHook, InstantiateMsg, SendType};
+        use crate::test_helpers::{
+            one_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR, DENOM_1, GOV_CONTRACT,
+        };
+        use pfc_fee_split::fee_split_msg::{
+            AllocationDetail, AllocationHolding, InitHook, InstantiateMsg, SendType,
+        };
 
         #[test]
         fn basic() {
             let mut deps = mock_dependencies();
-            //let amount = Uint128::from(11223344u128);
             let hook_msg = Binary::from(r#"{"some": 123}"#.as_bytes());
             let instantiate_msg = InstantiateMsg {
                 name: "Hook Test".to_string(),
@@ -258,6 +258,55 @@ mod tests {
                 }
             } else {
                 assert!(false, "should have failed")
+            }
+        }
+
+        #[test]
+        fn dupe_holdings() {
+            let mut deps = mock_dependencies();
+            let instantiate_msg = InstantiateMsg {
+                name: "Dupe Allocation Test".to_string(),
+
+                init_hook: None,
+                gov_contract: String::from(GOV_CONTRACT),
+                allocation: vec![
+                    AllocationDetail {
+                        name: ALLOCATION_1.to_string(),
+                        contract: "allocation_1_addr".to_string(),
+                        allocation: 1,
+                        send_after: coin(1_000u128, DENOM_1),
+                        send_type: "Wallet".to_string(),
+                    },
+                    AllocationDetail {
+                        name: ALLOCATION_2.to_string(),
+                        contract: "allocation_2_addr".to_string(),
+                        allocation: 1,
+                        send_after: coin(1_0000_000u128, DENOM_1),
+                        send_type: "Wallet".to_string(),
+                    },
+                    AllocationDetail {
+                        name: ALLOCATION_1.to_string(),
+                        contract: "allocation_3_addr".to_string(),
+                        allocation: 3,
+                        send_after: coin(1_0000_000u128, DENOM_1),
+                        send_type: "Wallet".to_string(),
+                    },
+                ],
+            };
+
+            let info = mock_info(CREATOR, &[]);
+            let env = mock_env();
+            let err = instantiate(deps.as_mut(), env, info, instantiate_msg)
+                .err()
+                .unwrap();
+            match err {
+                ContractError::FundAllocationNotUnique {} => {}
+                _ => {
+                    assert!(
+                        false,
+                        "this should have returned an FundAllocationNotUnique error"
+                    )
+                }
             }
         }
     }
