@@ -1,0 +1,14 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "terra12097jggxd6q95hq0wt65ejjqsaggu8xeckwgms",
+  "allocation": [
+    {
+      "name": "bLuna Cron",
+      "contract": "terra1e5hratq6nzt50xr8wh0fmsdar2mrs4ac36rh83",
+      "allocation": 1,
+      "send_after": {"denom": "uluna","amount": "100000"},
+      "send_type": "Wallet"
+    }
+  ]
+}
+

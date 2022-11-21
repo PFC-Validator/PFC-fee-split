@@ -18,8 +18,8 @@ pub enum ContractError {
         expected: String,
         actual: String,
     },
-    #[error("PFC-FeeSplit: Invalid Send_type {send_type:?}")]
-    SendTypeInvalid { send_type: String },
+    // #[error("PFC-FeeSplit: Invalid Send_type {send_type:?}")]
+    //  SendTypeInvalid { send_type: String },
     #[error(transparent)]
     AdminError(#[from] cw_controllers::AdminError),
 

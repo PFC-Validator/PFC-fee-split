@@ -1,0 +1,9 @@
+{
+  "add_allocation_details":    {
+    "name": "test",
+    "contract": "terra1n3g37dsdlv7ryqftlkef8mhgqj4ny7p8v78lg7",
+    "allocation": 1,
+    "send_after": {"denom": "uluna","amount": "0"},
+    "send_type": "Steak"
+  }
+}

@@ -1,6 +1,5 @@
 use cw2::{get_contract_version, set_contract_version};
 use std::collections::HashSet;
-use std::str::FromStr;
 
 /// Contract name that is used for migration.
 const CONTRACT_NAME: &str = "pfc-fee-split";
@@ -20,9 +19,8 @@ use crate::migrations::ConfigV100;
 use crate::state;
 use crate::state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG};
 
-use crate::error::ContractError::SendTypeInvalid;
 use pfc_fee_split::fee_split_msg::{
-    AllocationHolding, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SendType,
+    AllocationHolding, ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg,
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -56,10 +54,7 @@ pub fn instantiate(
                 coin: row.send_after,
             });
         }
-        let send_type_verified =
-            SendType::from_str(&row.send_type).map_err(|_| SendTypeInvalid {
-                send_type: row.send_type.clone(),
-            })?;
+        row.send_type.verify(deps.api)?;
         if row.allocation == 0 {
             return Err(ContractError::AllocationZero {});
         }
@@ -69,7 +64,7 @@ pub fn instantiate(
             contract: deps.api.addr_validate(row.contract.as_str())?,
             allocation: row.allocation,
             send_after: row.send_after,
-            send_type: send_type_verified,
+            send_type: row.send_type,
             balance: vec![],
         };
         ALLOCATION_HOLDINGS.save(deps.storage, row.name.clone(), &allocation_holding)?
@@ -275,21 +270,21 @@ mod tests {
                         contract: "allocation_1_addr".to_string(),
                         allocation: 1,
                         send_after: coin(1_000u128, DENOM_1),
-                        send_type: "Wallet".to_string(),
+                        send_type: SendType::WALLET,
                     },
                     AllocationDetail {
                         name: ALLOCATION_2.to_string(),
                         contract: "allocation_2_addr".to_string(),
                         allocation: 1,
                         send_after: coin(1_0000_000u128, DENOM_1),
-                        send_type: "Wallet".to_string(),
+                        send_type: SendType::WALLET,
                     },
                     AllocationDetail {
                         name: ALLOCATION_1.to_string(),
                         contract: "allocation_3_addr".to_string(),
                         allocation: 3,
                         send_after: coin(1_0000_000u128, DENOM_1),
-                        send_type: "Wallet".to_string(),
+                        send_type: SendType::WALLET,
                     },
                 ],
             };

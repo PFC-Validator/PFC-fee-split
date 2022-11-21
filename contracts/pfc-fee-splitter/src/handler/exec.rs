@@ -1,14 +1,14 @@
 use crate::error::ContractError;
 use crate::state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG, FLUSH_WHITELIST};
 use cosmwasm_std::{
-    Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal, DepsMut, Env,
-    MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdError, StdResult, Uint128,
+    to_binary, Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal, DepsMut,
+    Env, MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdError, StdResult, Uint128,
+    WasmMsg,
 };
 use pfc_fee_split::fee_split_msg::{AllocationHolding, SendType};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::ops::Mul;
-use std::str::FromStr;
 
 pub fn execute_deposit(
     deps: DepsMut,
@@ -59,14 +59,11 @@ pub fn execute_add_allocation_detail(
     contract_unverified: String,
     allocation: u8,
     send_after: Coin,
-    send_type_unverified: String,
+    send_type_unverified: SendType,
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
     let contract = deps.api.addr_validate(contract_unverified.as_str())?;
-    let send_type =
-        SendType::from_str(&send_type_unverified).map_err(|_| ContractError::SendTypeInvalid {
-            send_type: send_type_unverified.clone(),
-        })?;
+    send_type_unverified.verify(deps.api)?;
 
     if allocation == 0 {
         return Err(ContractError::AllocationZero {});
@@ -80,7 +77,7 @@ pub fn execute_add_allocation_detail(
         &AllocationHolding {
             name: name.clone(),
             contract: contract.clone(),
-            send_type,
+            send_type: send_type_unverified.clone(),
             send_after: send_after.clone(),
             allocation,
 
@@ -94,7 +91,7 @@ pub fn execute_add_allocation_detail(
         .add_attribute("contract", contract.to_string())
         .add_attribute("allocation", format!("{}", allocation))
         .add_attribute("send_after", send_after.to_string())
-        .add_attribute("send_type", send_type_unverified);
+        .add_attribute("send_type", send_type_unverified.to_string());
     Ok(res)
 }
 
@@ -106,14 +103,13 @@ pub fn execute_modify_allocation_detail(
     contract_unverified: String,
     allocation: u8,
     send_after: Coin,
-    send_type_unverified: String,
+    send_type_unverified: SendType,
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
     let contract = deps.api.addr_validate(contract_unverified.as_str())?;
-    let send_type =
-        SendType::from_str(&send_type_unverified).map_err(|_| ContractError::SendTypeInvalid {
-            send_type: send_type_unverified.clone(),
-        })?;
+
+    send_type_unverified.verify(deps.api)?;
+
     if allocation == 0 {
         return Err(ContractError::AllocationZero {});
     }
@@ -121,7 +117,7 @@ pub fn execute_modify_allocation_detail(
     ALLOCATION_HOLDINGS.update(deps.storage, name.clone(), |rec| -> StdResult<_> {
         if let Some(mut fee_holding) = rec {
             fee_holding.contract = contract.clone();
-            fee_holding.send_type = send_type;
+            fee_holding.send_type = send_type_unverified.clone();
             fee_holding.send_after = send_after.clone();
             fee_holding.allocation = allocation;
             Ok(fee_holding)
@@ -139,7 +135,7 @@ pub fn execute_modify_allocation_detail(
         .add_attribute("contract", contract.to_string())
         .add_attribute("allocation", format!("{}", allocation))
         .add_attribute("send_after", send_after.to_string())
-        .add_attribute("send_type", send_type_unverified);
+        .add_attribute("send_type", send_type_unverified.to_string());
 
     Ok(res)
 
@@ -414,7 +410,7 @@ pub(crate) fn do_deposit(
         )?;
         if flush {
             msgs.push(generate_cosmos_msg(
-                allocation_holding.send_type,
+                allocation_holding.send_type.clone(),
                 &allocation_holding.contract,
                 merged_coins,
             )?);
@@ -426,7 +422,7 @@ pub(crate) fn do_deposit(
             if let Some(coin) = check_coin {
                 if coin.amount > allocation_holding.send_after.amount {
                     msgs.push(generate_cosmos_msg(
-                        allocation_holding.send_type,
+                        allocation_holding.send_type.clone(),
                         &allocation_holding.contract,
                         merged_coins,
                     )?);
@@ -456,6 +452,16 @@ fn generate_cosmos_msg(
                 amount: coins,
             };
             Ok(CosmosMsg::Bank(msg))
+        }
+        SendType::SteakRewards { steak, receiver } => {
+            let msg = pfc_steak::hub::ExecuteMsg::Bond {
+                receiver: Some(receiver),
+            };
+            Ok(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: steak,
+                msg: to_binary(&msg)?,
+                funds: coins,
+            }))
         }
     }
 }
@@ -615,6 +621,61 @@ mod exec {
                 amount: vec![coin(1_000_000, DENOM_1)]
             })
         );
+
+        assert_eq!(res.attributes.len(), 2);
+        let allocation = query_allocation(deps.as_ref(), ALLOCATION_1.into())?.unwrap();
+        assert!(allocation.balance.is_empty(), "no coins should be present");
+
+        Ok(())
+    }
+    #[test]
+    fn deposit_split() -> Result<(), ContractError> {
+        let mut deps = mock_dependencies();
+        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let msg = ExecuteMsg::Deposit { flush: false };
+        let info = mock_info(USER_1, &[]);
+        let env = mock_env();
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
+
+        assert_eq!(res.messages.len(), 0);
+        assert_eq!(res.attributes.len(), 3);
+        assert_eq!(res.attributes[2].key, "no-action");
+
+        let info_with_funds = mock_info(USER_1, &[coin(50_000_000u128, String::from(DENOM_1))]);
+        let res = execute(deps.as_mut(), env, info_with_funds, msg)?;
+        //eprintln!("{:?}", res.messages[0]);
+        assert_eq!(res.messages.len(), 2);
+        assert_eq!(
+            res.messages[0].msg,
+            CosmosMsg::Bank(BankMsg::Send {
+                to_address: "allocation_1_addr".to_string(),
+                amount: vec![coin(25_000_000, DENOM_1)]
+            })
+        );
+        match &res.messages[1].msg {
+            CosmosMsg::Wasm(wasmmsg) => match wasmmsg {
+                WasmMsg::Execute {
+                    contract_addr,
+                    msg,
+                    funds,
+                } => {
+                    assert_eq!(contract_addr, "steak_contract");
+                    assert_eq!(funds.len(), 1);
+                    assert_eq!(funds[0].amount, Uint128::new(25_000_000));
+                    assert_eq!(funds[0].denom, DENOM_1);
+                    let expected = to_binary(&pfc_steak::hub::ExecuteMsg::Bond {
+                        receiver: Some(String::from("receiver")),
+                    })?;
+                    assert_eq!(msg, &expected)
+                }
+                _ => {
+                    assert!(false, "Invalid MSG {:?}", res.messages[1].msg)
+                }
+            },
+            _ => {
+                assert!(false, "Invalid MSG {:?}", res.messages[1].msg)
+            }
+        }
 
         assert_eq!(res.attributes.len(), 2);
         let allocation = query_allocation(deps.as_ref(), ALLOCATION_1.into())?.unwrap();
@@ -803,7 +864,10 @@ mod crud_allocations {
             contract: "line3-address".to_string(),
             allocation: 1,
             send_after: coin(0u128, DENOM_1),
-            send_type: "Wallet".to_string(),
+            send_type: SendType::SteakRewards {
+                steak: String::from("steak-contract"),
+                receiver: String::from("rewards"),
+            },
         };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
@@ -829,7 +893,10 @@ mod crud_allocations {
             contract: "line3-address".to_string(),
             allocation: 1,
             send_after: coin(0u128, DENOM_1),
-            send_type: "Wallet".to_string(),
+            send_type: SendType::SteakRewards {
+                steak: String::from("steak-contract"),
+                receiver: String::from("rewards"),
+            },
         };
         let err = execute(
             deps.as_mut(),
@@ -867,11 +934,8 @@ mod crud_allocations {
             })
         );
         assert_eq!(
-            res.messages[1].msg,
-            CosmosMsg::Bank(BankMsg::Send {
-                to_address: "line3-address".to_string(),
-                amount: vec![coin(333333, DENOM_1)]
-            })
+           & format!("{:?}",res.messages[1].msg),
+            "Wasm(Execute { contract_addr: \"steak-contract\", msg: {\"bond\":{\"receiver\":\"rewards\"}}, funds: [Coin { denom: \"uxyz\", amount: Uint128(333333) }] })"
         );
         let allocations = query_allocation(deps.as_ref(), String::from(ALLOCATION_2))?.unwrap();
 
@@ -965,7 +1029,7 @@ mod crud_allocations {
             contract: "new-contract".to_string(),
             allocation: 3,
             send_after: coin(1u128, DENOM_1),
-            send_type: "Wallet".to_string(),
+            send_type: SendType::WALLET,
         };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
@@ -991,7 +1055,7 @@ mod crud_allocations {
             contract: "new-contract".to_string(),
             allocation: 3,
             send_after: coin(1u128, DENOM_1),
-            send_type: "Wallet".to_string(),
+            send_type: SendType::WALLET,
         };
         let err = execute(
             deps.as_mut(),

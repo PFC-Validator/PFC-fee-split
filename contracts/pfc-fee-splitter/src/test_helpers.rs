@@ -2,7 +2,7 @@ use cosmwasm_std::{coin, DepsMut, Response};
 
 use cosmwasm_std::testing::{mock_env, mock_info};
 
-use pfc_fee_split::fee_split_msg::{AllocationDetail, InstantiateMsg};
+use pfc_fee_split::fee_split_msg::{AllocationDetail, InstantiateMsg, SendType};
 
 use crate::contract::instantiate;
 use crate::error::ContractError;
@@ -39,7 +39,7 @@ pub(crate) fn one_allocation() -> Vec<AllocationDetail> {
         contract: "allocation_1_addr".to_string(),
         allocation: 1,
         send_after: coin(1_000u128, DENOM_1),
-        send_type: "Wallet".to_string(),
+        send_type: SendType::WALLET,
     }]
 }
 
@@ -50,14 +50,17 @@ pub(crate) fn two_allocation() -> Vec<AllocationDetail> {
             contract: "allocation_1_addr".to_string(),
             allocation: 1,
             send_after: coin(1_000u128, DENOM_1),
-            send_type: "Wallet".to_string(),
+            send_type: SendType::WALLET,
         },
         AllocationDetail {
             name: ALLOCATION_2.to_string(),
             contract: "allocation_2_addr".to_string(),
             allocation: 1,
-            send_after: coin(1_0000_000u128, DENOM_1),
-            send_type: "Wallet".to_string(),
+            send_after: coin(10_000_000u128, DENOM_1),
+            send_type: SendType::SteakRewards {
+                steak: String::from("steak_contract"),
+                receiver: String::from("receiver"),
+            },
         },
     ]
 }
