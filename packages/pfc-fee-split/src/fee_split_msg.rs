@@ -1,42 +1,19 @@
-use cosmwasm_std::{to_binary, Addr, Api, Binary, Coin, CosmosMsg, StdResult, WasmMsg};
+use cosmwasm_std::{to_binary, Addr, Binary, Coin, CosmosMsg, StdResult, WasmMsg};
 //use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub enum SendType {
-    WALLET,
-    SteakRewards { steak: String, receiver: String },
-}
-impl FromStr for SendType {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Wallet" => Ok(SendType::WALLET),
-            //      "Contract" => Ok(SendType::CONTRACT),
-            _ => Err(()),
-        }
-    }
+    Wallet { receiver: Addr },
+    SteakRewards { steak: Addr, receiver: Addr },
 }
 impl ToString for SendType {
     fn to_string(&self) -> String {
         match &self {
-            SendType::WALLET => String::from("Wallet"),
+            SendType::Wallet { receiver } => format!("Wallet -> {}", receiver),
             SendType::SteakRewards { steak, receiver } => {
                 format!("Steak:{} -> {}", steak, receiver)
-            }
-        }
-    }
-}
-impl SendType {
-    pub fn verify(&self, api: &dyn Api) -> StdResult<()> {
-        match &self {
-            SendType::WALLET => Ok(()),
-            SendType::SteakRewards { steak, receiver } => {
-                api.addr_validate(steak)?;
-                api.addr_validate(receiver)?;
-                Ok(())
             }
         }
     }
@@ -44,16 +21,16 @@ impl SendType {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct AllocationDetail {
-    pub name: String,        // user-friendly name of wallet
-    pub contract: String,    // contract/wallet to send too
+    pub name: String, // user-friendly name of wallet
+    //   pub contract: String,    // contract/wallet to send too
     pub allocation: u8,      // what portion should we send
     pub send_after: Coin,    // only send $ after we have this amount in this coin
     pub send_type: SendType, // type of contract/wallet this is
 }
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct AllocationHolding {
-    pub name: String,        // user-friendly name of wallet
-    pub contract: Addr,      // contract/wallet to send too
+    pub name: String, // user-friendly name of wallet
+    // pub contract: Addr,      // contract/wallet to send too
     pub allocation: u8,      // what portion should we send
     pub send_after: Coin,    // only send $ after we have this amount in this coin
     pub send_type: SendType, // type of contract/wallet this is
@@ -86,7 +63,6 @@ pub enum ExecuteMsg {
 
     AddAllocationDetail {
         name: String,
-        contract: String,
         allocation: u8,
         send_after: Coin,
         send_type: SendType,
@@ -94,7 +70,6 @@ pub enum ExecuteMsg {
     // Modifies the fee, but does not send balance
     ModifyAllocationDetail {
         name: String,
-        contract: String,
         allocation: u8,
         send_after: Coin,
         send_type: SendType,

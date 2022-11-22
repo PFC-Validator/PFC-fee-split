@@ -1,9 +1,18 @@
 {
-  "add_allocation_details":    {
-    "name": "test",
+  "add_allocation_detail": {
+    "name": "test_steak",
     "contract": "terra1n3g37dsdlv7ryqftlkef8mhgqj4ny7p8v78lg7",
     "allocation": 1,
-    "send_after": {"denom": "uluna","amount": "0"},
-    "send_type": "Steak"
+    "send_after": {
+      "denom": "uluna",
+      "amount": "100000"
+    },
+    "send_type": {
+      "SteakRewards": {
+        "steak": "terra18200wue9sjzz9c2p7thzn47kj6d7lzya3gj4xemrcvmlu8skcugq227qfr",
+        "receiver": "terra1n3g37dsdlv7ryqftlkef8mhgqj4ny7p8v78lg7"
+      }
+    }
   }
 }
+

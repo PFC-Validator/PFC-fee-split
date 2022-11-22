@@ -23,7 +23,6 @@
       "required": [
         "allocation",
         "balance",
-        "contract",
         "name",
         "send_after",
         "send_type"
@@ -39,9 +38,6 @@
           "items": {
             "$ref": "#/definitions/Coin"
           }
-        },
-        "contract": {
-          "$ref": "#/definitions/Addr"
         },
         "name": {
           "type": "string"
@@ -70,9 +66,51 @@
       }
     },
     "SendType": {
-      "type": "string",
-      "enum": [
-        "WALLET"
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "Wallet"
+          ],
+          "properties": {
+            "Wallet": {
+              "type": "object",
+              "required": [
+                "receiver"
+              ],
+              "properties": {
+                "receiver": {
+                  "$ref": "#/definitions/Addr"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": [
+            "SteakRewards"
+          ],
+          "properties": {
+            "SteakRewards": {
+              "type": "object",
+              "required": [
+                "receiver",
+                "steak"
+              ],
+              "properties": {
+                "receiver": {
+                  "$ref": "#/definitions/Addr"
+                },
+                "steak": {
+                  "$ref": "#/definitions/Addr"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
       ]
     },
     "Uint128": {

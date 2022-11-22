@@ -9,7 +9,8 @@ use cw_storage_plus::{Item, Map};
 use pfc_fee_split::fee_split_msg::AllocationHolding;
 
 pub(crate) const CONFIG_KEY: &str = "config_002";
-pub(crate) const FEE_KEY: &str = "fees_001";
+pub(crate) const FEE_KEY: &str = "fees_002";
+
 pub(crate) const FLUSH_WHITELIST_KEY: &str = "flush_001";
 
 pub const ADMIN: Admin = Admin::new("admin");

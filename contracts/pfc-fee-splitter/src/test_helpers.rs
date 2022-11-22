@@ -1,4 +1,4 @@
-use cosmwasm_std::{coin, DepsMut, Response};
+use cosmwasm_std::{coin, Api, DepsMut, Response};
 
 use cosmwasm_std::testing::{mock_env, mock_info};
 
@@ -33,33 +33,35 @@ pub(crate) fn do_instantiate(
     instantiate(deps.branch(), env, info, instantiate_msg)
 }
 
-pub(crate) fn one_allocation() -> Vec<AllocationDetail> {
+pub(crate) fn one_allocation(api: &dyn Api) -> Vec<AllocationDetail> {
     vec![AllocationDetail {
         name: ALLOCATION_1.to_string(),
-        contract: "allocation_1_addr".to_string(),
         allocation: 1,
         send_after: coin(1_000u128, DENOM_1),
-        send_type: SendType::WALLET,
+        send_type: SendType::Wallet {
+            receiver: api.addr_validate("allocation_1_addr").unwrap(),
+        },
     }]
 }
 
-pub(crate) fn two_allocation() -> Vec<AllocationDetail> {
+pub(crate) fn two_allocation(api: &dyn Api) -> Vec<AllocationDetail> {
     vec![
         AllocationDetail {
             name: ALLOCATION_1.to_string(),
-            contract: "allocation_1_addr".to_string(),
             allocation: 1,
             send_after: coin(1_000u128, DENOM_1),
-            send_type: SendType::WALLET,
+            send_type: SendType::Wallet {
+                receiver: api.addr_validate("allocation_1_addr").unwrap(),
+            },
         },
         AllocationDetail {
             name: ALLOCATION_2.to_string(),
-            contract: "allocation_2_addr".to_string(),
+
             allocation: 1,
             send_after: coin(10_000_000u128, DENOM_1),
             send_type: SendType::SteakRewards {
-                steak: String::from("steak_contract"),
-                receiver: String::from("receiver"),
+                steak: api.addr_validate("steak_contract").unwrap(),
+                receiver: api.addr_validate("receiver").unwrap(),
             },
         },
     ]

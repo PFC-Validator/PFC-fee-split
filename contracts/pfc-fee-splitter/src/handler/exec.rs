@@ -56,14 +56,14 @@ pub fn execute_add_allocation_detail(
     _env: Env,
     info: MessageInfo,
     name: String,
-    contract_unverified: String,
+    // contract_unverified: String,
     allocation: u8,
     send_after: Coin,
     send_type_unverified: SendType,
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
-    let contract = deps.api.addr_validate(contract_unverified.as_str())?;
-    send_type_unverified.verify(deps.api)?;
+    //let contract = deps.api.addr_validate(contract_unverified.as_str())?;
+    //send_type_unverified.verify(deps.api)?;
 
     if allocation == 0 {
         return Err(ContractError::AllocationZero {});
@@ -76,7 +76,7 @@ pub fn execute_add_allocation_detail(
         name.clone(),
         &AllocationHolding {
             name: name.clone(),
-            contract: contract.clone(),
+            //contract: contract.clone(),
             send_type: send_type_unverified.clone(),
             send_after: send_after.clone(),
             allocation,
@@ -88,7 +88,6 @@ pub fn execute_add_allocation_detail(
         .add_attribute("action", "add_fee_detail")
         .add_attribute("from", info.sender)
         .add_attribute("name", name)
-        .add_attribute("contract", contract.to_string())
         .add_attribute("allocation", format!("{}", allocation))
         .add_attribute("send_after", send_after.to_string())
         .add_attribute("send_type", send_type_unverified.to_string());
@@ -100,15 +99,14 @@ pub fn execute_modify_allocation_detail(
     _env: Env,
     info: MessageInfo,
     name: String,
-    contract_unverified: String,
+
     allocation: u8,
     send_after: Coin,
     send_type_unverified: SendType,
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
-    let contract = deps.api.addr_validate(contract_unverified.as_str())?;
 
-    send_type_unverified.verify(deps.api)?;
+    //send_type_unverified.verify(deps.api)?;
 
     if allocation == 0 {
         return Err(ContractError::AllocationZero {});
@@ -116,7 +114,6 @@ pub fn execute_modify_allocation_detail(
 
     ALLOCATION_HOLDINGS.update(deps.storage, name.clone(), |rec| -> StdResult<_> {
         if let Some(mut fee_holding) = rec {
-            fee_holding.contract = contract.clone();
             fee_holding.send_type = send_type_unverified.clone();
             fee_holding.send_after = send_after.clone();
             fee_holding.allocation = allocation;
@@ -132,14 +129,11 @@ pub fn execute_modify_allocation_detail(
         .add_attribute("action", "modify_fee_detail")
         .add_attribute("from", info.sender)
         .add_attribute("name", name)
-        .add_attribute("contract", contract.to_string())
         .add_attribute("allocation", format!("{}", allocation))
         .add_attribute("send_after", send_after.to_string())
         .add_attribute("send_type", send_type_unverified.to_string());
 
     Ok(res)
-
-    //return Err(ContractError::FeeNotFound { name: name.clone() });
 }
 
 pub fn execute_remove_allocation_detail(
@@ -160,7 +154,6 @@ pub fn execute_remove_allocation_detail(
     if let Some(fee_holding) = ALLOCATION_HOLDINGS.may_load(deps.storage, name.clone())? {
         let msgs: Vec<CosmosMsg> = vec![generate_cosmos_msg(
             fee_holding.send_type,
-            &fee_holding.contract,
             fee_holding.balance,
         )?];
         ALLOCATION_HOLDINGS.remove(deps.storage, name.clone());
@@ -411,7 +404,6 @@ pub(crate) fn do_deposit(
         if flush {
             msgs.push(generate_cosmos_msg(
                 allocation_holding.send_type.clone(),
-                &allocation_holding.contract,
                 merged_coins,
             )?);
             allocation_holding.balance = vec![];
@@ -423,7 +415,6 @@ pub(crate) fn do_deposit(
                 if coin.amount > allocation_holding.send_after.amount {
                     msgs.push(generate_cosmos_msg(
                         allocation_holding.send_type.clone(),
-                        &allocation_holding.contract,
                         merged_coins,
                     )?);
                     allocation_holding.balance = vec![];
@@ -440,25 +431,21 @@ pub(crate) fn do_deposit(
     Ok(msgs)
 }
 
-fn generate_cosmos_msg(
-    send_type: SendType,
-    recipient: &Addr,
-    coins: Vec<Coin>,
-) -> Result<CosmosMsg, ContractError> {
+fn generate_cosmos_msg(send_type: SendType, coins: Vec<Coin>) -> Result<CosmosMsg, ContractError> {
     match send_type {
-        SendType::WALLET => {
+        SendType::Wallet { receiver } => {
             let msg = BankMsg::Send {
-                to_address: recipient.to_string(),
+                to_address: receiver.to_string(),
                 amount: coins,
             };
             Ok(CosmosMsg::Bank(msg))
         }
         SendType::SteakRewards { steak, receiver } => {
             let msg = pfc_steak::hub::ExecuteMsg::Bond {
-                receiver: Some(receiver),
+                receiver: Some(receiver.to_string()),
             };
             Ok(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: steak,
+                contract_addr: steak.to_string(),
                 msg: to_binary(&msg)?,
                 funds: coins,
             }))
@@ -600,7 +587,8 @@ mod exec {
     #[test]
     fn deposit_basic() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
-        let _res = do_instantiate(deps.as_mut(), CREATOR, one_allocation())?;
+        let alloc = one_allocation(&deps.api);
+        let _res = do_instantiate(deps.as_mut(), CREATOR, alloc)?;
         let msg = ExecuteMsg::Deposit { flush: false };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
@@ -631,7 +619,9 @@ mod exec {
     #[test]
     fn deposit_split() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
-        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let allocs = two_allocation(&deps.api);
+
+        let _res = do_instantiate(deps.as_mut(), CREATOR, allocs)?;
         let msg = ExecuteMsg::Deposit { flush: false };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
@@ -689,7 +679,8 @@ mod exec {
             Coin::new(1_000_000, DENOM_2),
             Coin::new(50_000, DENOM_1),
         ]);
-        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let alloc = two_allocation(&deps.api);
+        let _res = do_instantiate(deps.as_mut(), CREATOR, alloc)?;
         let msg = ExecuteMsg::Reconcile {};
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
@@ -854,21 +845,23 @@ mod crud_allocations {
     #[test]
     fn add_line() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
-        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let alloc = two_allocation(&deps.api);
+        let _res = do_instantiate(deps.as_mut(), CREATOR, alloc)?;
         let allocations = query_allocations(deps.as_ref(), None, None)?;
         assert_eq!(allocations.allocations.len(), 2);
         assert_eq!(allocations.allocations[0].name, ALLOCATION_1);
         assert_eq!(allocations.allocations[1].name, ALLOCATION_2);
         let msg = ExecuteMsg::AddAllocationDetail {
             name: "line3".to_string(),
-            contract: "line3-address".to_string(),
+
             allocation: 1,
             send_after: coin(0u128, DENOM_1),
             send_type: SendType::SteakRewards {
-                steak: String::from("steak-contract"),
-                receiver: String::from("rewards"),
+                steak: deps.api.addr_validate("steak-contract")?,
+                receiver: deps.api.addr_validate("rewards")?,
             },
         };
+        //eprintln!("{}", serde_json::to_string(&msg).unwrap());
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
         let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
@@ -890,12 +883,12 @@ mod crud_allocations {
         let info = mock_info(GOV_CONTRACT, &[]);
         let msg_duplicate = ExecuteMsg::AddAllocationDetail {
             name: ALLOCATION_2.to_string(),
-            contract: "line3-address".to_string(),
+
             allocation: 1,
             send_after: coin(0u128, DENOM_1),
             send_type: SendType::SteakRewards {
-                steak: String::from("steak-contract"),
-                receiver: String::from("rewards"),
+                steak: deps.api.addr_validate("steak-contract")?,
+                receiver: deps.api.addr_validate("rewards")?,
             },
         };
         let err = execute(
@@ -947,7 +940,8 @@ mod crud_allocations {
     #[test]
     fn rm_line() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
-        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let alloc = two_allocation(&deps.api);
+        let _res = do_instantiate(deps.as_mut(), CREATOR, alloc)?;
         let allocations = query_allocations(deps.as_ref(), None, None)?;
         assert_eq!(allocations.allocations.len(), 2);
         assert_eq!(allocations.allocations[0].name, ALLOCATION_1);
@@ -1019,18 +1013,21 @@ mod crud_allocations {
     #[test]
     fn upd_line() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
-        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let alloc = two_allocation(&deps.api);
+        let _res = do_instantiate(deps.as_mut(), CREATOR, alloc)?;
         let allocations = query_allocations(deps.as_ref(), None, None)?;
         assert_eq!(allocations.allocations.len(), 2);
         assert_eq!(allocations.allocations[0].name, ALLOCATION_1);
         assert_eq!(allocations.allocations[1].name, ALLOCATION_2);
         let msg = ExecuteMsg::ModifyAllocationDetail {
             name: ALLOCATION_2.to_string(),
-            contract: "new-contract".to_string(),
             allocation: 3,
             send_after: coin(1u128, DENOM_1),
-            send_type: SendType::WALLET,
+            send_type: SendType::Wallet {
+                receiver: deps.api.addr_validate("new-contract").unwrap(),
+            },
         };
+        eprintln!("{}", serde_json::to_string(&msg).unwrap());
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
         let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
@@ -1052,10 +1049,11 @@ mod crud_allocations {
         let info = mock_info(GOV_CONTRACT, &[]);
         let msg_does_not_exist = ExecuteMsg::ModifyAllocationDetail {
             name: "not-here".to_string(),
-            contract: "new-contract".to_string(),
             allocation: 3,
             send_after: coin(1u128, DENOM_1),
-            send_type: SendType::WALLET,
+            send_type: SendType::Wallet {
+                receiver: deps.api.addr_validate("new-contract").unwrap(),
+            },
         };
         let err = execute(
             deps.as_mut(),
@@ -1109,10 +1107,12 @@ mod crud_allocations {
             allocations.allocations[1],
             AllocationHolding {
                 name: ALLOCATION_2.to_string(),
-                contract: deps.api.addr_validate("new-contract")?,
+
                 allocation: 3,
                 send_after: coin(1u128, DENOM_1),
-                send_type: SendType::WALLET,
+                send_type: SendType::Wallet {
+                    receiver: deps.api.addr_validate("new-contract").unwrap()
+                },
                 balance: vec![coin(500_000, DENOM_1)]
             }
         );
@@ -1165,7 +1165,8 @@ mod flush_whitelist {
     #[test]
     fn add_remove_whitelists() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
-        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let alloc = two_allocation(&deps.api);
+        let _res = do_instantiate(deps.as_mut(), CREATOR, alloc)?;
         let msg = ExecuteMsg::AddToFlushWhitelist {
             address: "johnny".to_string(),
         };
@@ -1247,7 +1248,8 @@ mod flush_whitelist {
     #[test]
     fn flush_deposit() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
-        let _res = do_instantiate(deps.as_mut(), CREATOR, one_allocation())?;
+        let alloc = one_allocation(&deps.api);
+        let _res = do_instantiate(deps.as_mut(), CREATOR, alloc)?;
         let info = mock_info(GOV_CONTRACT, &[]);
         let env = mock_env();
         let msg_add = ExecuteMsg::AddToFlushWhitelist {
@@ -1303,7 +1305,8 @@ mod ownership_changes {
     #[test]
     fn change_owners() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
-        let _res = do_instantiate(deps.as_mut(), CREATOR, two_allocation())?;
+        let alloc = two_allocation(&deps.api);
+        let _res = do_instantiate(deps.as_mut(), CREATOR, alloc)?;
         let msg_gov_transfer = ExecuteMsg::TransferGovContract {
             gov_contract: "new_gov".to_string(),
             blocks: 1000,

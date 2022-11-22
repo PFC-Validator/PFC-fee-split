@@ -15,7 +15,7 @@ use cosmwasm_std::{
 use crate::error::ContractError;
 use crate::handler::exec as ExecHandler;
 use crate::handler::query as QueryHandler;
-use crate::migrations::ConfigV100;
+use crate::migrations::{ConfigV100, SendTypeV100};
 use crate::state;
 use crate::state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG};
 
@@ -54,14 +54,14 @@ pub fn instantiate(
                 coin: row.send_after,
             });
         }
-        row.send_type.verify(deps.api)?;
+        // row.send_type.verify(deps.api)?;
         if row.allocation == 0 {
             return Err(ContractError::AllocationZero {});
         }
 
         let allocation_holding: AllocationHolding = AllocationHolding {
             name: row.name.clone(),
-            contract: deps.api.addr_validate(row.contract.as_str())?,
+            //contract: deps.api.addr_validate(row.contract.as_str())?,
             allocation: row.allocation,
             send_after: row.send_after,
             send_type: row.send_type,
@@ -96,12 +96,11 @@ pub fn execute(
         ExecuteMsg::Deposit { flush } => ExecHandler::execute_deposit(deps, env, info, flush),
         ExecuteMsg::AddAllocationDetail {
             name,
-            contract,
             allocation,
             send_after,
             send_type,
         } => ExecHandler::execute_add_allocation_detail(
-            deps, env, info, name, contract, allocation, send_after, send_type,
+            deps, env, info, name, allocation, send_after, send_type,
         ),
 
         ExecuteMsg::RemoveAllocationDetail { name } => {
@@ -117,12 +116,12 @@ pub fn execute(
         }
         ExecuteMsg::ModifyAllocationDetail {
             name,
-            contract,
+
             allocation,
             send_after,
             send_type,
         } => ExecHandler::execute_modify_allocation_detail(
-            deps, env, info, name, contract, allocation, send_after, send_type,
+            deps, env, info, name, allocation, send_after, send_type,
         ),
         ExecuteMsg::Reconcile {} => ExecHandler::execute_reconcile(deps, env, info),
         ExecuteMsg::AddToFlushWhitelist { address } => {
@@ -147,7 +146,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(mut deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
     let contract_version = get_contract_version(deps.storage)?;
 
     match contract_version.contract.as_ref() {
@@ -158,6 +157,7 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
                 CONFIG.save(deps.storage, &config_v100.migrate_from())?;
             }
+            "0.2.1" | "0.2.2" => SendTypeV100::migrate_sendtype_v100(deps.branch())?,
 
             _ => {}
         },
@@ -209,7 +209,7 @@ mod tests {
                     msg: hook_msg.clone(),
                 }),
                 gov_contract: String::from(GOV_CONTRACT),
-                allocation: one_allocation(),
+                allocation: one_allocation(&deps.api),
             };
 
             let info = mock_info(CREATOR, &[]);
@@ -229,10 +229,11 @@ mod tests {
                     .unwrap(),
                 AllocationHolding {
                     name: ALLOCATION_1.to_string(),
-                    contract: deps.api.addr_validate("allocation_1_addr").unwrap(),
                     allocation: 1,
                     send_after: coin(1_000u128, DENOM_1),
-                    send_type: SendType::WALLET,
+                    send_type: SendType::Wallet {
+                        receiver: deps.api.addr_validate("allocation_1_addr").unwrap()
+                    },
                     balance: vec![]
                 }
             );
@@ -267,24 +268,27 @@ mod tests {
                 allocation: vec![
                     AllocationDetail {
                         name: ALLOCATION_1.to_string(),
-                        contract: "allocation_1_addr".to_string(),
                         allocation: 1,
                         send_after: coin(1_000u128, DENOM_1),
-                        send_type: SendType::WALLET,
+                        send_type: SendType::Wallet {
+                            receiver: deps.api.addr_validate("allocation_1_addr").unwrap(),
+                        },
                     },
                     AllocationDetail {
                         name: ALLOCATION_2.to_string(),
-                        contract: "allocation_2_addr".to_string(),
                         allocation: 1,
                         send_after: coin(1_0000_000u128, DENOM_1),
-                        send_type: SendType::WALLET,
+                        send_type: SendType::Wallet {
+                            receiver: deps.api.addr_validate("allocation_2_addr").unwrap(),
+                        },
                     },
                     AllocationDetail {
                         name: ALLOCATION_1.to_string(),
-                        contract: "allocation_3_addr".to_string(),
                         allocation: 3,
                         send_after: coin(1_0000_000u128, DENOM_1),
-                        send_type: SendType::WALLET,
+                        send_type: SendType::Wallet {
+                            receiver: deps.api.addr_validate("allocation_3_addr").unwrap(),
+                        },
                     },
                 ],
             };
