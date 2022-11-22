@@ -1,8 +1,6 @@
 # WARNING
-This has not been audited, or tested frankly.
-Do not use it.
-
-As-is this will send your NFTs and CW20 tokens to my wallet.(It won't be it could... so don't use it yet ok)
+v0.2.1 has been [audited](https://github.com/SCV-Security/PublicReports/blob/main/CW/NFTswitch/NFTswitch%20-%20Fee%20Split%20Contract%20Audit%20Report%201.0.pdf)
+you should still exercise caution, and do your own research.
 
 # PFC-Fee-Splitter protocol contracts
 
