@@ -1,0 +1,16 @@
+{
+  "add_allocation_detail": {
+    "name": "sp_dao",
+    "allocation": 30,
+    "send_after": {
+      "denom": "uluna",
+      "amount": "100000"
+    },
+    "send_type": {
+      "Wallet": {
+        "receiver": "terra1xxzfsunhhf8vv75xy5dv0up0xjhmpp09d8lwrn5d7m5jwng5qtjs4r8ehm"
+      }
+    }
+  }
+}
+

@@ -2,7 +2,7 @@
 [workspace]
 members = [
     "packages/*",
-    "contracts/pfc-fee-splitter"
+    "contracts/*"
 ]
 
 [profile.release]

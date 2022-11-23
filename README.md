@@ -7,7 +7,8 @@ you should still exercise caution, and do your own research.
 
 ## Components
 
-* [Core](./contracts/pfc-fee-splitter) - Implementation of fee splitter.
+* [Fee Split](./contracts/pfc-fee-splitter) - Implementation of fee splitter.
+* [Dual incentive Rewards](./contracts/pfc-astroport_lp_staker) - staking reward thingy for astroport 
 
 
 ## Development

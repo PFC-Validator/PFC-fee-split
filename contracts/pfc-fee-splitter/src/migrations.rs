@@ -47,6 +47,7 @@ impl ConfigV100 {
     }
 }
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
+#[allow(clippy::upper_case_acronyms)]
 pub enum SendTypeV100 {
     WALLET,
     SteakRewards { steak: String, receiver: String },
