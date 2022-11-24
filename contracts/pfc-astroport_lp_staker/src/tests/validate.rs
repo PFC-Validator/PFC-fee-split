@@ -30,20 +30,20 @@ fn calculation() {
 
     exec_bond(&mut deps, &env, &info.sender, Uint128::new(100u128)).unwrap();
 
-    let res = query_staker_info(&deps, env.clone(), info.sender.to_string());
+    let _res = query_staker_info(&deps, env.clone(), info.sender.to_string());
     //  assert_eq!(res.pending_reward, Uint128::new(1000000u128));
     //assert_eq!(res.bond_amount, Uint128::new(200u128));
 
     env.block.height += 10;
     exec_unbond(&mut deps, env.clone(), info.clone(), Uint128::new(100u128)).unwrap();
 
-    let res = query_staker_info(&deps, env.clone(), info.sender.to_string());
+    let _res = query_staker_info(&deps, env.clone(), info.sender.to_string());
     //assert_eq!(res.pending_reward, Uint128::new(2000000u128));
     //assert_eq!(res.bond_amount, Uint128::new(100u128));
 
     env.block.height += 10;
 
-    let res = query_staker_info(&deps, env.clone(), info.sender.to_string());
+    let _res = query_staker_info(&deps, env.clone(), info.sender.to_string());
     //assert_eq!(res.pending_reward, Uint128::new(3000000u128));
     //assert_eq!(res.bond_amount, Uint128::new(100u128));
 }

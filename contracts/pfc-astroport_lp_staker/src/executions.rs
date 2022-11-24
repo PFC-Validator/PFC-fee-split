@@ -1,34 +1,29 @@
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
-    Storage, Uint128, WasmMsg,
+    to_binary, Addr, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Order, Response, StdError,
+    StdResult, Storage, Uint128, WasmMsg,
 };
+use std::collections::HashMap;
 
-use crate::states::{Config, StakerInfo, UserTokenClaim, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM};
+use crate::states::{
+    Config, StakerInfo, UserTokenClaim, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM, USER_LAST_CLAIM,
+};
 
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use pfc_astroport_lp_staking::errors::ContractError;
 use pfc_astroport_lp_staking::lp_staking::TokenBalance;
 use pfc_astroport_lp_staking::message_factories;
-use pfc_astroport_lp_staking::utils::is_contract;
 
 pub fn bond(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     sender_addr: String,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
     let sender_addr_raw: Addr = deps.api.addr_validate(sender_addr.as_str())?;
 
-    let config: Config = Config::load(deps.storage)?;
+    //    let config: Config = Config::load(deps.storage)?;
 
-    // TBD - do we only want wallets?
-    if !config.is_authorized(&sender_addr_raw)? {
-        return Err(ContractError::Std(StdError::generic_err(
-            "Can only called by wallet",
-        )));
-    }
-
-    let msgs = do_token_claims(deps.storage, &sender_addr_raw)?;
+    let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
     let mut staker_info: StakerInfo = StakerInfo::load_or_default(deps.storage, &sender_addr_raw)?;
 
@@ -55,7 +50,7 @@ pub fn bond(
 /// unbond - sends the remaining rewards, decrements the user's staked, &  total staked
 pub fn unbond(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
@@ -71,7 +66,7 @@ pub fn unbond(
         )));
     }
 
-    let msgs = do_token_claims(deps.storage, &sender_addr_raw)?;
+    let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
     // Decrease bond_amount
     let num_staked = NUM_STAKED.update(deps.storage, |num| -> StdResult<Uint128> {
@@ -103,13 +98,15 @@ pub fn unbond(
 
 pub fn recv_reward_token(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: Cw20ReceiveMsg,
 ) -> Result<Response, ContractError> {
     // Calculate amount to distribute
     let num_staked = NUM_STAKED.load(deps.storage)?;
-    let amount_per_stake = msg.amount.checked_div(num_staked)?;
+    //   eprintln!("Num_staked ={} msg.amount={}", num_staked, msg.amount);
+    let amount_per_stake = Decimal::from_ratio(msg.amount, 1u128)
+        .checked_div(Decimal::from_ratio(num_staked, 1u128))?;
 
     if amount_per_stake.is_zero() {
         return Err(ContractError::Std(StdError::generic_err(
@@ -119,11 +116,13 @@ pub fn recv_reward_token(
     let upd_token =
         if let Some(mut token) = TOTAL_REWARDS.may_load(deps.storage, info.sender.clone())? {
             token.amount += amount_per_stake;
+            token.last_block_rewards_seen = env.block.height;
             token
         } else {
             TokenBalance {
                 amount: amount_per_stake,
-                token: String::from(info.sender.clone()),
+                token: info.sender.clone(),
+                last_block_rewards_seen: env.block.height,
             }
         };
     TOTAL_REWARDS.save(deps.storage, info.sender.clone(), &upd_token)?;
@@ -138,7 +137,7 @@ pub fn recv_reward_token(
     ]))
 }
 // withdraw rewards to executor
-pub fn withdraw(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
     let sender_addr_raw = info.sender;
 
     let staker_info = StakerInfo::load_or_default(deps.storage, &sender_addr_raw)?;
@@ -147,7 +146,7 @@ pub fn withdraw(deps: DepsMut, _env: Env, info: MessageInfo) -> Result<Response,
         staker_info.delete(deps.storage);
         Err(ContractError::NoneBonded {})
     } else {
-        let msgs = do_token_claims(deps.storage, &sender_addr_raw)?;
+        let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
         Ok(Response::new()
             .add_attributes(vec![
@@ -261,56 +260,71 @@ pub fn approve_admin_nominee(
 
 pub(crate) fn do_token_claims(
     storage: &mut dyn Storage,
+    block_height: u64,
     addr: &Addr,
 ) -> Result<Vec<CosmosMsg>, ContractError> {
     let mut resp: Vec<CosmosMsg> = vec![];
+    let mut new_claims: Vec<UserTokenClaim> = vec![];
     let staker_info = StakerInfo::load_or_default(storage, addr)?;
     if staker_info.bond_amount.is_zero() {
         return Ok(vec![]);
     }
 
-    if let Some(mut user_info) = USER_CLAIM.may_load(storage, addr.clone())? {
-        let tallies = TOTAL_REWARDS
-            .range(storage, None, None, Order::Ascending)
-            .collect::<StdResult<Vec<_>>>()?;
-        for token in tallies {
-            let amt_to_send = if let Some(last_claim) = user_info.get(&token.0) {
-                let claim = token.1.amount - last_claim.last_claimed_amount;
+    USER_LAST_CLAIM.save(storage, addr.clone(), &block_height)?;
+    //   let bond_amount = Decimal::from_ratio(staker_info.bond_amount, 1u128);
 
-                claim * staker_info.bond_amount
-            } else {
-                Uint128::zero()
+    let user_info_vec = USER_CLAIM
+        .may_load(storage, addr.clone())?
+        .unwrap_or_default();
+    let user_info = user_info_vec
+        .iter()
+        .map(|ui| (ui.token.clone(), ui))
+        .collect::<HashMap<Addr, &UserTokenClaim>>();
+
+    let tallies = TOTAL_REWARDS
+        .range(storage, None, None, Order::Ascending)
+        .collect::<StdResult<Vec<_>>>()?;
+    eprintln!(
+        "do_token_claims  tallies {}",
+        serde_json::to_string(&tallies).unwrap()
+    );
+
+    for token in tallies {
+        let amt = if let Some(last_claim) = user_info.get(&token.0) {
+            token.1.amount - last_claim.last_claimed_amount
+        } else {
+            token.1.amount
+        };
+        eprintln!("do_token_claim  amt {}", amt);
+
+        let amt_to_send = staker_info.bond_amount * amt; // amt.checked_mul(bond_amount)?;
+                                                         //.floor();
+        eprintln!("do_token_claim  amt_to_send {}", amt_to_send);
+        new_claims.push(UserTokenClaim {
+            last_claimed_amount: token.1.amount,
+            token: token.1.token,
+        });
+
+        if !amt_to_send.is_zero() {
+            let msg = Cw20ExecuteMsg::Send {
+                contract: addr.to_string(),
+                amount: amt_to_send,
+                msg: Default::default(),
             };
-            user_info.insert(
-                token.0.clone(),
-                UserTokenClaim {
-                    last_claimed_amount: token.1.amount,
-                    token: token.1.token,
-                },
-            );
-
-            if !amt_to_send.is_zero() {
-                let msg = if is_contract(addr) {
-                    Cw20ExecuteMsg::Send {
-                        contract: addr.to_string(),
-                        amount: amt_to_send,
-                        msg: Default::default(),
-                    }
-                } else {
-                    Cw20ExecuteMsg::Transfer {
-                        recipient: addr.to_string(),
-                        amount: amt_to_send,
-                    }
-                };
-                resp.push(CosmosMsg::Wasm(WasmMsg::Execute {
-                    contract_addr: token.0.to_string(),
-                    msg: to_binary(&msg)?,
-                    funds: vec![],
-                }))
-            }
+            resp.push(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: token.0.to_string(),
+                msg: to_binary(&msg)?,
+                funds: vec![],
+            }))
         }
-        USER_CLAIM.save(storage, addr.clone(), &user_info)?
     }
+
+    eprintln!(
+        "do_token_claim u-info {}",
+        serde_json::to_string(&user_info).unwrap()
+    );
+
+    USER_CLAIM.save(storage, addr.clone(), &new_claims)?;
 
     Ok(resp)
 }

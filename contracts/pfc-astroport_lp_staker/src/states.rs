@@ -1,11 +1,8 @@
-use cosmwasm_std::{Addr, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, Decimal, StdResult, Storage, Uint128};
 use cw_storage_plus::{Item, Map};
 use pfc_astroport_lp_staking::lp_staking::TokenBalance;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-
-use pfc_astroport_lp_staking::utils::is_contract;
 
 const CONFIG: Item<Config> = Item::new("config_v1");
 const ADMIN_NOMINEE: Item<Addr> = Item::new("admin_nominee");
@@ -15,14 +12,16 @@ pub const NUM_STAKED: Item<Uint128> = Item::new("num_staked_v1");
 
 /// Stores total token rewards PER UNIT NFT since the beginning of time, keyed by CW20 address
 pub const TOTAL_REWARDS: Map<Addr, TokenBalance> = Map::new("total_rewards_v1");
+pub const USER_LAST_CLAIM: Map<Addr, u64> = Map::new("user_last_claim_v1");
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct UserTokenClaim {
-    pub last_claimed_amount: Uint128,
-    pub token: String,
+    pub last_claimed_amount: Decimal,
+    pub token: Addr,
 }
+
 /// Stores total token rewards PER UNIT NFT since the beginning of time, keyed by CW20 address
-pub const USER_CLAIM: Map<Addr, HashMap<Addr, UserTokenClaim>> = Map::new("user_claim_v1");
+pub const USER_CLAIM: Map<Addr, Vec<UserTokenClaim>> = Map::new("user_claim_v1");
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct Config {
@@ -44,18 +43,6 @@ impl Config {
 
     pub fn load(storage: &dyn Storage) -> StdResult<Config> {
         CONFIG.load(storage)
-    }
-
-    pub fn is_whitelisted_contract(&self, address: &Addr) -> bool {
-        self.whitelisted_contracts.contains(address)
-    }
-
-    pub fn is_authorized(&self, address: &Addr) -> StdResult<bool> {
-        if is_contract(address) && !self.is_whitelisted_contract(address) {
-            return Ok(false);
-        }
-
-        Ok(true)
     }
 
     pub fn may_load_admin_nominee(storage: &dyn Storage) -> StdResult<Option<Addr>> {

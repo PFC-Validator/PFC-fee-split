@@ -3,7 +3,7 @@ use cosmwasm_std::testing::mock_info;
 
 pub const DEFAULT_SENDER: &str = "terra1sq9ppsvt4k378wwhvm2vyfg7kqrhtve8p0n3a6";
 pub const CONTRACT_CREATOR: &str = "terra16m3runusa9csfev7ymj62e8lnswu8um29k5zky";
-pub const VALKYRIE_TOKEN: &str = "terra1xj49zyqrwpv5k928jwfpfy2ha668nwdgkwlrg3";
+pub const REWARD_TOKEN: &str = "terra1xj49zyqrwpv5k928jwfpfy2ha668nwdgkwlrg3";
 pub const VALKYRIE_TICKET_TOKEN: &str = "terra1fh27l8h4s0tfx9ykqxq5efq4xx88f06x6clwmr";
 pub const VALKYRIE_PROXY: &str = "terra1fnywlw4edny3vw44x04xd67uzkdqluymgreu7g";
 
@@ -16,21 +16,21 @@ pub fn contract_creator() -> MessageInfo {
 }
 
 pub fn valkyrie_token() -> MessageInfo {
-    mock_info(VALKYRIE_TOKEN, &[])
+    mock_info(REWARD_TOKEN, &[])
 }
 
 pub mod governance {
     use cosmwasm_std::{Env, MessageInfo, Uint128};
     use cosmwasm_std::testing::mock_info;
 
-    use crate::test_constants::VALKYRIE_TOKEN;
+    use crate::test_constants::REWARD_TOKEN;
     use crate::test_constants::VALKYRIE_TICKET_TOKEN;
     use crate::test_utils::{mock_env_contract, mock_env_contract_height};
 
     pub const GOVERNANCE: &str = "terra16t7dpwwgx9n3lq6l6te3753lsjqwhxwpday9zx";
 
     // common config
-    pub const GOVERNANCE_TOKEN: &str = VALKYRIE_TOKEN;
+    pub const GOVERNANCE_TOKEN: &str = REWARD_TOKEN;
     pub const TICKET_TOKEN: &str = VALKYRIE_TICKET_TOKEN;
     pub const TICKET_DIST_SCHEDULE: (u64, u64, Uint128) = (0, 100, Uint128::new(100_000000u128));
 
@@ -62,12 +62,12 @@ pub mod community {
     use cosmwasm_std::testing::mock_info;
 
     use crate::test_constants::governance::GOVERNANCE;
-    use crate::test_constants::VALKYRIE_TOKEN;
+    use crate::test_constants::REWARD_TOKEN;
     use crate::test_utils::mock_env_contract;
 
     pub const COMMUNITY: &str = "terra1f68wt2ch3cx2g62dxtc8v68mkdh5wchdgdjwz7";
 
-    pub const MANAGING_TOKEN: &str = VALKYRIE_TOKEN;
+    pub const MANAGING_TOKEN: &str = REWARD_TOKEN;
     pub const ADMIN: &str = GOVERNANCE;
 
     pub const ADMIN1: &str = "terra1333veey879eeqcff8j3gfcgwt8cfrg9mq20v6f";
@@ -88,7 +88,7 @@ pub mod distributor {
     use cosmwasm_std::testing::mock_info;
 
     use crate::test_constants::governance::GOVERNANCE;
-    use crate::test_constants::VALKYRIE_TOKEN;
+    use crate::test_constants::REWARD_TOKEN;
     use crate::test_utils::mock_env_contract;
 
     pub const DISTRIBUTOR: &str = "terra14lpnyzc9z4g3ugr4lhm8s4nle0tq8vcltkhzh7";
@@ -97,7 +97,7 @@ pub mod distributor {
     pub const RECIPIENT2: &str = "terra17q4lzg70un58uefr2fwu7uxtgvftspr7d0a6p3";
     pub const ADMIN1: &str = "terra1fmcjjt6yc9wqup2r06urnrd928jhrde6gcld6n";
 
-    pub const MANAGING_TOKEN: &str = VALKYRIE_TOKEN;
+    pub const MANAGING_TOKEN: &str = REWARD_TOKEN;
     pub const ADMIN: &str = GOVERNANCE;
 
     pub fn distributor_env() -> Env {
@@ -192,12 +192,12 @@ pub mod campaign {
 
 pub mod liquidity {
     use cosmwasm_std::{Env, Uint128};
-    use crate::test_constants::VALKYRIE_TOKEN;
+    use crate::test_constants::REWARD_TOKEN;
     use crate::test_utils::{mock_env_contract, mock_env_contract_height};
 
     pub const LIQUIDITY: &str = "terra1l7xu2rl3c7qmtx3r5sd2tz25glf6jh8ul7aag7";
 
-    pub const LP_REWARD_TOKEN: &str = VALKYRIE_TOKEN;
+    pub const LP_REWARD_TOKEN: &str = REWARD_TOKEN;
     pub const LP_PAIR_TOKEN: &str = "terra17n5sunn88hpy965mzvt3079fqx3rttnplg779g";
     pub const LP_LIQUIDITY_TOKEN: &str = "terra1627ldjvxatt54ydd3ns6xaxtd68a2vtyu7kakj";
     pub const LP_WHITELISTED1: &str = "terra190fxpjfkp6cygr2k9unzjurq42dyehqd579h5j";

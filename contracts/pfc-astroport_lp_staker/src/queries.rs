@@ -1,11 +1,12 @@
-use cosmwasm_std::{Addr, Deps, Env, Order, StdResult, Storage, Uint128};
+use cosmwasm_std::{Addr, Decimal, Deps, Env, Order, StdResult, Storage};
 use pfc_astroport_lp_staking::errors::ContractError;
 use pfc_astroport_lp_staking::lp_staking::query_msgs::{
     ConfigResponse, StakerInfoResponse, StateResponse,
 };
 use pfc_astroport_lp_staking::lp_staking::TokenBalance;
+use std::collections::HashMap;
 
-use crate::states::{Config, StakerInfo, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM};
+use crate::states::{Config, StakerInfo, UserTokenClaim, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM};
 
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     let config: Config = Config::load(deps.storage)?;
@@ -69,25 +70,29 @@ pub(crate) fn calc_token_claims(
         return Ok(vec![]);
     }
 
-    if let Some(user_info) = USER_CLAIM.may_load(storage, addr)? {
-        let tallies = TOTAL_REWARDS
-            .range(storage, None, None, Order::Ascending)
-            .collect::<StdResult<Vec<_>>>()?;
-        for token in tallies {
-            let amt_to_send = if let Some(last_claim) = user_info.get(&token.0) {
-                let claim = token.1.amount - last_claim.last_claimed_amount;
+    let user_info_vec = USER_CLAIM.may_load(storage, addr)?.unwrap_or_default();
+    let user_info = user_info_vec
+        .iter()
+        .map(|ui| (ui.token.clone(), ui))
+        .collect::<HashMap<Addr, &UserTokenClaim>>();
 
-                claim * staker_info.bond_amount
-            } else {
-                Uint128::zero()
-            };
+    let tallies = TOTAL_REWARDS
+        .range(storage, None, None, Order::Ascending)
+        .collect::<StdResult<Vec<_>>>()?;
+    for token in tallies {
+        let amt = if let Some(last_claim) = user_info.get(&token.0) {
+            token.1.amount - last_claim.last_claimed_amount
+        } else {
+            token.1.amount
+        };
+        let amt_to_send = amt.checked_mul(Decimal::from_ratio(staker_info.bond_amount, 1u128))?;
 
-            if !amt_to_send.is_zero() {
-                resp.push(TokenBalance {
-                    token: token.0.to_string(),
-                    amount: amt_to_send,
-                });
-            }
+        if !amt_to_send.is_zero() {
+            resp.push(TokenBalance {
+                token: token.0,
+                amount: amt_to_send,
+                last_block_rewards_seen: token.1.last_block_rewards_seen,
+            });
         }
     }
 

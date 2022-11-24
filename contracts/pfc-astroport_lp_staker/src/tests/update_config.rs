@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::mock_info;
-use cosmwasm_std::{Addr, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{Addr, Env, MessageInfo, Response};
 use pfc_astroport_lp_staking::errors::ContractError;
 
 use crate::executions::update_config;
@@ -7,7 +7,7 @@ use crate::states::Config;
 use pfc_astroport_lp_staking::mock_querier::{custom_deps, CustomDeps};
 use pfc_astroport_lp_staking::test_constants::liquidity::*;
 use pfc_astroport_lp_staking::test_constants::DEFAULT_SENDER;
-use pfc_astroport_lp_staking::test_utils::{expect_generic_err, expect_unauthorized_err};
+use pfc_astroport_lp_staking::test_utils::expect_unauthorized_err;
 
 use crate::tests::instantiate::default;
 
@@ -40,7 +40,6 @@ pub fn will_success(
     lp_token: Option<String>,
     admin: Option<String>,
     whitelisted_contracts: Option<Vec<String>>,
-    distribution_schedule: Option<Vec<(u64, u64, Uint128)>>,
 ) -> (Env, MessageInfo, Response) {
     let env = lp_env();
     let info = mock_info(DEFAULT_SENDER, &[]);
@@ -54,7 +53,6 @@ pub fn will_success(
         lp_token,
         admin,
         whitelisted_contracts,
-        distribution_schedule,
     )
     .unwrap();
 
@@ -71,10 +69,6 @@ fn succeed() {
         "terra1r4qtnusnk63wkg2y6sytwr37aymz0sfy3p2yc9".to_string(),
         "terra14mtctaszgzm4gcedlfslds802fmklnp4up72da".to_string(),
     ];
-    let distribution_schedule = vec![
-        (0, 50, Uint128::new(50u128)),
-        (50, 100, Uint128::new(50u128)),
-    ];
 
     will_success(
         &mut deps,
@@ -83,7 +77,6 @@ fn succeed() {
         Some("terra199vw7724lzkwz6lf2hsx04lrxfkz09tg8dlp6r".to_string()),
         Some("terra1e8ryd9ezefuucd4mje33zdms9m2s90m57878v9".to_string()),
         Some(whitelisted_contracts.clone()),
-        Some(distribution_schedule.clone()),
     );
 
     let config = Config::load(&deps.storage).unwrap();
@@ -119,7 +112,7 @@ fn failed_invalid_permission() {
 
     info.sender = Addr::unchecked("terra1e8ryd9ezefuucd4mje33zdms9m2s90m57878v9");
 
-    let result = exec(&mut deps, env, info, None, None, None, None, None, None);
+    let result = exec(&mut deps, env, info, None, None, None, None, None);
 
     expect_unauthorized_err(&result);
 }

@@ -8,7 +8,7 @@ use pfc_astroport_lp_staking::lp_staking::execute_msgs::{Cw20HookMsg, ExecuteMsg
 use pfc_astroport_lp_staking::mock_querier::{custom_deps, CustomDeps};
 use pfc_astroport_lp_staking::test_constants::liquidity::*;
 use pfc_astroport_lp_staking::test_constants::{default_sender, DEFAULT_SENDER};
-use pfc_astroport_lp_staking::test_utils::expect_generic_err;
+//use pfc_astroport_lp_staking::test_utils::expect_generic_err;
 
 pub fn exec(
     deps: &mut CustomDeps,
