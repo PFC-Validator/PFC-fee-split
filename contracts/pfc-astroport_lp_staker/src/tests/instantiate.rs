@@ -17,13 +17,13 @@ pub fn exec(
     token: String,
     pair: String,
     lp_token: String,
-    whitelisted_contracts: Vec<String>,
+    // whitelisted_contracts: Vec<String>,
 ) -> Result<Response, ContractError> {
     let msg = InstantiateMsg {
         token,
         pair,
         lp_token,
-        whitelisted_contracts,
+        //     whitelisted_contracts,
     };
 
     instantiate(deps.as_mut(), env, info, msg)
@@ -43,7 +43,7 @@ pub fn default(
         LP_REWARD_TOKEN.to_string(),
         LP_PAIR_TOKEN.to_string(),
         LP_LIQUIDITY_TOKEN.to_string(),
-        vec![LP_WHITELISTED1.to_string(), LP_WHITELISTED2.to_string()],
+        // vec![LP_WHITELISTED1.to_string(), LP_WHITELISTED2.to_string()],
     )
     .unwrap();
 
@@ -84,11 +84,12 @@ fn succeed() {
     assert_eq!(config.pair, LP_PAIR_TOKEN);
     assert_eq!(config.lp_token, LP_LIQUIDITY_TOKEN);
     assert_eq!(config.admin, info.sender);
+    /*
     assert_eq!(
         config.whitelisted_contracts,
         vec![LP_WHITELISTED1.to_string(), LP_WHITELISTED2.to_string()]
     );
-    /*
+
         assert_eq!(
             config.distribution_schedule,
             vec![LP_DISTRIBUTION_SCHEDULE1, LP_DISTRIBUTION_SCHEDULE2]

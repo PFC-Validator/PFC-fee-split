@@ -1,7 +1,5 @@
 use cosmwasm_std::testing::mock_info;
-use cosmwasm_std::{
-    to_binary, Addr, Attribute, CosmosMsg, Decimal, Env, Response, SubMsg, Uint128, WasmMsg,
-};
+use cosmwasm_std::{to_binary, Addr, Decimal, Env, Response, Uint128, WasmMsg};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use pfc_astroport_lp_staking::errors::ContractError;
 use pfc_astroport_lp_staking::lp_staking::execute_msgs::{Cw20HookMsg, ExecuteMsg};

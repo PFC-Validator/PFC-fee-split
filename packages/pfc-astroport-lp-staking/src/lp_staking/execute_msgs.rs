@@ -9,7 +9,7 @@ pub struct InstantiateMsg {
     pub token: String,
     pub pair: String,
     pub lp_token: String,
-    pub whitelisted_contracts: Vec<String>,
+    //pub whitelisted_contracts: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -26,7 +26,7 @@ pub enum ExecuteMsg {
         pair: Option<String>,
         lp_token: Option<String>,
         admin: Option<String>,
-        whitelisted_contracts: Option<Vec<String>>,
+        //      whitelisted_contracts: Option<Vec<String>>,
     },
     MigrateReward {
         recipient: String,

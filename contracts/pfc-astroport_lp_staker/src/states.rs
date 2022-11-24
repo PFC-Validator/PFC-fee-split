@@ -32,7 +32,7 @@ pub struct Config {
     /// The token we 'stake'
     pub lp_token: Addr,
     pub pair: Addr,
-    pub whitelisted_contracts: Vec<Addr>,
+    //    pub whitelisted_contracts: Vec<Addr>,
 }
 
 impl Config {

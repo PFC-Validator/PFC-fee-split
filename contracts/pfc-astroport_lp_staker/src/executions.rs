@@ -165,7 +165,7 @@ pub fn update_config(
     pair: Option<String>,
     lp_token: Option<String>,
     admin: Option<String>,
-    whitelisted_contracts: Option<Vec<String>>,
+    //   whitelisted_contracts: Option<Vec<String>>,
 ) -> Result<Response, ContractError> {
     let mut response = Response::new().add_attribute("action", "update_config");
 
@@ -193,15 +193,15 @@ pub fn update_config(
         Config::save_admin_nominee(deps.storage, &deps.api.addr_validate(admin.as_str())?)?;
         response = response.add_attribute("is_updated_admin_nominee", "true");
     }
-
-    if let Some(whitelisted_contracts) = whitelisted_contracts {
-        config.whitelisted_contracts = whitelisted_contracts
-            .iter()
-            .map(|item| deps.api.addr_validate(item.as_str()).unwrap())
-            .collect();
-        response = response.add_attribute("is_updated_whitelisted_contracts", "true");
-    }
-
+    /*
+        if let Some(whitelisted_contracts) = whitelisted_contracts {
+            config.whitelisted_contracts = whitelisted_contracts
+                .iter()
+                .map(|item| deps.api.addr_validate(item.as_str()).unwrap())
+                .collect();
+            response = response.add_attribute("is_updated_whitelisted_contracts", "true");
+        }
+    */
     config.save(deps.storage)?;
 
     Ok(response)
@@ -271,7 +271,6 @@ pub(crate) fn do_token_claims(
     }
 
     USER_LAST_CLAIM.save(storage, addr.clone(), &block_height)?;
-    //   let bond_amount = Decimal::from_ratio(staker_info.bond_amount, 1u128);
 
     let user_info_vec = USER_CLAIM
         .may_load(storage, addr.clone())?

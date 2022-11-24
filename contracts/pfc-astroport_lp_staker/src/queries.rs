@@ -15,11 +15,12 @@ pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
         token: config.token.to_string(),
         pair: config.pair.to_string(),
         lp_token: config.lp_token.to_string(),
+        /*
         whitelisted_contracts: config
             .whitelisted_contracts
             .iter()
             .map(|item| item.to_string())
-            .collect(),
+            .collect(),*/
     };
 
     Ok(resp)

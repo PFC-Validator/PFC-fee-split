@@ -24,11 +24,12 @@ pub fn instantiate(
 
         pair: deps.api.addr_validate(msg.pair.as_str())?,
         lp_token: deps.api.addr_validate(msg.lp_token.as_str())?,
+        /*
         whitelisted_contracts: msg
             .whitelisted_contracts
             .iter()
             .map(|item| deps.api.addr_validate(item.as_str()).unwrap())
-            .collect(),
+            .collect(),*/
     }
     .save(deps.storage)?;
 
@@ -53,17 +54,12 @@ pub fn execute(
             pair,
             lp_token,
             admin,
-            whitelisted_contracts,
+            //   whitelisted_contracts,
             //    distribution_schedule,
         } => update_config(
-            deps,
-            env,
-            info,
-            token,
-            pair,
-            lp_token,
+            deps, env, info, token, pair, lp_token,
             admin,
-            whitelisted_contracts,
+            //    whitelisted_contracts,
             //   distribution_schedule,
         ),
         ExecuteMsg::MigrateReward { recipient, amount } => {

@@ -19,7 +19,7 @@ pub struct ConfigResponse {
     pub token: String,
     pub pair: String,
     pub lp_token: String,
-    pub whitelisted_contracts: Vec<String>,
+    //    pub whitelisted_contracts: Vec<String>,
 }
 
 // We define a custom struct for each query response
