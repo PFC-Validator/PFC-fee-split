@@ -4,7 +4,7 @@ name = "pfc-fee-splitter"
 version = "0.2.3"
 authors = ["PFC <pfc-validator@protonmail.com>"]
 edition = "2018"
-
+license = "Apache-2.0"
 description = "smart contract to split incoming $ to multiple places"
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.

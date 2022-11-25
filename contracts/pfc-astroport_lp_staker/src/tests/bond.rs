@@ -5,10 +5,10 @@ use pfc_astroport_lp_staking::mock_querier::{custom_deps, CustomDeps};
 use pfc_astroport_lp_staking::test_constants::REWARD_TOKEN;
 
 use crate::executions::withdraw;
-use crate::states::{StakerInfo, NUM_STAKED, USER_CLAIM};
+use crate::states::{NUM_STAKED, USER_CLAIM};
 use crate::tests::{
-    exec_bond, exec_send_reward_token, find_attribute, find_exec, init_default, SENDER_1, SENDER_2,
-    SENDER_REWARD,
+    exec_bond, exec_send_reward_token, find_attribute, find_exec, init_default, query_staker_info,
+    SENDER_1, SENDER_2, SENDER_REWARD,
 };
 
 fn will_success(deps: &mut CustomDeps, env: Env, sender: &Addr) {
@@ -28,13 +28,14 @@ fn succeed() {
     will_success(&mut deps, env.clone(), &sender2);
 
     //    let state1 = State::load(deps.as_ref().storage).unwrap();
-    let info1 = StakerInfo::load_or_default(deps.as_ref().storage, &sender1).unwrap();
-    let info2 = StakerInfo::load_or_default(deps.as_ref().storage, &sender2).unwrap();
+    let info1 = query_staker_info(deps.as_ref(), &env, &sender1);
+    let info2 = query_staker_info(deps.as_ref(), &env, &sender2);
+
     let num_staked = NUM_STAKED.load(deps.as_ref().storage).unwrap();
 
     assert_eq!(num_staked, Uint128::new(200u128));
-    assert_eq!(info1.bond_amount, Uint128::new(100u128));
-    assert_eq!(info2.bond_amount, Uint128::new(100u128));
+    assert_eq!(info1.total_staked, Uint128::new(100u128));
+    assert_eq!(info2.total_staked, Uint128::new(100u128));
 
     let res = exec_send_reward_token(&mut deps, &env, &sender_reward, Uint128::new(1_000_000u128))
         .unwrap();
@@ -51,8 +52,11 @@ fn succeed() {
     let token_attr = find_attribute(&res.attributes, "total_staked").unwrap();
     assert_eq!(token_attr.value, "200");
 
-    let info1 = StakerInfo::load_or_default(deps.as_ref().storage, &sender1).unwrap();
-    let info2 = StakerInfo::load_or_default(deps.as_ref().storage, &sender2).unwrap();
+    //    let info1 = StakerInfo::load_or_default(deps.as_ref().storage, &sender1).unwrap();
+    //    let info2 = StakerInfo::load_or_default(deps.as_ref().storage, &sender2).unwrap();
+    let info1 = query_staker_info(deps.as_ref(), &env, &sender1);
+    let info2 = query_staker_info(deps.as_ref(), &env, &sender2);
+
     let res = withdraw(deps.as_mut(), env, mock_info(sender1.as_str(), &[])).unwrap();
     assert_eq!(res.messages.len(), 1);
     let exec = find_exec(&res.messages[0]).unwrap();
@@ -82,8 +86,8 @@ fn succeed() {
     let num_staked = NUM_STAKED.load(deps.as_ref().storage).unwrap();
 
     assert_eq!(num_staked, Uint128::new(200u128));
-    assert_eq!(info1.bond_amount, Uint128::new(100u128));
-    assert_eq!(info2.bond_amount, Uint128::new(100u128));
+    assert_eq!(info1.total_staked, Uint128::new(100u128));
+    assert_eq!(info2.total_staked, Uint128::new(100u128));
     assert_eq!(
         token_claim1.last_claimed_amount,
         Decimal::new(Uint128::from(1_000_000u128))

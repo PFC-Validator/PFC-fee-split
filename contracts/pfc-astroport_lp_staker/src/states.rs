@@ -53,59 +53,6 @@ impl Config {
         ADMIN_NOMINEE.save(storage, address)
     }
 }
-/*
-const STATE: Item<State> = Item::new("state_v2");
-
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
-pub struct State {
-    pub last_distributed: u64,
-    pub total_bond_amount: Uint128,
-    pub global_reward_index: Decimal,
-}
-
-impl State {
-    pub fn save(&self, storage: &mut dyn Storage) -> StdResult<()> {
-        STATE.save(storage, self)
-    }
-
-    pub fn load(storage: &dyn Storage) -> StdResult<State> {
-        STATE.load(storage)
-    }
-
-       // compute distributed rewards and update global reward index
-       pub fn compute_reward(&mut self, config: &Config, block_height: u64) {
-           if self.total_bond_amount.is_zero() {
-               self.last_distributed = block_height;
-               return;
-           }
-
-           let mut distributed_amount: Uint128 = Uint128::zero();
-           for s in config.distribution_schedule.iter() {
-               //s.0 = begin block height of this schedule
-               //s.1 = end block height of this schedule
-               if s.0 > block_height || s.1 < self.last_distributed {
-                   continue;
-               }
-
-               // min(s.1, block_height) - max(s.0, last_distributed)
-               let passed_blocks =
-                   std::cmp::min(s.1, block_height) - std::cmp::max(s.0, self.last_distributed);
-
-               let num_blocks = s.1 - s.0;
-               let distribution_amount_per_block: Decimal = Decimal::from_ratio(s.2, num_blocks);
-               // distribution_amount_per_block = distribution amount of this schedule / blocks count of this schedule.
-               distributed_amount +=
-                   distribution_amount_per_block * Uint128::new(passed_blocks as u128);
-           }
-
-           self.last_distributed = block_height;
-           self.global_reward_index += Decimal::from_ratio(distributed_amount, self.total_bond_amount);
-           // state.global_reward_index = state.global_reward_index + (distributed_amount / state.total_bond_amount)
-       }
-
-}
-
- */
 
 const STAKER_INFO: Map<&str, StakerInfo> = Map::new("reward");
 

@@ -1,12 +1,14 @@
-use crate::entrypoints::{execute, instantiate};
+use crate::entrypoints::{execute, instantiate, query};
 use crate::executions::{unbond, withdraw};
 use cosmwasm_std::testing::mock_info;
 use cosmwasm_std::{
-    to_binary, Addr, Attribute, CosmosMsg, Env, MessageInfo, Response, SubMsg, Uint128, WasmMsg,
+    from_binary, to_binary, Addr, Attribute, CosmosMsg, Deps, Env, MessageInfo, Response, SubMsg,
+    Uint128, WasmMsg,
 };
 use cw20::Cw20ReceiveMsg;
 use pfc_astroport_lp_staking::errors::ContractError;
 use pfc_astroport_lp_staking::lp_staking::execute_msgs::{Cw20HookMsg, ExecuteMsg, InstantiateMsg};
+use pfc_astroport_lp_staking::lp_staking::query_msgs::{QueryMsg, StakerInfoResponse};
 use pfc_astroport_lp_staking::mock_querier::CustomDeps;
 use pfc_astroport_lp_staking::test_constants::liquidity::{
     lp_env, LP_DISTRIBUTION_SCHEDULE1, LP_DISTRIBUTION_SCHEDULE2, LP_LIQUIDITY_TOKEN,
@@ -18,7 +20,7 @@ pub mod bond;
 pub mod instantiate;
 pub mod unbond;
 pub mod update_config;
-pub mod validate;
+//pub mod validate;
 pub mod withdraw;
 
 pub const SENDER_1: &str = "terra1fmcjjt6yc9wqup2r06urnrd928jhrde6gcld6n";
@@ -60,6 +62,20 @@ pub fn exec_bond(
     });
 
     execute(deps.as_mut(), env.clone(), info.clone(), msg)
+}
+
+pub fn query_staker_info(deps: Deps, env: &Env, sender: &Addr) -> StakerInfoResponse {
+    from_binary::<StakerInfoResponse>(
+        &query(
+            deps,
+            env.clone(),
+            QueryMsg::StakerInfo {
+                staker: sender.to_string(),
+            },
+        )
+        .unwrap(),
+    )
+    .unwrap()
 }
 pub fn exec_send_reward_token(
     deps: &mut CustomDeps,

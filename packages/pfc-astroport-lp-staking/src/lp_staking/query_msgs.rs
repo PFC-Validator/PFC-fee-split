@@ -35,4 +35,5 @@ pub struct StakerInfoResponse {
     pub staker: String,
     pub total_staked: Uint128,
     pub estimated_rewards: Vec<TokenBalance>,
+    pub last_claimed: Option<u64>,
 }

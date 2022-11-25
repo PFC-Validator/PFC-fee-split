@@ -6,7 +6,9 @@ use pfc_astroport_lp_staking::lp_staking::query_msgs::{
 use pfc_astroport_lp_staking::lp_staking::TokenBalance;
 use std::collections::HashMap;
 
-use crate::states::{Config, StakerInfo, UserTokenClaim, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM};
+use crate::states::{
+    Config, StakerInfo, UserTokenClaim, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM, USER_LAST_CLAIM,
+};
 
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     let config: Config = Config::load(deps.storage)?;
@@ -15,12 +17,6 @@ pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
         token: config.token.to_string(),
         pair: config.pair.to_string(),
         lp_token: config.lp_token.to_string(),
-        /*
-        whitelisted_contracts: config
-            .whitelisted_contracts
-            .iter()
-            .map(|item| item.to_string())
-            .collect(),*/
     };
 
     Ok(resp)
@@ -48,30 +44,30 @@ pub fn query_staker_info(
 
     let staker_info: StakerInfo = StakerInfo::load_or_default(deps.storage, &staker_raw)?;
 
-    //let config: Config = Config::load(deps.storage)?;
-    //let mut state: State = State::load(deps.storage)?;
+    let rewards = calc_token_claims(deps.storage, &staker_raw)?;
+    let last_claim = USER_LAST_CLAIM.may_load(deps.storage, staker_raw)?;
 
-    //state.compute_reward(&config, block_height);
-    //staker_info.compute_staker_reward(&state)?;
-    let rewards = calc_token_claims(deps.storage, staker_raw)?;
     Ok(StakerInfoResponse {
         staker,
         total_staked: staker_info.bond_amount,
         estimated_rewards: rewards,
+        last_claimed: last_claim,
     })
 }
 
 pub(crate) fn calc_token_claims(
     storage: &dyn Storage,
-    addr: Addr,
+    addr: &Addr,
 ) -> Result<Vec<TokenBalance>, ContractError> {
     let mut resp: Vec<TokenBalance> = vec![];
-    let staker_info = StakerInfo::load_or_default(storage, &addr)?;
+    let staker_info = StakerInfo::load_or_default(storage, addr)?;
     if staker_info.bond_amount.is_zero() {
         return Ok(vec![]);
     }
 
-    let user_info_vec = USER_CLAIM.may_load(storage, addr)?.unwrap_or_default();
+    let user_info_vec = USER_CLAIM
+        .may_load(storage, addr.clone())?
+        .unwrap_or_default();
     let user_info = user_info_vec
         .iter()
         .map(|ui| (ui.token.clone(), ui))
