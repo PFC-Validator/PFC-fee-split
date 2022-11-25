@@ -9,7 +9,7 @@ use pfc_astroport_lp_staking::test_constants::liquidity::*;
 use pfc_astroport_lp_staking::test_constants::DEFAULT_SENDER;
 use pfc_astroport_lp_staking::test_utils::expect_unauthorized_err;
 
-use crate::tests::instantiate::default;
+use crate::tests::{init_default, SENDER_1};
 
 pub fn exec(
     deps: &mut CustomDeps,
@@ -63,17 +63,12 @@ pub fn will_success(
 fn succeed() {
     let mut deps = custom_deps();
 
-    let (_env, info, _response) = default(&mut deps, None);
-    /*
-        let whitelisted_contracts = vec![
-            "terra1r4qtnusnk63wkg2y6sytwr37aymz0sfy3p2yc9".to_string(),
-            "terra14mtctaszgzm4gcedlfslds802fmklnp4up72da".to_string(),
-        ];
-    */
+    let (_env, info, _response) = init_default(&mut deps, None);
+
     will_success(
         &mut deps,
         Some("terra1r0rm0evrlkfvpt0csrcpmnpmrega54czajfd86".to_string()),
-        Some("terra1fmcjjt6yc9wqup2r06urnrd928jhrde6gcld6n".to_string()),
+        Some(SENDER_1.to_string()),
         Some("terra199vw7724lzkwz6lf2hsx04lrxfkz09tg8dlp6r".to_string()),
         Some("terra1e8ryd9ezefuucd4mje33zdms9m2s90m57878v9".to_string()),
     );
@@ -83,10 +78,7 @@ fn succeed() {
         config.token,
         Addr::unchecked("terra1r0rm0evrlkfvpt0csrcpmnpmrega54czajfd86".to_string())
     );
-    assert_eq!(
-        config.pair,
-        Addr::unchecked("terra1fmcjjt6yc9wqup2r06urnrd928jhrde6gcld6n".to_string())
-    );
+    assert_eq!(config.pair, Addr::unchecked(SENDER_1.to_string()));
     assert_eq!(
         config.lp_token,
         Addr::unchecked("terra199vw7724lzkwz6lf2hsx04lrxfkz09tg8dlp6r".to_string())
@@ -107,7 +99,7 @@ fn succeed() {
 fn failed_invalid_permission() {
     let mut deps = custom_deps();
 
-    let (env, mut info, _response) = default(&mut deps, None);
+    let (env, mut info, _response) = init_default(&mut deps, None);
 
     info.sender = Addr::unchecked("terra1e8ryd9ezefuucd4mje33zdms9m2s90m57878v9");
 

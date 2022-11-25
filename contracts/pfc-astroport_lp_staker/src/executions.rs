@@ -84,9 +84,10 @@ pub fn unbond(
     Ok(Response::new()
         .add_message(message_factories::wasm_execute(
             &config.lp_token,
-            &Cw20ExecuteMsg::Transfer {
-                recipient: sender_addr_raw.to_string(),
+            &Cw20ExecuteMsg::Send {
+                contract: sender_addr_raw.to_string(),
                 amount,
+                msg: Default::default(),
             },
         ))
         .add_messages(msgs)
@@ -132,8 +133,8 @@ pub fn recv_reward_token(
         ("token_addr", info.sender.as_str()),
         ("token_sender", &msg.sender),
         ("total_amount", &msg.amount.to_string()),
-        ("amount_per_stake", &amount_per_stake.to_string()),
-        ("num_staked", &num_staked.to_string()),
+        ("amount_per_stake", &upd_token.amount.to_string()),
+        ("total_staked", &num_staked.to_string()),
     ]))
 }
 // withdraw rewards to executor
@@ -146,12 +147,14 @@ pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
         staker_info.delete(deps.storage);
         Err(ContractError::NoneBonded {})
     } else {
+        let num_staked = NUM_STAKED.load(deps.storage)?;
         let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
         Ok(Response::new()
             .add_attributes(vec![
                 ("action", "withdraw"),
                 ("amount_staked", &staker_info.bond_amount.to_string()),
+                ("total_staked", &num_staked.to_string()),
             ])
             .add_messages(msgs))
     }
@@ -283,22 +286,23 @@ pub(crate) fn do_token_claims(
     let tallies = TOTAL_REWARDS
         .range(storage, None, None, Order::Ascending)
         .collect::<StdResult<Vec<_>>>()?;
-    eprintln!(
-        "do_token_claims  tallies {}",
-        serde_json::to_string(&tallies).unwrap()
-    );
-
+    /*
+        eprintln!(
+            "do_token_claims  tallies {}",
+            serde_json::to_string(&tallies).unwrap()
+        );
+    */
     for token in tallies {
         let amt = if let Some(last_claim) = user_info.get(&token.0) {
             token.1.amount - last_claim.last_claimed_amount
         } else {
             token.1.amount
         };
-        eprintln!("do_token_claim  amt {}", amt);
+        //      eprintln!("do_token_claim  amt/share {}", amt);
 
         let amt_to_send = staker_info.bond_amount * amt; // amt.checked_mul(bond_amount)?;
                                                          //.floor();
-        eprintln!("do_token_claim  amt_to_send {}", amt_to_send);
+                                                         //    eprintln!("do_token_claim  amt_to_send {}", amt_to_send);
         new_claims.push(UserTokenClaim {
             last_claimed_amount: token.1.amount,
             token: token.1.token,
@@ -317,12 +321,12 @@ pub(crate) fn do_token_claims(
             }))
         }
     }
-
-    eprintln!(
-        "do_token_claim u-info {}",
-        serde_json::to_string(&user_info).unwrap()
-    );
-
+    /*
+        eprintln!(
+            "do_token_claim u-info {}",
+            serde_json::to_string(&user_info).unwrap()
+        );
+    */
     USER_CLAIM.save(storage, addr.clone(), &new_claims)?;
 
     Ok(resp)
