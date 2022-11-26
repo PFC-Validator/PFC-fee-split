@@ -31,6 +31,7 @@ cosmwasm-std = { version = "1.0.0" }
 #getrandom is here so cw-storage-plus can build on wasm.
 getrandom = { version = "0.2", features = ["js"] }
 cw-storage-plus = { version = "1.0.0", features = ["iterator"] }
+cw2 = "0.16.0"
 cw20 = "0.16.0"
 cw-controllers = "0.16.0"
 pfc-astroport-lp-staking = {  path = "../../packages/pfc-astroport-lp-staking" }

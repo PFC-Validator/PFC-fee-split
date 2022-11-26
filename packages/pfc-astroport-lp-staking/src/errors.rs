@@ -37,4 +37,9 @@ pub enum ContractError {
 
     #[error("Already exists")]
     AlreadyExists {},
+    #[error("Contract can't be migrated! {current_name:?} {current_version:?}")]
+    MigrationError {
+        current_name: String,
+        current_version: String,
+    },
 }

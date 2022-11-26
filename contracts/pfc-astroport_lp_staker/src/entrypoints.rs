@@ -4,8 +4,13 @@ use crate::queries::{query_config, query_staker_info, query_state};
 use crate::states::{Config, ADMIN, NUM_STAKED};
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
+use cw2::{get_contract_version, set_contract_version};
 use cw20::Cw20ReceiveMsg;
 use pfc_astroport_lp_staking::errors::ContractError;
+/// Contract name that is used for migration.
+const CONTRACT_NAME: &str = "pfc-astroport-lp-staker";
+/// Contract version that is used for migration.
+const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 use crate::executions::{
     execute_accept_gov_contract, execute_update_gov_contract, recv_reward_token,
@@ -20,6 +25,8 @@ pub fn instantiate(
     _info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     let admin = deps.api.addr_validate(&msg.gov_contract)?;
     ADMIN.set(deps.branch(), Some(admin.clone()))?;
 
@@ -100,6 +107,20 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, ContractError> {
+    let contract_version = get_contract_version(deps.storage)?;
+
+    match contract_version.contract.as_ref() {
+        #[allow(clippy::single_match)]
+        "pfc-astroport-lp-staker" => {}
+        _ => {
+            return Err(ContractError::MigrationError {
+                current_name: contract_version.contract,
+                current_version: contract_version.version,
+            })
+        }
+    }
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+
     Ok(Response::default())
 }
