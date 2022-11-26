@@ -115,7 +115,7 @@ pub fn exec_instantiate(
         token,
         pair,
         lp_token,
-        //     whitelisted_contracts,
+        gov_contract: info.sender.to_string(),
     };
 
     instantiate(deps.as_mut(), env, info, msg)

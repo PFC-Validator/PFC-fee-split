@@ -13,10 +13,12 @@ use crate::states::{
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     let config: Config = Config::load(deps.storage)?;
     let resp = ConfigResponse {
-        admin: config.admin.to_string(),
         token: config.token.to_string(),
         pair: config.pair.to_string(),
         lp_token: config.lp_token.to_string(),
+        gov_contract: config.gov_contract.to_string(),
+        new_gov_contract: config.new_gov_contract.map(|f| f.to_string()),
+        change_gov_contract_by_height: config.change_gov_contract_by_height,
     };
 
     Ok(resp)

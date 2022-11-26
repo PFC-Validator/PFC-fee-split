@@ -60,7 +60,7 @@ pub fn expect_generic_err(result: &Result<Response, ContractError>, expect_msg: 
 pub fn expect_unauthorized_err(result: &Result<Response, ContractError>) {
     match result {
         Ok(_) => panic!("Must return error"),
-        Err(ContractError::Unauthorized {}) => {
+        Err(ContractError::AdminError { .. }) => {
             // do nothing
         }
         Err(e) => panic!("Unexpected error: {:?}", e),

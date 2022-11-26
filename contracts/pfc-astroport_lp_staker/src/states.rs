@@ -1,11 +1,13 @@
 use cosmwasm_std::{Addr, Decimal, StdResult, Storage, Uint128};
+use cw_controllers::Admin;
 use cw_storage_plus::{Item, Map};
 use pfc_astroport_lp_staking::lp_staking::TokenBalance;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 const CONFIG: Item<Config> = Item::new("config_v1");
-const ADMIN_NOMINEE: Item<Addr> = Item::new("admin_nominee");
+
+pub const ADMIN: Admin = Admin::new("admin");
 
 /// Helper to store number of staked NFTs to increase computational efficiency
 pub const NUM_STAKED: Item<Uint128> = Item::new("num_staked_v1");
@@ -25,32 +27,25 @@ pub const USER_CLAIM: Map<Addr, Vec<UserTokenClaim>> = Map::new("user_claim_v1")
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct Config {
-    /// The admin account
-    pub admin: Addr,
     /// The token we send
     pub token: Addr,
     /// The token we 'stake'
     pub lp_token: Addr,
     pub pair: Addr,
-    //    pub whitelisted_contracts: Vec<Addr>,
+    /// 'admin' account
+    pub gov_contract: Addr,
+    pub new_gov_contract: Option<Addr>,
+    pub change_gov_contract_by_height: Option<u64>,
 }
 
 impl Config {
     pub fn save(&self, storage: &mut dyn Storage) -> StdResult<()> {
-        CONFIG.save(storage, self)?;
-        Ok(())
+        CONFIG.save(storage, self)
+        // Ok(())
     }
 
     pub fn load(storage: &dyn Storage) -> StdResult<Config> {
         CONFIG.load(storage)
-    }
-
-    pub fn may_load_admin_nominee(storage: &dyn Storage) -> StdResult<Option<Addr>> {
-        ADMIN_NOMINEE.may_load(storage)
-    }
-
-    pub fn save_admin_nominee(storage: &mut dyn Storage, address: &Addr) -> StdResult<()> {
-        ADMIN_NOMINEE.save(storage, address)
     }
 }
 
@@ -66,9 +61,7 @@ impl StakerInfo {
     pub fn default(owner: Addr) -> StakerInfo {
         StakerInfo {
             owner,
-            //     reward_index: Decimal::zero(),
             bond_amount: Uint128::zero(),
-            //    pending_reward: Uint128::zero(),
         }
     }
 
@@ -85,16 +78,4 @@ impl StakerInfo {
     pub fn delete(&self, storage: &mut dyn Storage) {
         STAKER_INFO.remove(storage, self.owner.as_str())
     }
-    /*
-       // withdraw reward to pending reward
-       pub fn compute_staker_reward(&mut self, state: &State) -> StdResult<()> {
-           let pending_reward = (self.bond_amount * state.global_reward_index)
-               .checked_sub(self.bond_amount * self.reward_index)?;
-
-           self.reward_index = state.global_reward_index;
-           self.pending_reward += pending_reward;
-           Ok(())
-       }
-
-    */
 }

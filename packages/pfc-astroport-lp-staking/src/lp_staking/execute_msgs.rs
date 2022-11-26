@@ -9,7 +9,7 @@ pub struct InstantiateMsg {
     pub token: String,
     pub pair: String,
     pub lp_token: String,
-    //pub whitelisted_contracts: Vec<String>,
+    pub gov_contract: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -25,14 +25,18 @@ pub enum ExecuteMsg {
         token: Option<String>,
         pair: Option<String>,
         lp_token: Option<String>,
-        admin: Option<String>,
-        //      whitelisted_contracts: Option<Vec<String>>,
     },
     MigrateReward {
         recipient: String,
         amount: Uint128,
     },
-    ApproveAdminNominee {},
+    /// Transfer gov-contract to another account; will not take effect unless the new owner accepts
+    TransferGovContract {
+        gov_contract: String,
+        blocks: u64,
+    },
+    /// Accept an gov-contract transfer
+    AcceptGovContract {},
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]

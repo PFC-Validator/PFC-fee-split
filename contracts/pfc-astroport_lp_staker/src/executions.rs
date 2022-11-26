@@ -5,7 +5,8 @@ use cosmwasm_std::{
 use std::collections::HashMap;
 
 use crate::states::{
-    Config, StakerInfo, UserTokenClaim, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM, USER_LAST_CLAIM,
+    Config, StakerInfo, UserTokenClaim, ADMIN, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM,
+    USER_LAST_CLAIM,
 };
 
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
@@ -20,8 +21,6 @@ pub fn bond(
     amount: Uint128,
 ) -> Result<Response, ContractError> {
     let sender_addr_raw: Addr = deps.api.addr_validate(sender_addr.as_str())?;
-
-    //    let config: Config = Config::load(deps.storage)?;
 
     let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
@@ -57,7 +56,6 @@ pub fn unbond(
     let config: Config = Config::load(deps.storage)?;
     let sender_addr_raw: Addr = info.sender;
 
-    //   let mut state: State = State::load(deps.storage)?;
     let mut staker_info: StakerInfo = StakerInfo::load_or_default(deps.storage, &sender_addr_raw)?;
 
     if staker_info.bond_amount < amount {
@@ -167,15 +165,12 @@ pub fn update_config(
     token: Option<String>,
     pair: Option<String>,
     lp_token: Option<String>,
-    admin: Option<String>,
-    //   whitelisted_contracts: Option<Vec<String>>,
 ) -> Result<Response, ContractError> {
+    ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
+
     let mut response = Response::new().add_attribute("action", "update_config");
 
     let mut config: Config = Config::load(deps.storage)?;
-    if config.admin != info.sender {
-        return Err(ContractError::Unauthorized {});
-    }
 
     if let Some(token) = token {
         config.token = deps.api.addr_validate(token.as_str())?;
@@ -192,19 +187,6 @@ pub fn update_config(
         response = response.add_attribute("is_updated_lp_token", "true");
     }
 
-    if let Some(admin) = admin {
-        Config::save_admin_nominee(deps.storage, &deps.api.addr_validate(admin.as_str())?)?;
-        response = response.add_attribute("is_updated_admin_nominee", "true");
-    }
-    /*
-        if let Some(whitelisted_contracts) = whitelisted_contracts {
-            config.whitelisted_contracts = whitelisted_contracts
-                .iter()
-                .map(|item| deps.api.addr_validate(item.as_str()).unwrap())
-                .collect();
-            response = response.add_attribute("is_updated_whitelisted_contracts", "true");
-        }
-    */
     config.save(deps.storage)?;
 
     Ok(response)
@@ -217,10 +199,9 @@ pub fn migrate_reward(
     recipient: String,
     amount: Uint128,
 ) -> Result<Response, ContractError> {
+    ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
+
     let config = Config::load(deps.storage)?;
-    if config.admin != info.sender {
-        return Err(ContractError::Unauthorized {});
-    }
 
     Ok(Response::new()
         .add_attribute("action", "migrate_reward")
@@ -235,32 +216,53 @@ pub fn migrate_reward(
         .add_attribute("amount", amount.to_string()))
 }
 
-pub fn approve_admin_nominee(
+pub fn execute_update_gov_contract(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
+    gov_contract: String,
+    blocks: u64,
 ) -> Result<Response, ContractError> {
-    // Execute
-    if let Some(admin_nominee) = Config::may_load_admin_nominee(deps.storage)? {
-        if admin_nominee != info.sender {
-            return Err(ContractError::Std(StdError::generic_err(
-                "It is not admin nominee",
-            )));
-        }
-    } else {
-        return Err(ContractError::Unauthorized {});
-    }
-
+    ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
+    let new_admin = deps.api.addr_validate(&gov_contract)?;
     let mut config = Config::load(deps.storage)?;
-    config.admin = info.sender;
 
+    config.new_gov_contract = Some(new_admin);
+    config.change_gov_contract_by_height = Some(env.block.height + blocks);
     config.save(deps.storage)?;
 
-    Ok(Response::new()
-        .add_attribute("action", "approve_admin_nominee")
-        .add_attribute("is_updated_admin", "true"))
+    let res = Response::new().add_attribute("action", "update_gov_contract");
+    Ok(res)
 }
+pub fn execute_accept_gov_contract(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+) -> Result<Response, ContractError> {
+    let mut config = Config::load(deps.storage)?;
 
+    if let Some(new_admin) = config.new_gov_contract {
+        if new_admin != info.sender {
+            Err(ContractError::Unauthorized {})
+        } else if let Some(block_height) = config.change_gov_contract_by_height {
+            if block_height < env.block.height {
+                Err(ContractError::Unauthorized {})
+            } else {
+                config.gov_contract = new_admin.clone();
+                config.new_gov_contract = None;
+                config.change_gov_contract_by_height = None;
+                config.save(deps.storage)?;
+                ADMIN.set(deps, Some(new_admin))?;
+                let res = Response::new().add_attribute("action", "accept_gov_contract");
+                Ok(res)
+            }
+        } else {
+            Err(ContractError::Unauthorized {})
+        }
+    } else {
+        Err(ContractError::Unauthorized {})
+    }
+}
 pub(crate) fn do_token_claims(
     storage: &mut dyn Storage,
     block_height: u64,

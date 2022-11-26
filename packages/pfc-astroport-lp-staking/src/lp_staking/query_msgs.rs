@@ -15,11 +15,12 @@ pub enum QueryMsg {
 // We define a custom struct for each query response
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
-    pub admin: String,
     pub token: String,
     pub pair: String,
     pub lp_token: String,
-    //    pub whitelisted_contracts: Vec<String>,
+    pub gov_contract: String,
+    pub new_gov_contract: Option<String>,
+    pub change_gov_contract_by_height: Option<u64>,
 }
 
 // We define a custom struct for each query response
