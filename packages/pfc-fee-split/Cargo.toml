@@ -13,7 +13,6 @@ repository = "https://github.com/PFC-Validator/pfc-fee-split"
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-
 cosmwasm-std = "1.0.0"
 cw20 = "0.15.0"
 schemars = "0.8.10"

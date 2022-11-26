@@ -27,7 +27,6 @@ library=[]
 cw2 = "0.15.0"
 cw-item-set = "0.5.0"
 pfc-fee-split = { version = "0.2", path = "../../packages/pfc-fee-split" }
-
 cosmwasm-std = "1.0.0"
 cw-storage-plus = "0.15.0"
 cw-controllers = "0.15.0"
