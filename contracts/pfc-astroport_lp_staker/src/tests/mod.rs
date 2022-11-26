@@ -12,7 +12,7 @@ use pfc_astroport_lp_staking::lp_staking::query_msgs::{QueryMsg, StakerInfoRespo
 use pfc_astroport_lp_staking::mock_querier::CustomDeps;
 use pfc_astroport_lp_staking::test_constants::liquidity::{
     lp_env, LP_DISTRIBUTION_SCHEDULE1, LP_DISTRIBUTION_SCHEDULE2, LP_LIQUIDITY_TOKEN,
-    LP_PAIR_TOKEN, LP_REWARD_TOKEN,
+    LP_REWARD_TOKEN,
 };
 use pfc_astroport_lp_staking::test_constants::{default_sender, DEFAULT_SENDER, REWARD_TOKEN};
 
@@ -107,13 +107,13 @@ pub fn exec_instantiate(
     env: Env,
     info: MessageInfo,
     token: String,
-    pair: String,
+    name: String,
     lp_token: String,
     // whitelisted_contracts: Vec<String>,
 ) -> Result<Response, ContractError> {
     let msg = InstantiateMsg {
         token,
-        pair,
+        name,
         lp_token,
         gov_contract: info.sender.to_string(),
     };
@@ -133,7 +133,7 @@ pub fn init_default(
         env.clone(),
         info.clone(),
         LP_REWARD_TOKEN.to_string(),
-        LP_PAIR_TOKEN.to_string(),
+        "Just a name".to_string(),
         LP_LIQUIDITY_TOKEN.to_string(),
     )
     .unwrap();

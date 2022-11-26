@@ -163,7 +163,7 @@ pub fn update_config(
     _env: Env,
     info: MessageInfo,
     token: Option<String>,
-    pair: Option<String>,
+    name: Option<String>,
     lp_token: Option<String>,
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
@@ -177,9 +177,9 @@ pub fn update_config(
         response = response.add_attribute("is_updated_token", "true");
     }
 
-    if let Some(pair) = pair {
-        config.pair = deps.api.addr_validate(pair.as_str())?;
-        response = response.add_attribute("is_updated_pair", "true");
+    if let Some(name) = name {
+        config.name = name.clone();
+        response = response.add_attribute("is_updated_name", "true");
     }
 
     if let Some(lp_token) = lp_token {

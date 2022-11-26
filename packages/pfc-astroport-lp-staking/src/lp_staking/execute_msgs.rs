@@ -7,7 +7,7 @@ use cw20::Cw20ReceiveMsg;
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
     pub token: String,
-    pub pair: String,
+    pub name: String,
     pub lp_token: String,
     pub gov_contract: String,
 }
@@ -23,7 +23,7 @@ pub enum ExecuteMsg {
     Withdraw {},
     UpdateConfig {
         token: Option<String>,
-        pair: Option<String>,
+        name: Option<String>,
         lp_token: Option<String>,
     },
     MigrateReward {

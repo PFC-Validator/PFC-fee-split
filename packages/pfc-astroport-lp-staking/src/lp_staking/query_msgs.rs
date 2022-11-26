@@ -16,7 +16,7 @@ pub enum QueryMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct ConfigResponse {
     pub token: String,
-    pub pair: String,
+    pub name: String,
     pub lp_token: String,
     pub gov_contract: String,
     pub new_gov_contract: Option<String>,

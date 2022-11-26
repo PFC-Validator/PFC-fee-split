@@ -21,7 +21,7 @@ pub mod liquidity {
     pub const LIQUIDITY: &str = "terra1l7xu2rl3c7qmtx3r5sd2tz25glf6jh8ul7aag7";
 
     pub const LP_REWARD_TOKEN: &str = REWARD_TOKEN;
-    pub const LP_PAIR_TOKEN: &str = "terra17n5sunn88hpy965mzvt3079fqx3rttnplg779g";
+    //  pub const LP_PAIR_TOKEN: &str = "terra17n5sunn88hpy965mzvt3079fqx3rttnplg779g";
     pub const LP_LIQUIDITY_TOKEN: &str = "terra1627ldjvxatt54ydd3ns6xaxtd68a2vtyu7kakj";
     pub const LP_DISTRIBUTION_SCHEDULE1: (u64, u64, Uint128) = (0, 100, Uint128::new(1000000u128));
     pub const LP_DISTRIBUTION_SCHEDULE2: (u64, u64, Uint128) =

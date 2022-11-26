@@ -31,7 +31,8 @@ pub struct Config {
     pub token: Addr,
     /// The token we 'stake'
     pub lp_token: Addr,
-    pub pair: Addr,
+    /// descriptive name of this
+    pub name: String,
     /// 'admin' account
     pub gov_contract: Addr,
     pub new_gov_contract: Option<Addr>,
@@ -41,7 +42,6 @@ pub struct Config {
 impl Config {
     pub fn save(&self, storage: &mut dyn Storage) -> StdResult<()> {
         CONFIG.save(storage, self)
-        // Ok(())
     }
 
     pub fn load(storage: &dyn Storage) -> StdResult<Config> {

@@ -14,7 +14,7 @@ pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
     let config: Config = Config::load(deps.storage)?;
     let resp = ConfigResponse {
         token: config.token.to_string(),
-        pair: config.pair.to_string(),
+        name: config.name.to_string(),
         lp_token: config.lp_token.to_string(),
         gov_contract: config.gov_contract.to_string(),
         new_gov_contract: config.new_gov_contract.map(|f| f.to_string()),

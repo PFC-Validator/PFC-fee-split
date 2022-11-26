@@ -26,13 +26,13 @@ pub fn exec(
 pub fn will_success(
     deps: &mut CustomDeps,
     token: Option<String>,
-    pair: Option<String>,
+    name: Option<String>,
     lp_token: Option<String>,
 ) -> (Env, MessageInfo, Response) {
     let env = lp_env();
     let info = mock_info(DEFAULT_SENDER, &[]);
 
-    let response = exec(deps, env.clone(), info.clone(), token, pair, lp_token).unwrap();
+    let response = exec(deps, env.clone(), info.clone(), token, name, lp_token).unwrap();
 
     (env, info, response)
 }
@@ -46,7 +46,7 @@ fn succeed() {
     will_success(
         &mut deps,
         Some("terra1r0rm0evrlkfvpt0csrcpmnpmrega54czajfd86".to_string()),
-        Some(SENDER_1.to_string()),
+        Some("NEW NAME".to_string()),
         Some("terra199vw7724lzkwz6lf2hsx04lrxfkz09tg8dlp6r".to_string()),
         //  Some("terra1e8ryd9ezefuucd4mje33zdms9m2s90m57878v9".to_string()),
     );
@@ -56,7 +56,7 @@ fn succeed() {
         config.token,
         Addr::unchecked("terra1r0rm0evrlkfvpt0csrcpmnpmrega54czajfd86".to_string())
     );
-    assert_eq!(config.pair, Addr::unchecked(SENDER_1.to_string()));
+    assert_eq!(config.name, "NEW NAME".to_string());
     assert_eq!(
         config.lp_token,
         Addr::unchecked("terra199vw7724lzkwz6lf2hsx04lrxfkz09tg8dlp6r".to_string())

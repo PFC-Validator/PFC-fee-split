@@ -11,7 +11,7 @@ fn succeed() {
 
     let config = Config::load(&deps.storage).unwrap();
     assert_eq!(config.token, LP_REWARD_TOKEN);
-    assert_eq!(config.pair, LP_PAIR_TOKEN);
+    assert_eq!(config.name, "Just a name");
     assert_eq!(config.lp_token, LP_LIQUIDITY_TOKEN);
     assert_eq!(config.gov_contract, info.sender);
 }

@@ -25,7 +25,7 @@ pub fn instantiate(
 
     Config {
         token: deps.api.addr_validate(msg.token.as_str())?,
-        pair: deps.api.addr_validate(msg.pair.as_str())?,
+        name: msg.name.clone(),
         lp_token: deps.api.addr_validate(msg.lp_token.as_str())?,
         gov_contract: admin,
         new_gov_contract: None,
@@ -51,9 +51,9 @@ pub fn execute(
         ExecuteMsg::Withdraw {} => withdraw(deps, env, info),
         ExecuteMsg::UpdateConfig {
             token,
-            pair,
+            name,
             lp_token,
-        } => update_config(deps, env, info, token, pair, lp_token),
+        } => update_config(deps, env, info, token, name, lp_token),
         ExecuteMsg::MigrateReward { recipient, amount } => {
             migrate_reward(deps, env, info, recipient, amount)
         }
