@@ -123,6 +123,12 @@ pub fn recv_reward_token(
     // Calculate amount to distribute
     let num_staked = NUM_STAKED.load(deps.storage)?;
     //   eprintln!("Num_staked ={} msg.amount={}", num_staked, msg.amount);
+
+    if num_staked.is_zero() {
+        return Err(ContractError::Std(StdError::generic_err(
+            "num staked is zero",
+        )));
+    }
     let amount_per_stake = Decimal::from_ratio(msg.amount, 1u128)
         .checked_div(Decimal::from_ratio(num_staked, 1u128))?;
 

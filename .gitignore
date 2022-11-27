@@ -29,3 +29,4 @@ code_id*.json
 
 /test_files/phoenix_instantiate.json
 /notes.txt
+*.profraw

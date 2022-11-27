@@ -95,3 +95,18 @@ fn succeed() {
             .unwrap()
     );
 }
+
+#[test]
+fn none_bonded() {
+    let sender_reward = Addr::unchecked(SENDER_REWARD);
+
+    let mut deps = custom_deps();
+    let (env, _info, _response) = init_default(&mut deps, None);
+
+    let num_staked = NUM_STAKED.load(deps.as_ref().storage).unwrap();
+
+    assert_eq!(num_staked, Uint128::new(0u128));
+
+    let _err = exec_send_reward_token(&mut deps, &env, &sender_reward, Uint128::new(1_000_000u128))
+        .unwrap_err();
+}
