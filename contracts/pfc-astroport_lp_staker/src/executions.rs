@@ -1,18 +1,19 @@
+use std::collections::HashMap;
+
 use cosmwasm_std::{
     to_binary, Addr, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Order, Response, StdError,
     StdResult, Storage, Uint128, WasmMsg,
 };
-use std::collections::HashMap;
+use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
+
+use pfc_astroport_lp_staking::errors::ContractError;
+use pfc_astroport_lp_staking::lp_staking::TokenBalance;
+use pfc_astroport_lp_staking::message_factories;
 
 use crate::states::{
     Config, StakerInfo, UserTokenClaim, ADMIN, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM,
     USER_LAST_CLAIM,
 };
-
-use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
-use pfc_astroport_lp_staking::errors::ContractError;
-use pfc_astroport_lp_staking::lp_staking::TokenBalance;
-use pfc_astroport_lp_staking::message_factories;
 
 pub fn bond(
     deps: DepsMut,
@@ -22,9 +23,27 @@ pub fn bond(
 ) -> Result<Response, ContractError> {
     let sender_addr_raw: Addr = deps.api.addr_validate(sender_addr.as_str())?;
 
-    let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
-
     let mut staker_info: StakerInfo = StakerInfo::load_or_default(deps.storage, &sender_addr_raw)?;
+
+    if staker_info.bond_amount.is_zero() {
+        let tallies = TOTAL_REWARDS
+            .range(deps.storage, None, None, Order::Ascending)
+            .collect::<StdResult<Vec<_>>>()?;
+
+        USER_CLAIM.save(
+            deps.storage,
+            sender_addr_raw.clone(),
+            &tallies
+                .iter()
+                .map(|tb| UserTokenClaim {
+                    last_claimed_amount: tb.1.amount,
+                    token: tb.0.clone(),
+                })
+                .collect::<Vec<UserTokenClaim>>(),
+        )?;
+        //    } else {
+    }
+    let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
     // Increase bond_amount
     let num_staked = NUM_STAKED.update(deps.storage, |num| -> StdResult<Uint128> {
@@ -270,6 +289,11 @@ pub(crate) fn do_token_claims(
 ) -> Result<Vec<CosmosMsg>, ContractError> {
     let mut resp: Vec<CosmosMsg> = vec![];
     let mut new_claims: Vec<UserTokenClaim> = vec![];
+
+    let tallies = TOTAL_REWARDS
+        .range(storage, None, None, Order::Ascending)
+        .collect::<StdResult<Vec<_>>>()?;
+
     let staker_info = StakerInfo::load_or_default(storage, addr)?;
     if staker_info.bond_amount.is_zero() {
         return Ok(vec![]);
@@ -285,9 +309,6 @@ pub(crate) fn do_token_claims(
         .map(|ui| (ui.token.clone(), ui))
         .collect::<HashMap<Addr, &UserTokenClaim>>();
 
-    let tallies = TOTAL_REWARDS
-        .range(storage, None, None, Order::Ascending)
-        .collect::<StdResult<Vec<_>>>()?;
     /*
         eprintln!(
             "do_token_claims  tallies {}",
@@ -302,9 +323,10 @@ pub(crate) fn do_token_claims(
         };
         //      eprintln!("do_token_claim  amt/share {}", amt);
 
-        let amt_to_send = staker_info.bond_amount * amt; // amt.checked_mul(bond_amount)?;
-                                                         //.floor();
-                                                         //    eprintln!("do_token_claim  amt_to_send {}", amt_to_send);
+        let amt_to_send = staker_info.bond_amount * amt;
+        // amt.checked_mul(bond_amount)?;
+        //.floor();
+        //    eprintln!("do_token_claim  amt_to_send {}", amt_to_send);
         new_claims.push(UserTokenClaim {
             last_claimed_amount: token.1.amount,
             token: token.1.token,

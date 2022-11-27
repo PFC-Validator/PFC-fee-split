@@ -243,11 +243,13 @@ fn test_4() {
     let (mut env, _info, _response) = init_default(&mut deps, None);
     env.block.height += 1;
     let res = exec_bond(&mut deps, &env, &sender1.sender, Uint128::new(200u128)).unwrap();
+    assert_eq!(res.messages.len(), 0);
     let token_attr = find_attribute(&res.attributes, "total_staked").unwrap();
     assert_eq!(token_attr.value, "200");
     env.block.height += 1;
 
     let res = exec_bond(&mut deps, &env, &sender2.sender, Uint128::new(200u128)).unwrap();
+    assert_eq!(res.messages.len(), 0);
     let token_attr = find_attribute(&res.attributes, "total_staked").unwrap();
     assert_eq!(token_attr.value, "400");
     env.block.height += 1;
@@ -264,6 +266,7 @@ fn test_4() {
     let res = exec_bond(&mut deps, &env, &sender1.sender, Uint128::new(100u128)).unwrap();
     let token_attr = find_attribute(&res.attributes, "total_staked").unwrap();
     assert_eq!(token_attr.value, "500");
+
     assert_eq!(res.messages.len(), 1);
     let exec = find_exec(&res.messages[0]).unwrap();
     assert_eq!(
@@ -352,4 +355,107 @@ fn test_4() {
     assert_eq!(info2.estimated_rewards, &[]);
     assert_eq!(info2.last_claimed.unwrap(), 6);
     assert_eq!(env.block.height, 7);
+}
+
+#[test]
+fn test_5() {
+    // tests to do
+    // #5 - bone someone, add some rewards, then add a new bond
+
+    let mut deps = custom_deps();
+    let sender_reward = Addr::unchecked(SENDER_REWARD);
+    let sender1 = mock_info(SENDER_1, &[]);
+    let sender2 = mock_info(SENDER_2, &[]);
+    let mut reward_tally = Uint128::zero();
+
+    let (mut env, _info, _response) = init_default(&mut deps, None);
+    env.block.height += 1;
+    let res = exec_bond(&mut deps, &env, &sender1.sender, Uint128::new(200u128)).unwrap();
+    let token_attr = find_attribute(&res.attributes, "total_staked").unwrap();
+    assert_eq!(token_attr.value, "200");
+    env.block.height += 1;
+
+    let res =
+        exec_send_reward_token(&mut deps, &env, &sender_reward, Uint128::new(2_000u128)).unwrap();
+    reward_tally += Uint128::new(2_000u128);
+
+    let token_attr = find_attribute(&res.attributes, "amount_per_stake").unwrap();
+    assert_eq!(token_attr.value, "10");
+    assert_eq!(res.messages.len(), 0);
+
+    let res = exec_bond(&mut deps, &env, &sender2.sender, Uint128::new(200u128)).unwrap();
+    let token_attr = find_attribute(&res.attributes, "total_staked").unwrap();
+    assert_eq!(token_attr.value, "400");
+    env.block.height += 1;
+
+    assert_eq!(res.messages.len(), 0);
+    let _res =
+        exec_send_reward_token(&mut deps, &env, &sender_reward, Uint128::new(2_000u128)).unwrap();
+    reward_tally += Uint128::new(2_000u128);
+
+    let res = exec_withdraw(&mut deps, env.clone(), sender1.clone()).unwrap();
+    env.block.height += 1;
+
+    let token_attr = find_attribute(&res.attributes, "total_staked").unwrap();
+    assert_eq!(token_attr.value, "400");
+    let token_attr = find_attribute(&res.attributes, "amount_staked").unwrap();
+    assert_eq!(token_attr.value, "200");
+    assert_eq!(res.messages.len(), 1);
+
+    let exec = find_exec(&res.messages[0]).unwrap();
+    assert_eq!(
+        exec,
+        &WasmMsg::Execute {
+            contract_addr: LP_REWARD_TOKEN.to_string(),
+            msg: to_binary(&Cw20ExecuteMsg::Send {
+                contract: sender1.sender.to_string(),
+                amount: Uint128::from(3_000u64),
+                msg: Default::default(),
+            })
+            .unwrap(),
+            funds: vec![],
+        }
+    );
+    reward_tally -= Uint128::new(3_000);
+
+    let res = exec_withdraw(&mut deps, env.clone(), sender2.clone()).unwrap();
+    env.block.height += 1;
+
+    let token_attr = find_attribute(&res.attributes, "total_staked").unwrap();
+    assert_eq!(token_attr.value, "400");
+    let token_attr = find_attribute(&res.attributes, "amount_staked").unwrap();
+    assert_eq!(token_attr.value, "200");
+    assert_eq!(res.messages.len(), 1);
+
+    let exec = find_exec(&res.messages[0]).unwrap();
+    assert_eq!(
+        exec,
+        &WasmMsg::Execute {
+            contract_addr: LP_REWARD_TOKEN.to_string(),
+            msg: to_binary(&Cw20ExecuteMsg::Send {
+                contract: sender2.sender.to_string(),
+                amount: Uint128::from(1_000u64),
+                msg: Default::default(),
+            })
+            .unwrap(),
+            funds: vec![],
+        }
+    );
+    reward_tally -= Uint128::new(1_000u128);
+
+    if reward_tally <= Uint128::one() {
+        assert!(
+            reward_tally <= Uint128::one(),
+            "Outstanding rewards exceeds tolerance of >1< unit",
+        );
+    }
+    let info1 = query_staker_info(deps.as_ref(), &env, &sender1.sender);
+    assert_eq!(info1.total_staked, Uint128::new(200u128));
+    assert_eq!(info1.estimated_rewards, &[]);
+    assert_eq!(info1.last_claimed.unwrap(), 3);
+    let info2 = query_staker_info(deps.as_ref(), &env, &sender2.sender);
+    assert_eq!(info2.total_staked, Uint128::new(200u128));
+    assert_eq!(info2.estimated_rewards, &[]);
+    assert_eq!(info2.last_claimed.unwrap(), 4);
+    assert_eq!(env.block.height, 5);
 }
