@@ -197,7 +197,7 @@ pub fn update_config(
     }
 
     if let Some(name) = name {
-        config.name = name.clone();
+        config.name = name;
         response = response.add_attribute("is_updated_name", "true");
     }
 
