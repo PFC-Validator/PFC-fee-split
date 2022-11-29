@@ -27,6 +27,6 @@ code_id*.json
 /*.json
 /contracts/*/.env
 
-/test_files/phoenix_instantiate.json
-/notes.txt
+#/test_files/phoenix_instantiate.json
+#/notes.txt
 *.profraw
