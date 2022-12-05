@@ -114,17 +114,17 @@ export allow_proxies_msg = '{
 export msg2 = '{
    "move_to_proxy": {
        "lp_token": "terra1mqmrh89e42yk6vy026mawymz879d4p829560krcql3e0ws23lassk6hzx4",
-       "proxy": "terra10jmdvgf5tk5j3yq8c8jynxzj2ghf73sjy8l6xr85zclqpmkeyhpq6q2e36",
+       "proxy": "terra10jmdvgf5tk5j3yq8c8jynxzj2ghf73sjy8l6xr85zclqpmkeyhpq6q2e36"
    }
 }'
-export binmsg2='ewogICAibW92ZV90b19wcm94eSI6IHsKICAgICAgICJscF90b2tlbiI6ICJ0ZXJyYTFtcW1yaDg5ZTQyeWs2dnkwMjZtYXd5bXo4NzlkNHA4Mjk1NjBrcmNxbDNlMHdzMjNsYXNzazZoeng0IiwKICAgICAgICJwcm94eSI6ICJ0ZXJyYTEwam1kdmdmNXRrNWozeXE4YzhqeW54emoyZ2hmNzNzank4bDZ4cjg1emNscXBta2V5aHBxNnEyZTM2IiwKICAgfQp9'
+export binmsg2='ewogICAibW92ZV90b19wcm94eSI6IHsKICAgICAgICJscF90b2tlbiI6ICJ0ZXJyYTFtcW1yaDg5ZTQyeWs2dnkwMjZtYXd5bXo4NzlkNHA4Mjk1NjBrcmNxbDNlMHdzMjNsYXNzazZoeng0IiwKICAgICAgICJwcm94eSI6ICJ0ZXJyYTEwam1kdmdmNXRrNWozeXE4YzhqeW54emoyZ2hmNzNzank4bDZ4cjg1emNscXBta2V5aHBxNnEyZTM2IgogICB9Cn0'
 export allow_proxies_msg = '{
    "order": "2",
    "msg": {
        "wasm": {
            "execute": {
                "contract_addr": "terra1gc4d4v82vjgkz0ag28lrmlxx3tf6sq69tmaujjpe7jwmnqakkx0qm28j2l",
-               "msg": "ewogICAibW92ZV90b19wcm94eSI6IHsKICAgICAgICJscF90b2tlbiI6ICJ0ZXJyYTFtcW1yaDg5ZTQyeWs2dnkwMjZtYXd5bXo4NzlkNHA4Mjk1NjBrcmNxbDNlMHdzMjNsYXNzazZoeng0IiwKICAgICAgICJwcm94eSI6ICJ0ZXJyYTEwam1kdmdmNXRrNWozeXE4YzhqeW54emoyZ2hmNzNzank4bDZ4cjg1emNscXBta2V5aHBxNnEyZTM2IiwKICAgfQp9",
+               "msg": "ewogICAibW92ZV90b19wcm94eSI6IHsKICAgICAgICJscF90b2tlbiI6ICJ0ZXJyYTFtcW1yaDg5ZTQyeWs2dnkwMjZtYXd5bXo4NzlkNHA4Mjk1NjBrcmNxbDNlMHdzMjNsYXNzazZoeng0IiwKICAgICAgICJwcm94eSI6ICJ0ZXJyYTEwam1kdmdmNXRrNWozeXE4YzhqeW54emoyZ2hmNzNzank4bDZ4cjg1emNscXBta2V5aHBxNnEyZTM2IgogICB9Cn0",
                "funds": []
            }
        }
@@ -152,7 +152,7 @@ export  proposal_msg = '{
                    "wasm": {
                        "execute": {
                            "contract_addr": "terra1gc4d4v82vjgkz0ag28lrmlxx3tf6sq69tmaujjpe7jwmnqakkx0qm28j2l",
-                           "msg": "ewogICAibW92ZV90b19wcm94eSI6IHsKICAgICAgICJscF90b2tlbiI6ICJ0ZXJyYTFtcW1yaDg5ZTQyeWs2dnkwMjZtYXd5bXo4NzlkNHA4Mjk1NjBrcmNxbDNlMHdzMjNsYXNzazZoeng0IiwKICAgICAgICJwcm94eSI6ICJ0ZXJyYTEwam1kdmdmNXRrNWozeXE4YzhqeW54emoyZ2hmNzNzank4bDZ4cjg1emNscXBta2V5aHBxNnEyZTM2IiwKICAgfQp9",
+                           "msg": "ewogICAibW92ZV90b19wcm94eSI6IHsKICAgICAgICJscF90b2tlbiI6ICJ0ZXJyYTFtcW1yaDg5ZTQyeWs2dnkwMjZtYXd5bXo4NzlkNHA4Mjk1NjBrcmNxbDNlMHdzMjNsYXNzazZoeng0IiwKICAgICAgICJwcm94eSI6ICJ0ZXJyYTEwam1kdmdmNXRrNWozeXE4YzhqeW54emoyZ2hmNzNzank4bDZ4cjg1emNscXBta2V5aHBxNnEyZTM2IgogICB9Cn0",
                            "funds": []
                        }
                    }
