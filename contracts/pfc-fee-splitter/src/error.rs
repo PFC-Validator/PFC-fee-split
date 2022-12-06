@@ -11,15 +11,15 @@ pub enum ContractError {
     Overflow(#[from] OverflowError),
 
     #[error(
-        "PFC-FeeSplit: Unauthorized (action: {action:?}, expected: {expected:?}, actual: {actual:?})"
+    "PFC-FeeSplit: Unauthorized (action: {action:?}, expected: {expected:?}, actual: {actual:?})"
     )]
     Unauthorized {
         action: String,
         expected: String,
         actual: String,
     },
-    // #[error("PFC-FeeSplit: Invalid Send_type {send_type:?}")]
-    //  SendTypeInvalid { send_type: String },
+    #[error("PFC-FeeSplit: Recursion Send_type {send_type:?} - {contract:?}")]
+    Recursion { send_type: String, contract: String },
     #[error(transparent)]
     AdminError(#[from] cw_controllers::AdminError),
 

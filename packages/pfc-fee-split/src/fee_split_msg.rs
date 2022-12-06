@@ -18,6 +18,14 @@ impl ToString for SendType {
         }
     }
 }
+impl SendType {
+    pub fn verify(&self, address:&Addr ) -> bool {
+        match &self {
+            SendType::Wallet { receiver } => receiver != address,
+            SendType::SteakRewards {  receiver,.. } => receiver != address,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct AllocationDetail {

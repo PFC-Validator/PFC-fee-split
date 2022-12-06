@@ -1,14 +1,17 @@
-use crate::error::ContractError;
-use crate::state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG, FLUSH_WHITELIST};
-use cosmwasm_std::{
-    to_binary, Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal, DepsMut,
-    Env, MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdError, StdResult, Uint128,
-    WasmMsg,
-};
-use pfc_fee_split::fee_split_msg::{AllocationHolding, SendType};
 use std::collections::HashMap;
 use std::iter::FromIterator;
 use std::ops::Mul;
+
+use cosmwasm_std::{
+    Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal, DepsMut, Env,
+    MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdError, StdResult, to_binary, Uint128,
+    WasmMsg,
+};
+
+use pfc_fee_split::fee_split_msg::{AllocationHolding, SendType};
+
+use crate::error::ContractError;
+use crate::state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG, FLUSH_WHITELIST};
 
 pub fn execute_deposit(
     deps: DepsMut,
@@ -53,7 +56,7 @@ pub fn execute_deposit(
 
 pub fn execute_add_allocation_detail(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     name: String,
     // contract_unverified: String,
@@ -63,7 +66,9 @@ pub fn execute_add_allocation_detail(
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
     //let contract = deps.api.addr_validate(contract_unverified.as_str())?;
-    //send_type_unverified.verify(deps.api)?;
+    if !send_type_unverified.verify(&env.contract.address) {
+        return Err( ContractError::Recursion {send_type: send_type_unverified.to_string(), contract: env.contract.address.to_string() })
+    }
 
     if allocation == 0 {
         return Err(ContractError::AllocationZero {});
@@ -76,7 +81,6 @@ pub fn execute_add_allocation_detail(
         name.clone(),
         &AllocationHolding {
             name: name.clone(),
-            //contract: contract.clone(),
             send_type: send_type_unverified.clone(),
             send_after: send_after.clone(),
             allocation,
@@ -96,10 +100,9 @@ pub fn execute_add_allocation_detail(
 
 pub fn execute_modify_allocation_detail(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     name: String,
-
     allocation: u8,
     send_after: Coin,
     send_type_unverified: SendType,
@@ -107,6 +110,9 @@ pub fn execute_modify_allocation_detail(
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
 
     //send_type_unverified.verify(deps.api)?;
+    if !send_type_unverified.verify(&env.contract.address) {
+        return Err( ContractError::Recursion {send_type: send_type_unverified.to_string(), contract: env.contract.address.to_string() })
+    }
 
     if allocation == 0 {
         return Err(ContractError::AllocationZero {});
@@ -152,18 +158,22 @@ pub fn execute_remove_allocation_detail(
         return Err(ContractError::NoFeesError {});
     }
     if let Some(fee_holding) = ALLOCATION_HOLDINGS.may_load(deps.storage, name.clone())? {
+        let balances = fee_holding.balance.into_iter().filter(|f| f.amount > Uint128::zero()).collect();
         let msgs: Vec<CosmosMsg> = vec![generate_cosmos_msg(
             fee_holding.send_type,
-            fee_holding.balance,
+            balances,
         )?];
         ALLOCATION_HOLDINGS.remove(deps.storage, name.clone());
+
         let res = Response::new()
             .add_attribute("action", "remove_fee_detail")
             .add_attribute("from", info.sender)
-            .add_attribute("fee", name)
-            .add_messages(msgs);
-
-        Ok(res)
+            .add_attribute("fee", name);
+        if msgs.is_empty() {
+            Ok(res)
+        } else {
+            Ok(res.add_messages(msgs))
+        }
     } else {
         Err(ContractError::AllocationNotFound { name })
     }
@@ -184,6 +194,7 @@ pub fn execute_add_flush_whitelist(
 
     Ok(res)
 }
+
 pub fn execute_remove_flush_whitelist(
     deps: DepsMut,
     _env: Env,
@@ -269,6 +280,7 @@ pub fn execute_update_gov_contract(
     let res = Response::new().add_attribute("action", "update_gov_contract");
     Ok(res)
 }
+
 pub fn execute_accept_gov_contract(
     deps: DepsMut,
     env: Env,
@@ -319,6 +331,7 @@ pub(crate) fn get_total_weight(deps: &DepsMut) -> Result<u8, ContractError> {
         .range(deps.storage, None, None, Order::Ascending)
         .fold(0, |acc, x| acc + x.unwrap().1.allocation))
 }
+
 ///
 /// this function takes the allocation ratio (allocation_amt & total_allocation)
 /// and first splits funds_sent by that allocation
@@ -466,20 +479,22 @@ pub(crate) fn get_native_balances(
 
 #[cfg(test)]
 mod exec {
-    use super::*;
     use cosmwasm_std::coin;
-
-    use crate::contract::execute;
-    use crate::handler::query::{query_allocation, query_allocations};
     use cosmwasm_std::testing::{
         mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info,
     };
+
     use pfc_fee_split::fee_split_msg::ExecuteMsg;
 
+    use crate::contract::execute;
+    use crate::handler::query::{query_allocation, query_allocations};
     use crate::test_helpers::{
-        do_instantiate, one_allocation, two_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR,
-        DENOM_1, DENOM_2, DENOM_3, GOV_CONTRACT, USER_1,
+        ALLOCATION_1, ALLOCATION_2, CREATOR, DENOM_1, DENOM_2, DENOM_3,
+        do_instantiate, GOV_CONTRACT, one_allocation, two_allocation, USER_1,
     };
+
+    use super::*;
+
     #[test]
     fn allocations_1() -> Result<(), ContractError> {
         let zero = determine_allocation(1, 1, &HashMap::default(), &vec![])?;
@@ -510,6 +525,7 @@ mod exec {
 
         Ok(())
     }
+
     #[test]
     fn allocations_2() -> Result<(), ContractError> {
         let funds2: HashMap<String, Uint128> = HashMap::from([
@@ -606,7 +622,7 @@ mod exec {
             res.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: "allocation_1_addr".to_string(),
-                amount: vec![coin(1_000_000, DENOM_1)]
+                amount: vec![coin(1_000_000, DENOM_1)],
             })
         );
 
@@ -616,6 +632,7 @@ mod exec {
 
         Ok(())
     }
+
     #[test]
     fn deposit_split() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
@@ -639,7 +656,7 @@ mod exec {
             res.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: "allocation_1_addr".to_string(),
-                amount: vec![coin(25_000_000, DENOM_1)]
+                amount: vec![coin(25_000_000, DENOM_1)],
             })
         );
         match &res.messages[1].msg {
@@ -673,6 +690,7 @@ mod exec {
 
         Ok(())
     }
+
     #[test]
     fn reconcile_basic() -> Result<(), ContractError> {
         let mut deps = mock_dependencies_with_balance(&vec![
@@ -829,18 +847,21 @@ mod exec {
         Ok(())
     }
 }
+
 #[cfg(test)]
 mod crud_allocations {
+    use cosmwasm_std::{Api, BankMsg, coin, CosmosMsg, StdError};
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+
+    use pfc_fee_split::fee_split_msg::{AllocationHolding, ExecuteMsg, SendType};
+
     use crate::contract::execute;
     use crate::error::ContractError;
     use crate::handler::query::{query_allocation, query_allocations};
     use crate::test_helpers::{
-        do_instantiate, two_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR, DENOM_1, GOV_CONTRACT,
+        ALLOCATION_1, ALLOCATION_2, CREATOR, DENOM_1, do_instantiate, GOV_CONTRACT, two_allocation,
         USER_1,
     };
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coin, Api, BankMsg, CosmosMsg, StdError};
-    use pfc_fee_split::fee_split_msg::{AllocationHolding, ExecuteMsg, SendType};
 
     #[test]
     fn add_line() -> Result<(), ContractError> {
@@ -897,8 +918,8 @@ mod crud_allocations {
             info.clone(),
             msg_duplicate.clone(),
         )
-        .err()
-        .unwrap();
+            .err()
+            .unwrap();
         match err {
             ContractError::FeeAlreadyThere { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -923,11 +944,11 @@ mod crud_allocations {
             res.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: "allocation_1_addr".to_string(),
-                amount: vec![coin(333333, DENOM_1)]
+                amount: vec![coin(333333, DENOM_1)],
             })
         );
         assert_eq!(
-           & format!("{:?}",res.messages[1].msg),
+            &format!("{:?}", res.messages[1].msg),
             "Wasm(Execute { contract_addr: \"steak-contract\", msg: {\"bond\":{\"receiver\":\"rewards\"}}, funds: [Coin { denom: \"uxyz\", amount: Uint128(333333) }] })"
         );
         let allocations = query_allocation(deps.as_ref(), String::from(ALLOCATION_2))?.unwrap();
@@ -937,6 +958,7 @@ mod crud_allocations {
 
         Ok(())
     }
+
     #[test]
     fn rm_line() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
@@ -977,8 +999,8 @@ mod crud_allocations {
             info.clone(),
             msg_does_not_exist.clone(),
         )
-        .err()
-        .unwrap();
+            .err()
+            .unwrap();
         match err {
             ContractError::AllocationNotFound { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -1001,7 +1023,7 @@ mod crud_allocations {
             res.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: "allocation_1_addr".to_string(),
-                amount: vec![coin(1_000_000, DENOM_1)]
+                amount: vec![coin(1_000_000, DENOM_1)],
             })
         );
 
@@ -1010,6 +1032,7 @@ mod crud_allocations {
 
         Ok(())
     }
+
     #[test]
     fn upd_line() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
@@ -1027,7 +1050,7 @@ mod crud_allocations {
                 receiver: deps.api.addr_validate("new-contract").unwrap(),
             },
         };
-        eprintln!("{}", serde_json::to_string(&msg).unwrap());
+        //eprintln!("{}", serde_json::to_string(&msg).unwrap());
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
         let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
@@ -1061,8 +1084,8 @@ mod crud_allocations {
             info.clone(),
             msg_does_not_exist.clone(),
         )
-        .err()
-        .unwrap();
+            .err()
+            .unwrap();
         match err {
             ContractError::Std(x) => match x {
                 StdError::NotFound { .. } => {}
@@ -1086,7 +1109,7 @@ mod crud_allocations {
             res.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: "allocation_1_addr".to_string(),
-                amount: vec![coin(500_000, DENOM_1)]
+                amount: vec![coin(500_000, DENOM_1)],
             })
         );
         let allocation = query_allocation(deps.as_ref(), String::from(ALLOCATION_2))?.unwrap();
@@ -1113,7 +1136,7 @@ mod crud_allocations {
                 send_type: SendType::Wallet {
                     receiver: deps.api.addr_validate("new-contract").unwrap()
                 },
-                balance: vec![coin(500_000, DENOM_1)]
+                balance: vec![coin(500_000, DENOM_1)],
             }
         );
 
@@ -1132,14 +1155,14 @@ mod crud_allocations {
             res.messages[0].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: "allocation_1_addr".to_string(),
-                amount: vec![coin(250_000, DENOM_1)]
+                amount: vec![coin(250_000, DENOM_1)],
             })
         );
         assert_eq!(
             res.messages[1].msg,
             CosmosMsg::Bank(BankMsg::Send {
                 to_address: "new-contract".to_string(),
-                amount: vec![coin(1_250_000, DENOM_1)]
+                amount: vec![coin(1_250_000, DENOM_1)],
             })
         );
 
@@ -1152,15 +1175,17 @@ mod crud_allocations {
 
 #[cfg(test)]
 mod flush_whitelist {
+    use cosmwasm_std::coin;
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+
+    use pfc_fee_split::fee_split_msg::ExecuteMsg;
+
     use crate::contract::execute;
     use crate::error::ContractError;
     use crate::handler::query::query_flush_whitelist;
     use crate::test_helpers::{
-        do_instantiate, one_allocation, two_allocation, CREATOR, DENOM_1, GOV_CONTRACT, USER_1,
+        CREATOR, DENOM_1, do_instantiate, GOV_CONTRACT, one_allocation, two_allocation, USER_1,
     };
-    use cosmwasm_std::coin;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use pfc_fee_split::fee_split_msg::ExecuteMsg;
 
     #[test]
     fn add_remove_whitelists() -> Result<(), ContractError> {
@@ -1245,6 +1270,7 @@ mod flush_whitelist {
 
         Ok(())
     }
+
     #[test]
     fn flush_deposit() -> Result<(), ContractError> {
         let mut deps = mock_dependencies();
@@ -1273,8 +1299,8 @@ mod flush_whitelist {
             info_with_funds.clone(),
             msg_flush.clone(),
         )
-        .err()
-        .unwrap();
+            .err()
+            .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -1296,11 +1322,13 @@ mod flush_whitelist {
 
 #[cfg(test)]
 mod ownership_changes {
+    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+
+    use pfc_fee_split::fee_split_msg::ExecuteMsg;
+
     use crate::contract::execute;
     use crate::error::ContractError;
-    use crate::test_helpers::{do_instantiate, two_allocation, CREATOR, GOV_CONTRACT, USER_1};
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use pfc_fee_split::fee_split_msg::ExecuteMsg;
+    use crate::test_helpers::{CREATOR, do_instantiate, GOV_CONTRACT, two_allocation, USER_1};
 
     #[test]
     fn change_owners() -> Result<(), ContractError> {
@@ -1319,8 +1347,8 @@ mod ownership_changes {
             info.clone(),
             msg_gov_transfer.clone(),
         )
-        .err()
-        .unwrap();
+            .err()
+            .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -1359,8 +1387,8 @@ mod ownership_changes {
             info.clone(),
             msg_accept_gov_transfer.clone(),
         )
-        .err()
-        .unwrap();
+            .err()
+            .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -1372,8 +1400,8 @@ mod ownership_changes {
             info.clone(),
             msg_accept_gov_transfer.clone(),
         )
-        .err()
-        .unwrap();
+            .err()
+            .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
