@@ -19,6 +19,7 @@ pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
         gov_contract: config.gov_contract.to_string(),
         new_gov_contract: config.new_gov_contract.map(|f| f.to_string()),
         change_gov_contract_by_height: config.change_gov_contract_by_height,
+        astroport_generator_contract: config.astroport_generator_contract.map(|f| f.to_string())
     };
 
     Ok(resp)

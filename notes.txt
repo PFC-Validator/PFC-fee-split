@@ -1,11 +1,11 @@
-terrad tx wasm store ./artifacts/pfc_fee_splitter.wasm --from testadmin --yes --fees 300000uluna --gas 2000000
+terrad tx wasm store ./artifacts/pfc_fee_splitter.wasm --from testadmin --yes --fees 300000uluna --gas 2500000
 
-# 4361 |4642 | 5154 | 5744 | 5758
+# 4361 |4642 | 5154 | 5744 | 5758 | 6049
 
 json=$(cat ./test_files/pisco_instantiate.json)
 terrad tx wasm instantiate 4361 "${json}" --admin terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902 --label pfc-fee-split --from testadmin  --fees 75000uluna --gas 500000
 # terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k
-terrad tx wasm migrate terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k 5757 '{}' --from testadmin --fees 30000uluna
+terrad tx wasm migrate terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k 6049 '{}' --from testadmin --fees 30000uluna
 terrad query wasm
 
 terrad query bank balances terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k
@@ -35,15 +35,29 @@ terrad query wasm cs smart terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf
 
 
 ###
-### LP_Staker
+### Vault
 ###
-terrad tx wasm store ./artifacts/pfc_astroport_lp_staker.wasm --from testadmin --yes --fees 300000uluna --gas 2000000
+export steak="terra18200wue9sjzz9c2p7thzn47kj6d7lzya3gj4xemrcvmlu8skcugq227qfr"
+terrad tx wasm exec $steak '{"harvest":{}}' --from testadmin --fees 30000uluna --gas 1500000
 
-# 5891
-json=$(cat ./test_files/pisco_instantiate_astro_lp_staker.json)
+terrad tx wasm store ./artifacts/pfc_vault_contract.wasm --from testadmin --yes --fees 300000uluna --gas 2000000
+
+# 5891|6041
+json=$(cat ./test_files/pisco_instantiate_vault.json)
 terrad tx wasm instantiate 5881 "${json}"  --admin terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902 --label pfc-astro-lp-staker --from testadmin  --fees 75000uluna --gas 500000
 
-# reward contract
-export reward_contract="terra10jmdvgf5tk5j3yq8c8jynxzj2ghf73sjy8l6xr85zclqpmkeyhpq6q2e36"
+# vault_contract contract
+export vault_contract="terra10jmdvgf5tk5j3yq8c8jynxzj2ghf73sjy8l6xr85zclqpmkeyhpq6q2e36"
 
-terrad tx wasm migrate $reward_contract 5891 '{}' --from testadmin --fees 30000uluna
+terrad tx wasm migrate $vault_contract 6041 '{}' --from testadmin --fees 30000uluna
+terrad tx wasm exec $vault_contract '{"set_astroport_generator":{}}' --from testadmin --fees 30000uluna
+terrad query wasm cs smart $vault_contract '{"state":{}}'
+
+##
+terrad tx wasm store ./artifacts/pfc_astroport_generator.wasm --from testadmin --yes --fees 300000uluna --gas 2000000
+# 6042
+
+json=$(cat ./test_files/pisco_instantiate_astroport.json)
+terrad tx wasm instantiate 6042 "${json}"  --admin terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902 --label pfc-astro-generator --from testadmin  --fees 75000uluna --gas 500000
+
+export astro_contract="terra10f4knvhpc0gvunnd48wqn7r5d5ce2kxfnwysn0uqnwqcv7u7a4qs2ak8vg"

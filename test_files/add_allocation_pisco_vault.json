@@ -1,0 +1,17 @@
+{
+  "add_allocation_detail": {
+    "name": "test_vault",
+    "allocation": 200,
+    "send_after": {
+      "denom": "uluna",
+      "amount": "100000"
+    },
+    "send_type": {
+      "SteakRewards": {
+        "steak": "terra18200wue9sjzz9c2p7thzn47kj6d7lzya3gj4xemrcvmlu8skcugq227qfr",
+        "receiver": "terra10jmdvgf5tk5j3yq8c8jynxzj2ghf73sjy8l6xr85zclqpmkeyhpq6q2e36"
+      }
+    }
+  }
+}
+
