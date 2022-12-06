@@ -193,7 +193,7 @@ pub fn execute_remove_flush_whitelist(
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
     let address_addr = deps.api.addr_validate(address.as_str())?;
     if FLUSH_WHITELIST.contains(deps.storage, address_addr.clone()) {
-        FLUSH_WHITELIST.remove(deps.storage, address_addr);
+        FLUSH_WHITELIST.remove(deps.storage, address_addr)?;
 
         let res = Response::new()
             .add_attribute("action", "remove_flush_whitelist")

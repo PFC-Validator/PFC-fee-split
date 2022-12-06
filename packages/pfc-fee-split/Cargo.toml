@@ -1,6 +1,6 @@
 [package]
 name = "pfc-fee-split"
-version = "0.2.3"
+version = "0.2.5"
 authors = ["PFC"]
 edition = "2021"
 description = "Common helpers for other contracts to use pfc-fee-split"
@@ -14,6 +14,6 @@ backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
 cosmwasm-std = "1.0.0"
-cw20 = "0.15.0"
+cw20 = "1.0.0"
 schemars = "0.8.10"
 serde = { version = "1.0.103", default-features = false, features = ["derive"] }

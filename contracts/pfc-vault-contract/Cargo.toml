@@ -1,11 +1,14 @@
 [package]
-
-name = "pfc-fee-splitter"
+name = "pfc-vault-contract"
 version = "0.2.5"
-authors = ["PFC <pfc-validator@protonmail.com>"]
-edition = "2018"
+authors = ["PFC","Valkyrie Protocol"]
+edition = "2021"
+description = "modified by PFC. Originally A Staking contract for Valkyrie Protocol - distribute rewards to stakers"
 license = "Apache-2.0"
-description = "smart contract to split incoming $ to multiple places"
+repository = "https://github.com/PFC-Validator/PFC-fee-split"
+homepage = "https://PFC.zone"
+#documentation = "https://docs.valkyrieprotocol.com"
+
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "contract.wasm",
@@ -17,34 +20,30 @@ exclude = [
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+
 [features]
+# for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
-# use library feature to disable all init/handle/query exports
-library=[]
 
 [dependencies]
+cosmwasm-std = { version = "1.0.0" }
+#getrandom is here so cw-storage-plus can build on wasm.
+getrandom = { version = "0.2", features = ["js"] }
+cw-storage-plus = { version = "1.0.0", features = ["iterator"] }
 cw2 = "1.0.0"
-cw-item-set = "0.7.0"
-pfc-fee-split = { version = "0.2", path = "../../packages/pfc-fee-split" }
-cosmwasm-std = "1.0.0"
-cw-storage-plus = "1.0.1"
+cw20 = "1.0.0"
 cw-controllers = "1.0.0"
-schemars = "0.8.10"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = "1.0.23"
-pfc-steak="2.1.8"
+pfc-vault = {  path = "../../packages/pfc-vault" }
+schemars = { version = "0.8.10" }
+serde = { version = "1.0.147", default-features = false, features = ["derive"] }
 
-[build-dependencies]
-protoc-rust = "2"
+#serde_json = "1.0.89"
+thiserror = "1.0.37"
 
 [dev-dependencies]
-cosmwasm-schema = "1.0.0"
-serde_json = "1.0.85"
-convert_case = "0.6.0"
-
-#[profile.release]
-#overflow-checks = true
+cosmwasm-schema = { version = "1.0.0" }
+cosmwasm-storage = { version = "1.1.6", features = ["iterator"] }
 
 [package.metadata.scripts]
 optimize = """docker run --rm -v "$(pwd)":/code \
