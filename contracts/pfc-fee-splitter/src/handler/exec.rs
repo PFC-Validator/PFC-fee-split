@@ -67,7 +67,7 @@ pub fn execute_add_allocation_detail(
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
     //let contract = deps.api.addr_validate(contract_unverified.as_str())?;
     if !send_type_unverified.verify(&env.contract.address) {
-        return Err( ContractError::Recursion {send_type: send_type_unverified.to_string(), contract: env.contract.address.to_string() })
+        return Err(ContractError::Recursion { send_type: send_type_unverified.to_string(), contract: env.contract.address.to_string() });
     }
 
     if allocation == 0 {
@@ -111,7 +111,7 @@ pub fn execute_modify_allocation_detail(
 
     //send_type_unverified.verify(deps.api)?;
     if !send_type_unverified.verify(&env.contract.address) {
-        return Err( ContractError::Recursion {send_type: send_type_unverified.to_string(), contract: env.contract.address.to_string() })
+        return Err(ContractError::Recursion { send_type: send_type_unverified.to_string(), contract: env.contract.address.to_string() });
     }
 
     if allocation == 0 {
