@@ -26,6 +26,7 @@ export factory="terra1z3y69xas85r7egusa0c7m5sam0yk97gsztqmh8f2cc6rr4s4anysudp7k0
 
 # Pair
 #export contract="terra1v2ycfsv427m28tn32gjllza4p6hpe65excyxgtuszkycp73fjams85598j"
+# also known as 'pair'
 export lp_contract="terra1v2ycfsv427m28tn32gjllza4p6hpe65excyxgtuszkycp73fjams85598j"
 export lp_token="terra1mqmrh89e42yk6vy026mawymz879d4p829560krcql3e0ws23lassk6hzx4"
 export steak_token="terra1xztnx8mm7dagn4ck3dgylaqucp6h6agw83pmyc29hnplq7355trs78fkcq"

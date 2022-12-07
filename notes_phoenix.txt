@@ -1,0 +1,51 @@
+
+# phoenix
+terrad tx wasm store ./artifacts/pfc_fee_splitter.wasm --from boneLunaAdmin --yes --fees 300000uluna --gas 2500000
+# 572 | 580 | 771 | 834
+json=$(cat ./test_files/phoenix_instantiate.json)
+terrad tx wasm instantiate 572 "${json}" --admin terra12097jggxd6q95hq0wt65ejjqsaggu8xeckwgms --label pfc-fee-split --from boneLunaAdmin --fees 75000uluna --gas 500000
+
+# terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m
+
+terrad tx wasm migrate terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m 834 '{}' --from boneLunaAdmin --fees 30000uluna
+add_alloc=$(cat ./test_files/add_allocation_phoenix_vault.json)
+terrad tx wasm exec terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m "${add_alloc}" --from boneLunaAdmin --fees 3000uluna
+terrad tx wasm exec terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m '{"reconcile":{}}' --from boneLunaAdmin --fees 3000uluna
+terrad query wasm cs smart terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m '{"allocations":{}}'
+
+
+
+
+###
+### Vault
+###
+
+terrad tx wasm store ./artifacts/pfc_vault_contract.wasm --from boneLunaAdmin --yes --fees 300000uluna --gas 2000000
+# 835
+
+export steak_hub="terra1l2nd99yze5fszmhl5svyh5fky9wm4nz4etlgnztfu4e8809gd52q04n3ea"
+export steak_token="terra17aj4ty4sz4yhgm08na8drc0v03v2jwr3waxcqrwhajj729zhl7zqnpc0ml"
+terrad tx wasm exec $steak_hub '{"harvest":{}}' --from testadmin --fees 30000uluna --gas 1500000
+
+json=$(cat ./test_files/phoenix_instantiate_vault.json)
+terrad tx wasm instantiate 835 "${json}"  --admin terra12097jggxd6q95hq0wt65ejjqsaggu8xeckwgms --label boneLuna-LP-Vault --from boneLunaAdmin  --fees 75000uluna --gas 500000
+
+# vault_contract contract
+export vault_contract="terra1tgpwsnndr7djj9smld3u57snyd5xacdgdsz6glr2nqhgu82hyz0sq644hz"
+
+terrad tx wasm migrate $vault_contract 6041 '{}' --from testadmin --fees 30000uluna
+terrad tx wasm exec $vault_contract '{"set_astroport_generator":{"generator":"terra17re5g6mrp6upu9prhg35r9y7ugagkxm9kuxpypf2gqya2wnvtg8sdfs8p8"}}' --from boneLunaAdmin --fees 30000uluna
+terrad query wasm cs smart $vault_contract '{"state":{}}'
+
+##
+terrad tx wasm store ./artifacts/pfc_astroport_generator.wasm --from boneLunaAdmin --yes --fees 30000uluna --gas 2000000
+# 836
+
+json=$(cat ./test_files/phoenix_instantiate_astroport.json)
+terrad tx wasm instantiate 836 "${json}"  --admin terra12097jggxd6q95hq0wt65ejjqsaggu8xeckwgms --label boneluna-astro-generator --from boneLunaAdmin  --fees 75000uluna --gas 500000
+
+export astro_contract="terra17re5g6mrp6upu9prhg35r9y7ugagkxm9kuxpypf2gqya2wnvtg8sdfs8p8"
+
+export lp_token="terra1h3z2zv6aw94fx5263dy6tgz6699kxmewlx3vrcu4jjrudg6xmtyqk6vt0u"
+
+terrad tx wasm exec $lp_token '{"send":{"contract":"terra1tgpwsnndr7djj9smld3u57snyd5xacdgdsz6glr2nqhgu82hyz0sq644hz", "amount":"1000000", "msg":"e30="}}' --from boneLunaAdmin  --fees 3000uluna
