@@ -44,7 +44,8 @@ terrad tx wasm store ./artifacts/pfc_astroport_generator.wasm --from boneLunaAdm
 json=$(cat ./test_files/phoenix_instantiate_astroport.json)
 terrad tx wasm instantiate 836 "${json}"  --admin terra12097jggxd6q95hq0wt65ejjqsaggu8xeckwgms --label boneluna-astro-generator --from boneLunaAdmin  --fees 75000uluna --gas 500000
 
-export astro_contract="terra17re5g6mrp6upu9prhg35r9y7ugagkxm9kuxpypf2gqya2wnvtg8sdfs8p8"
+#export astro_contract="terra17re5g6mrp6upu9prhg35r9y7ugagkxm9kuxpypf2gqya2wnvtg8sdfs8p8"
+export astro_contract="terra12jvzm2cy33zspvp8asn7ns98jmyk489es2cy2j8k926mr2n7metqha430q"
 
 export lp_token="terra1h3z2zv6aw94fx5263dy6tgz6699kxmewlx3vrcu4jjrudg6xmtyqk6vt0u"
 
