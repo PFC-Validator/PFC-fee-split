@@ -10,6 +10,7 @@ use crate::tests::{
 use pfc_vault::mock_querier::custom_deps;
 use pfc_vault::test_constants::liquidity::{LP_LIQUIDITY_TOKEN, LP_REWARD_TOKEN};
 use pfc_vault::test_constants::REWARD_TOKEN;
+use pfc_vault::vault::TokenBalance;
 
 #[test]
 fn succeed() {
@@ -89,8 +90,8 @@ fn succeed() {
     let token_attr = find_attribute(&res.attributes, "amount_staked").unwrap();
     assert_eq!(token_attr.value, "100");
 
-    // should return the LP & Reward tokens
-    assert_eq!(res.messages.len(), 2);
+    // should return the LP tokens
+    assert_eq!(res.messages.len(), 1);
     let exec = find_exec(&res.messages[0]).unwrap();
     assert_eq!(
         exec,
@@ -105,21 +106,18 @@ fn succeed() {
             funds: vec![],
         }
     );
-    let exec = find_exec(&res.messages[1]).unwrap();
+    let qry = query_staker_info(deps.as_ref(), &env, &sender1.sender);
+    assert_eq!(qry.estimated_rewards.len(), 1);
     assert_eq!(
-        exec,
-        &WasmMsg::Execute {
-            contract_addr: LP_REWARD_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
-                contract: sender1.sender.to_string(),
-                amount: Uint128::from(1_000u64),
-                msg: Default::default(),
-            })
-            .unwrap(),
-            funds: vec![],
+        qry.estimated_rewards[0],
+        TokenBalance {
+            amount: Decimal::new(Uint128::new(1_000u128)),
+            token: Addr::unchecked(REWARD_TOKEN),
+            last_block_rewards_seen: 0,
         }
     );
-    reward_tally -= Uint128::new(1_000u128);
+
+    //    reward_tally -= Uint128::new(1_000u128);
 
     let res =
         exec_send_reward_token(&mut deps, &env, &sender_reward, Uint128::new(2_000u128)).unwrap();
@@ -147,17 +145,17 @@ fn succeed() {
     assert_eq!(
         exec,
         &WasmMsg::Execute {
-            contract_addr: LP_REWARD_TOKEN.to_string(),
+            contract_addr: REWARD_TOKEN.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: sender1.sender.to_string(),
-                amount: Uint128::from(666u64),
+                amount: Uint128::from(1666u64),
                 msg: Default::default(),
             })
             .unwrap(),
             funds: vec![],
         }
     );
-    reward_tally -= Uint128::new(666u128);
+    reward_tally -= Uint128::new(1666u128);
 
     let info2 = query_staker_info(deps.as_ref(), &env, &sender2.sender);
     assert_eq!(info2.total_staked, Uint128::new(200u128));
@@ -267,22 +265,18 @@ fn test_4() {
     let token_attr = find_attribute(&res.attributes, "total_staked").unwrap();
     assert_eq!(token_attr.value, "500");
 
-    assert_eq!(res.messages.len(), 1);
-    let exec = find_exec(&res.messages[0]).unwrap();
+    assert_eq!(res.messages.len(), 0);
+    let qry = query_staker_info(deps.as_ref(), &env, &sender1.sender);
+    assert_eq!(qry.estimated_rewards.len(), 1);
     assert_eq!(
-        exec,
-        &WasmMsg::Execute {
-            contract_addr: REWARD_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
-                contract: sender1.sender.to_string(),
-                amount: Uint128::from(1000u64),
-                msg: Default::default(),
-            })
-            .unwrap(),
-            funds: vec![],
+        qry.estimated_rewards[0],
+        TokenBalance {
+            amount: Decimal::new(Uint128::new(1000u128)),
+            token: Addr::unchecked(REWARD_TOKEN),
+            last_block_rewards_seen: 0,
         }
     );
-    reward_tally -= Uint128::new(1_000u128);
+    //    reward_tally -= Uint128::new(1_000u128);
 
     env.block.height += 1;
 
@@ -306,15 +300,16 @@ fn test_4() {
             contract_addr: LP_REWARD_TOKEN.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: sender1.sender.to_string(),
-                amount: Uint128::from(1_200u64),
+                amount: Uint128::from(2_200u64),
                 msg: Default::default(),
             })
             .unwrap(),
             funds: vec![],
         }
     );
-    reward_tally -= Uint128::new(1_200);
-
+    reward_tally -= Uint128::new(2_200);
+    let qry = query_staker_info(deps.as_ref(), &env, &sender1.sender);
+    assert_eq!(qry.estimated_rewards, vec![]);
     let res = exec_withdraw(&mut deps, env.clone(), sender2.clone()).unwrap();
     env.block.height += 1;
 

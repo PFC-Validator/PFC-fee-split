@@ -1,13 +1,13 @@
 use cosmwasm_std::{Addr, Decimal, Deps, Env, Order, StdResult, Storage};
 use pfc_vault::errors::ContractError;
-use pfc_vault::vault::query_msgs::{
-    ConfigResponse, StakerInfoResponse, StateResponse,
-};
+use pfc_vault::vault::query_msgs::{ConfigResponse, StakerInfoResponse, StateResponse};
 use pfc_vault::vault::TokenBalance;
 use std::collections::HashMap;
+use std::ops::Add;
 
 use crate::states::{
-    Config, StakerInfo, UserTokenClaim, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM, USER_LAST_CLAIM,
+    Config, PendingClaimAmount, StakerInfo, UserTokenClaim, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM,
+    USER_LAST_CLAIM, USER_PENDING_CLAIM,
 };
 
 pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
@@ -19,7 +19,7 @@ pub fn query_config(deps: Deps) -> Result<ConfigResponse, ContractError> {
         gov_contract: config.gov_contract.to_string(),
         new_gov_contract: config.new_gov_contract.map(|f| f.to_string()),
         change_gov_contract_by_height: config.change_gov_contract_by_height,
-        astroport_generator_contract: config.astroport_generator_contract.map(|f| f.to_string())
+        astroport_generator_contract: config.astroport_generator_contract.map(|f| f.to_string()),
     };
 
     Ok(resp)
@@ -47,13 +47,52 @@ pub fn query_staker_info(
 
     let staker_info: StakerInfo = StakerInfo::load_or_default(deps.storage, &staker_raw)?;
 
-    let rewards = calc_token_claims(deps.storage, &staker_raw)?;
+    let pending_claim = USER_PENDING_CLAIM
+        .may_load(deps.storage, staker_raw.clone())?
+        .unwrap_or_default();
+
+    let rewards_vec = calc_token_claims(deps.storage, &staker_raw)?;
+    let pending = pending_claim
+        .into_iter()
+        .map(|f| {
+            (
+                f.token.clone(),
+                PendingClaimAmount {
+                    amount: f.amount,
+                    token: f.token,
+                },
+            )
+        })
+        .collect::<HashMap<Addr, PendingClaimAmount>>();
+    let mut rewards = rewards_vec
+        .into_iter()
+        .map(|f| {
+            (
+                f.token.clone(),
+                TokenBalance {
+                    amount: f.amount,
+                    token: f.token.clone(),
+                    last_block_rewards_seen: f.last_block_rewards_seen,
+                },
+            )
+        })
+        .collect::<HashMap<Addr, TokenBalance>>();
+    for pending_tb in pending {
+        rewards
+            .entry(pending_tb.0)
+            .and_modify(|e| e.amount = e.amount.add(Decimal::new(pending_tb.1.amount)))
+            .or_insert(TokenBalance {
+                amount: Decimal::new(pending_tb.1.amount),
+                token: pending_tb.1.token.clone(),
+                last_block_rewards_seen: 0,
+            });
+    }
     let last_claim = USER_LAST_CLAIM.may_load(deps.storage, staker_raw)?;
 
     Ok(StakerInfoResponse {
         staker,
         total_staked: staker_info.bond_amount,
-        estimated_rewards: rewards,
+        estimated_rewards: rewards.into_iter().map(|f| f.1).collect(),
         last_claimed: last_claim,
     })
 }

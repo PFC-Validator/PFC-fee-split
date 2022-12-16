@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use cosmwasm_std::{
-    Addr, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult,
-    Storage, to_binary, Uint128, WasmMsg,
+    to_binary, Addr, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Order, Response, StdError,
+    StdResult, Storage, Uint128, WasmMsg,
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 
@@ -11,9 +11,10 @@ use pfc_vault::message_factories;
 use pfc_vault::vault::TokenBalance;
 
 use crate::states::{
-    ADMIN, Config, NUM_STAKED, StakerInfo, TOTAL_REWARDS, USER_CLAIM, USER_LAST_CLAIM,
-    UserTokenClaim,
+    Config, PendingClaimAmount, StakerInfo, UserTokenClaim, ADMIN, NUM_STAKED, TOTAL_REWARDS,
+    USER_CLAIM, USER_LAST_CLAIM, USER_PENDING_CLAIM,
 };
+use crate::utils::merge_claims;
 
 pub fn bond(
     deps: DepsMut,
@@ -43,7 +44,8 @@ pub fn bond(
         )?;
         //    } else {
     }
-    let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
+    //  let msgs = do_token_claims_and_gen_messages(deps.storage, env.block.height, &sender_addr_raw)?;
+    update_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
     // Increase bond_amount
     let num_staked = NUM_STAKED.update(deps.storage, |num| -> StdResult<Uint128> {
@@ -52,16 +54,15 @@ pub fn bond(
     staker_info.bond_amount += amount;
     staker_info.save(deps.storage)?;
 
-    Ok(Response::new()
-        .add_attributes(vec![
-            ("action", "bond"),
-            ("owner", &sender_addr),
-            ("amount_bonded", &amount.to_string()),
-            ("amount_staked", &staker_info.bond_amount.to_string()),
-            // ("amount_per_stake", &amount_per_stake.to_string()),
-            ("total_staked", &num_staked.to_string()),
-        ])
-        .add_messages(msgs))
+    Ok(Response::new().add_attributes(vec![
+        ("action", "bond"),
+        ("owner", &sender_addr),
+        ("amount_bonded", &amount.to_string()),
+        ("amount_staked", &staker_info.bond_amount.to_string()),
+        // ("amount_per_stake", &amount_per_stake.to_string()),
+        ("total_staked", &num_staked.to_string()),
+    ]))
+    // .add_messages(msgs))
 }
 
 ///
@@ -83,7 +84,8 @@ pub fn unbond(
         )));
     }
 
-    let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
+    //  let msgs = do_token_claims_and_gen_messages(deps.storage, env.block.height, &sender_addr_raw)?;
+    update_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
     // Decrease bond_amount
     let num_staked = NUM_STAKED.update(deps.storage, |num| -> StdResult<Uint128> {
@@ -107,7 +109,7 @@ pub fn unbond(
                 msg: Default::default(),
             },
         ))
-        .add_messages(msgs)
+        // .add_messages(msgs)
         .add_attribute("owner", sender_addr_raw.to_string())
         .add_attribute("amount", amount.to_string())
         .add_attribute("amount_staked", &staker_info.bond_amount.to_string())
@@ -166,13 +168,17 @@ pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
     let sender_addr_raw = info.sender;
 
     let staker_info = StakerInfo::load_or_default(deps.storage, &sender_addr_raw)?;
+    let has_pending = USER_PENDING_CLAIM
+        .may_load(deps.storage, sender_addr_raw.clone())?
+        .unwrap_or_default();
 
-    if staker_info.bond_amount.is_zero() {
+    if staker_info.bond_amount.is_zero() && has_pending.is_empty() {
         staker_info.delete(deps.storage);
         Err(ContractError::NoneBonded {})
     } else {
         let num_staked = NUM_STAKED.load(deps.storage)?;
-        let msgs = do_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
+        let msgs =
+            do_token_claims_and_gen_messages(deps.storage, env.block.height, &sender_addr_raw)?;
 
         Ok(Response::new()
             .add_attributes(vec![
@@ -273,7 +279,11 @@ pub fn execute_set_new_astroport_generator(
     generator_contract: Option<String>,
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
-    let astroport_generator_contract = if let Some(x) = generator_contract { Some(deps.api.addr_validate(&x)?) } else { None };
+    let astroport_generator_contract = if let Some(x) = generator_contract {
+        Some(deps.api.addr_validate(&x)?)
+    } else {
+        None
+    };
     let mut config = Config::load(deps.storage)?;
 
     config.new_gov_contract = astroport_generator_contract;
@@ -314,12 +324,27 @@ pub fn execute_accept_gov_contract(
     }
 }
 
-pub(crate) fn do_token_claims(
+/// calculates the amount of claims outstanding, storing it in USER_PENDING_CLAIM but not sending it
+pub(crate) fn update_token_claims(
     storage: &mut dyn Storage,
     block_height: u64,
     addr: &Addr,
-) -> Result<Vec<CosmosMsg>, ContractError> {
-    let mut resp: Vec<CosmosMsg> = vec![];
+) -> Result<(), ContractError> {
+    let previous = USER_PENDING_CLAIM
+        .may_load(storage, addr.clone())?
+        .unwrap_or_default();
+    let current = get_current_claims(storage, block_height, addr)?;
+    let merged = merge_claims(&previous, &current);
+    USER_PENDING_CLAIM.save(storage, addr.clone(), &merged)?;
+    Ok(())
+}
+
+pub(crate) fn get_current_claims(
+    storage: &mut dyn Storage,
+    block_height: u64,
+    addr: &Addr,
+) -> Result<Vec<PendingClaimAmount>, ContractError> {
+    let mut resp: Vec<PendingClaimAmount> = vec![];
     let mut new_claims: Vec<UserTokenClaim> = vec![];
 
     let tallies = TOTAL_REWARDS
@@ -365,16 +390,10 @@ pub(crate) fn do_token_claims(
         });
 
         if !amt_to_send.is_zero() {
-            let msg = Cw20ExecuteMsg::Send {
-                contract: addr.to_string(),
+            resp.push(PendingClaimAmount {
+                token: token.0,
                 amount: amt_to_send,
-                msg: Default::default(),
-            };
-            resp.push(CosmosMsg::Wasm(WasmMsg::Execute {
-                contract_addr: token.0.to_string(),
-                msg: to_binary(&msg)?,
-                funds: vec![],
-            }))
+            });
         }
     }
     /*
@@ -384,6 +403,44 @@ pub(crate) fn do_token_claims(
         );
     */
     USER_CLAIM.save(storage, addr.clone(), &new_claims)?;
+    Ok(resp)
+}
+
+pub(crate) fn gen_claim_messages(
+    storage: &mut dyn Storage,
+    addr: &Addr,
+    clear_pending: bool,
+) -> Result<Vec<CosmosMsg>, ContractError> {
+    let mut resp: Vec<CosmosMsg> = vec![];
+    if let Some(pending) = USER_PENDING_CLAIM.may_load(storage, addr.clone())? {
+        for claim_amount in pending {
+            if !claim_amount.amount.is_zero() {
+                let msg = Cw20ExecuteMsg::Send {
+                    contract: addr.to_string(),
+                    amount: claim_amount.amount,
+                    msg: Default::default(),
+                };
+                resp.push(CosmosMsg::Wasm(WasmMsg::Execute {
+                    contract_addr: claim_amount.token.to_string(),
+                    msg: to_binary(&msg)?,
+                    funds: vec![],
+                }))
+            }
+        }
+        if clear_pending {
+            USER_PENDING_CLAIM.save(storage, addr.clone(), &vec![])?
+        }
+    }
+    Ok(resp)
+}
+
+pub(crate) fn do_token_claims_and_gen_messages(
+    storage: &mut dyn Storage,
+    block_height: u64,
+    addr: &Addr,
+) -> Result<Vec<CosmosMsg>, ContractError> {
+    update_token_claims(storage, block_height, addr)?;
+    let resp = gen_claim_messages(storage, addr, true)?;
 
     Ok(resp)
 }

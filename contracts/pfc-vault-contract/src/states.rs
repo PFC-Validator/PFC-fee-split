@@ -21,9 +21,16 @@ pub struct UserTokenClaim {
     pub last_claimed_amount: Decimal,
     pub token: Addr,
 }
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
+pub struct PendingClaimAmount {
+    pub amount: Uint128,
+    pub token: Addr,
+}
 
 /// Stores total token rewards PER UNIT NFT since the beginning of time, keyed by CW20 address
 pub const USER_CLAIM: Map<Addr, Vec<UserTokenClaim>> = Map::new("user_claim_v1");
+/// Stores total token rewards PER UNIT NFT since the beginning of time, keyed by CW20 address
+pub const USER_PENDING_CLAIM: Map<Addr, Vec<PendingClaimAmount>> = Map::new("user_pending_claim_v1");
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct Config {

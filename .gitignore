@@ -21,8 +21,9 @@ code_id*.json
 .idea
 
 # ignore compiled objects
-/artifacts/
-**/artifacts/
+/artifacts/*-aarch64.wasm
+/artifacts/checksums_intermediate.txt
+#**/artifacts/
 #
 /*.json
 /contracts/*/.env

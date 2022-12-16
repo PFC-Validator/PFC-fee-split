@@ -7,20 +7,21 @@ use cosmwasm_std::{
 };
 use cw20::Cw20ReceiveMsg;
 use pfc_vault::errors::ContractError;
-use pfc_vault::vault::execute_msgs::{Cw20HookMsg, ExecuteMsg, InstantiateMsg};
-use pfc_vault::vault::query_msgs::{QueryMsg, StakerInfoResponse};
 use pfc_vault::mock_querier::CustomDeps;
 use pfc_vault::test_constants::liquidity::{
     lp_env, LP_DISTRIBUTION_SCHEDULE1, LP_DISTRIBUTION_SCHEDULE2, LP_LIQUIDITY_TOKEN,
     LP_REWARD_TOKEN,
 };
 use pfc_vault::test_constants::{default_sender, DEFAULT_SENDER, REWARD_TOKEN};
+use pfc_vault::vault::execute_msgs::{Cw20HookMsg, ExecuteMsg, InstantiateMsg};
+use pfc_vault::vault::query_msgs::{QueryMsg, StakerInfoResponse};
 
 pub mod bond;
 pub mod instantiate;
 pub mod unbond;
 pub mod update_config;
 //pub mod validate;
+pub mod merge;
 pub mod withdraw;
 
 pub const SENDER_1: &str = "terra1fmcjjt6yc9wqup2r06urnrd928jhrde6gcld6n";
@@ -141,17 +142,6 @@ pub fn init_default(
 
     if let Some(total_bonded) = total_bonded {
         exec_bond(deps, &env, &default_sender().sender, total_bonded).unwrap();
-        /*
-              let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
-                  sender: info.sender.to_string(),
-                  amount: total_bonded,
-                  msg: to_binary(&Cw20HookMsg::Bond {}).unwrap(),
-              });
-
-              let mut info = info.clone();
-              info.sender = Addr::unchecked(LP_LIQUIDITY_TOKEN);
-              execute(deps.as_mut(), env.clone(), info.clone(), msg).unwrap();
-        */
     }
 
     deps.querier.plus_token_balances(&[
