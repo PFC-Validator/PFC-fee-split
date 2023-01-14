@@ -1,6 +1,6 @@
 [package]
 name = "pfc-vault-contract"
-version = "0.2.6"
+version = "0.2.7"
 authors = ["PFC","Valkyrie Protocol"]
 edition = "2021"
 description = "modified by PFC. Originally A Staking contract for Valkyrie Protocol - distribute rewards to stakers"

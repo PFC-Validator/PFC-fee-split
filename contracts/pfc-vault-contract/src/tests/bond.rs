@@ -64,10 +64,15 @@ fn succeed() {
         exec,
         &WasmMsg::Execute {
             contract_addr: REWARD_TOKEN.to_string(),
+            /*
             msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: sender1.to_string(),
                 amount: Uint128::from(500_000u64),
                 msg: Default::default(),
+            })*/
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: sender1.to_string(),
+                amount: Uint128::from(500_000u64),
             })
             .unwrap(),
             funds: vec![],

@@ -103,10 +103,10 @@ pub fn unbond(
     Ok(Response::new()
         .add_message(message_factories::wasm_execute(
             &config.lp_token,
-            &Cw20ExecuteMsg::Send {
-                contract: sender_addr_raw.to_string(),
+            &Cw20ExecuteMsg::Transfer {
+                recipient: sender_addr_raw.to_string(),
                 amount,
-                msg: Default::default(),
+                //msg: Default::default(),
             },
         ))
         // .add_messages(msgs)
@@ -415,11 +415,19 @@ pub(crate) fn gen_claim_messages(
     if let Some(pending) = USER_PENDING_CLAIM.may_load(storage, addr.clone())? {
         for claim_amount in pending {
             if !claim_amount.amount.is_zero() {
+                /*
                 let msg = Cw20ExecuteMsg::Send {
                     contract: addr.to_string(),
                     amount: claim_amount.amount,
                     msg: Default::default(),
                 };
+
+                 */
+                let msg = Cw20ExecuteMsg::Transfer {
+                    recipient: addr.to_string(),
+                    amount: claim_amount.amount,
+                };
+
                 resp.push(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: claim_amount.token.to_string(),
                     msg: to_binary(&msg)?,

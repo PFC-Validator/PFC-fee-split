@@ -21,7 +21,7 @@ terrad query wasm cs smart terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf
 ###
 
 terrad tx wasm store ./artifacts/pfc_vault_contract.wasm --from boneLunaAdmin --yes --fees 300000uluna --gas 2000000
-# 835
+# 835|871|872
 
 export steak_hub="terra1l2nd99yze5fszmhl5svyh5fky9wm4nz4etlgnztfu4e8809gd52q04n3ea"
 export steak_token="terra17aj4ty4sz4yhgm08na8drc0v03v2jwr3waxcqrwhajj729zhl7zqnpc0ml"
@@ -33,7 +33,8 @@ terrad tx wasm instantiate 835 "${json}"  --admin terra12097jggxd6q95hq0wt65ejjq
 # vault_contract contract
 export vault_contract="terra1tgpwsnndr7djj9smld3u57snyd5xacdgdsz6glr2nqhgu82hyz0sq644hz"
 
-terrad tx wasm migrate $vault_contract 6041 '{}' --from testadmin --fees 30000uluna
+terrad tx wasm migrate $vault_contract 872 '{}' --from boneLunaAdmin --fees 30000uluna
+
 terrad tx wasm exec $vault_contract '{"set_astroport_generator":{"generator":"terra17re5g6mrp6upu9prhg35r9y7ugagkxm9kuxpypf2gqya2wnvtg8sdfs8p8"}}' --from boneLunaAdmin --fees 30000uluna
 terrad query wasm cs smart $vault_contract '{"state":{}}'
 

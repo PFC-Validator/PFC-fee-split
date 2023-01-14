@@ -58,10 +58,14 @@ fn succeed() {
         res.messages,
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: Addr::unchecked(LP_REWARD_TOKEN).to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
+            /*msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: Addr::unchecked(SENDER_1).to_string(),
                 amount: Uint128::new(1_000u128),
                 msg: Default::default(),
+            })*/
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: Addr::unchecked(SENDER_1).to_string(),
+                amount: Uint128::new(1_000u128),
             })
             .unwrap(),
             funds: vec![],
@@ -97,10 +101,16 @@ fn succeed() {
         exec,
         &WasmMsg::Execute {
             contract_addr: LP_LIQUIDITY_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
-                contract: sender1.sender.to_string(),
-                amount: Uint128::from(100u64),
-                msg: Default::default(),
+            /*            msg: to_binary(&Cw20ExecuteMsg::Send {
+                           contract: sender1.sender.to_string(),
+                           amount: Uint128::from(100u64),
+                           msg: Default::default(),
+                       })
+
+            */
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: sender1.sender.to_string(),
+                amount: Uint128::new(100u128),
             })
             .unwrap(),
             funds: vec![],
@@ -146,10 +156,14 @@ fn succeed() {
         exec,
         &WasmMsg::Execute {
             contract_addr: REWARD_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
+            /*            msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: sender1.sender.to_string(),
                 amount: Uint128::from(1666u64),
                 msg: Default::default(),
+            })*/
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: sender1.sender.to_string(),
+                amount: Uint128::new(1_666u128),
             })
             .unwrap(),
             funds: vec![],
@@ -190,10 +204,10 @@ fn succeed() {
         exec,
         &WasmMsg::Execute {
             contract_addr: LP_REWARD_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
-                contract: sender2.sender.to_string(),
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: sender2.sender.to_string(),
                 amount: Uint128::from(3_333u64),
-                msg: Default::default(),
+                //msg: Default::default(),
             })
             .unwrap(),
             funds: vec![],
@@ -298,10 +312,14 @@ fn test_4() {
         exec,
         &WasmMsg::Execute {
             contract_addr: LP_REWARD_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
+            /*msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: sender1.sender.to_string(),
                 amount: Uint128::from(2_200u64),
                 msg: Default::default(),
+            })*/
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: sender1.sender.to_string(),
+                amount: Uint128::new(2_200u128),
             })
             .unwrap(),
             funds: vec![],
@@ -324,10 +342,14 @@ fn test_4() {
         exec,
         &WasmMsg::Execute {
             contract_addr: LP_REWARD_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
+            /*msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: sender2.sender.to_string(),
                 amount: Uint128::from(1_800u64),
                 msg: Default::default(),
+            })*/
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: sender2.sender.to_string(),
+                amount: Uint128::from(1_800u128),
             })
             .unwrap(),
             funds: vec![],
@@ -402,10 +424,14 @@ fn test_5() {
         exec,
         &WasmMsg::Execute {
             contract_addr: LP_REWARD_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
+            /*msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: sender1.sender.to_string(),
                 amount: Uint128::from(3_000u64),
                 msg: Default::default(),
+            })*/
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: sender1.sender.to_string(),
+                amount: Uint128::new(3_000u128),
             })
             .unwrap(),
             funds: vec![],
@@ -427,10 +453,14 @@ fn test_5() {
         exec,
         &WasmMsg::Execute {
             contract_addr: LP_REWARD_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
+            /*            msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: sender2.sender.to_string(),
                 amount: Uint128::from(1_000u64),
                 msg: Default::default(),
+            })*/
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: sender2.sender.to_string(),
+                amount: Uint128::new(1_000u128),
             })
             .unwrap(),
             funds: vec![],

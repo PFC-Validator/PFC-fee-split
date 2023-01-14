@@ -74,10 +74,14 @@ fn claim_after_unbond() {
         res.messages,
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: Addr::unchecked(REWARD_TOKEN).to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Send {
+            /*msg: to_binary(&Cw20ExecuteMsg::Send {
                 contract: info.sender.to_string(),
                 amount: Uint128::new(2_000u128),
                 msg: Default::default(),
+            })*/
+            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+                recipient: info.sender.to_string(),
+                amount: Uint128::from(2_000u128),
             })
             .unwrap(),
             funds: vec![],
