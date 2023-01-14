@@ -2,15 +2,17 @@ use astroport::generator_proxy::{
     CallbackMsg, ConfigResponse, Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg,
 };
 use cosmwasm_std::{
-    Addr, Binary, CosmosMsg, Deps, DepsMut, entry_point, Env, from_binary, MessageInfo, Response,
-    StdError, StdResult, SubMsg, to_binary, Uint128, WasmMsg,
+    entry_point, from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
 };
-use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg, Cw20ReceiveMsg};
 use cw2::set_contract_version;
+use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg, Cw20ReceiveMsg};
 
-use pfc_vault::EmptyMigrateMsg;
-use pfc_vault::vault::execute_msgs::{Cw20HookMsg as VaultCw20HookMsg, ExecuteMsg as VaultExecuteMsg};
+use pfc_vault::vault::execute_msgs::{
+    Cw20HookMsg as VaultCw20HookMsg, ExecuteMsg as VaultExecuteMsg,
+};
 use pfc_vault::vault::query_msgs::{QueryMsg as VaultQueryMsg, StakerInfoResponse};
+use pfc_vault::EmptyMigrateMsg;
 
 use crate::error::ContractError;
 use crate::state::{Config, CONFIG};
@@ -195,7 +197,7 @@ fn withdraw(
         funds: vec![],
         msg: to_binary(&ExecuteMsg::Callback(
             CallbackMsg::TransferLpTokensAfterWithdraw {
-                account: astroport::asset::addr_validate_to_lower(deps.api, &account)?,
+                account: astroport::asset::addr_validate_to_lower(deps.api, account)?,
                 prev_lp_balance,
             },
         ))?,
@@ -272,8 +274,13 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                     staker: env.contract.address.to_string(),
                 },
             )?;
-            let pending_reward = res.estimated_rewards.iter().find(|f| f.token == cfg.reward_token_addr).map(|tb| tb.amount).unwrap_or_default();
-            let pending_reward_uint128: Uint128 = Uint128::one()*pending_reward;
+            let pending_reward = res
+                .estimated_rewards
+                .iter()
+                .find(|f| f.token == cfg.reward_token_addr)
+                .map(|tb| tb.amount)
+                .unwrap_or_default();
+            let pending_reward_uint128: Uint128 = Uint128::one() * pending_reward;
             to_binary(&(pending_reward_uint128))
         }
         QueryMsg::RewardInfo {} => {

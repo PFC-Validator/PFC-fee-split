@@ -1,6 +1,6 @@
 [package]
 name = "pfc-astroport-generator"
-version = "0.2.5"
+version = "0.2.8"
 authors = ["_astromartian"]
 edition = "2021"
 

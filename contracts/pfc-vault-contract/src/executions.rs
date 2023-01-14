@@ -112,7 +112,7 @@ pub fn unbond(
         // .add_messages(msgs)
         .add_attribute("owner", sender_addr_raw.to_string())
         .add_attribute("amount", amount.to_string())
-        .add_attribute("amount_staked", &staker_info.bond_amount.to_string())
+        .add_attribute("amount_staked", staker_info.bond_amount.to_string())
         .add_attribute("total_staked", num_staked.to_string()))
 }
 
