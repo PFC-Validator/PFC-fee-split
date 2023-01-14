@@ -1,0 +1,17 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "stars1kdtdg0lvy8asxn8clnjfpusuvf93zuknxrad8g",
+  "allocation": [
+    {
+      "name": "testnet",
+      "allocation": 1,
+      "send_after": {"denom": "ustars","amount": "1000000"},
+      "send_type": { "Wallet": {
+        "receiver": "stars1kdtdg0lvy8asxn8clnjfpusuvf93zuknxrad8g"
+      }
+      }
+    }
+  ]
+
+}
+
