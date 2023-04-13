@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "oneOf": [
+    {
+      "description": "lists all fees Return Type: AllocationResponse",
+      "type": "object",
+      "required": [
+        "allocations"
+      ],
+      "properties": {
+        "allocations": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_after": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "Returns allocation with name 'name' Return Type: AllocationHolding",
+      "type": "object",
+      "required": [
+        "allocation"
+      ],
+      "properties": {
+        "allocation": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "returns ownership",
+      "type": "object",
+      "required": [
+        "ownership"
+      ],
+      "properties": {
+        "ownership": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    {
+      "description": "returns list of addresses allowed to flush",
+      "type": "object",
+      "required": [
+        "flush_whitelist"
+      ],
+      "properties": {
+        "flush_whitelist": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    }
+  ]
+}

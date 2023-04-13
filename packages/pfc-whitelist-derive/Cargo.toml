@@ -1,0 +1,15 @@
+[package]
+name = "pfc-whitelist-derive"
+version = "0.1.0"
+authors = ["PFC"]
+edition = "2021"
+description = "Common helpers for other contracts to use pfc-dust-collectors based on DA0 DA0 'dao-macros'"
+license = "Apache-2.0"
+repository = "https://github.com/PFC-Validator/pfc-fee-split"
+[lib]
+proc-macro=true
+
+[dependencies]
+proc-macro2 = "1.0.51"
+quote= "1.0.23"
+syn="1.0.108"
