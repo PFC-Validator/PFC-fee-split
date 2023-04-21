@@ -23,3 +23,18 @@ NFT Staking contracts
 
 ### pfc-vault
 Simple vault contract.
+
+# how do/can they interact ?
+
+![](../images/overview.png "overview")
+
+native denoms comes into the system via 'fee-splitter' contract. the funds get split via the allocation table
+and either TRANSFERed to a wallet, or SEND to a smart contract, in this case, the 'vault' contract.
+
+the vault accumulates the denoms, and allows people who hold the governance token (in astroport's case the LP token of the pair) to claim their portion when they choose.
+
+the person needs to deposit their governance token in to start accumulating rewards.
+
+the astroport-generator sits between the end-user and the vault itself, so the vault only sees a single address (the astroport smart contract) as the holder of it's LP tokens.
+it forwards the 'claim' function from astroport, and send rewards (in total for the smart contract).
+Astrport then determines how much of that sends to the individual. (how is out of scope)
