@@ -207,8 +207,8 @@ pub fn update_config(
 
     if let Some(token) = token {
         if let Some(reward) = TOTAL_REWARDS.may_load(deps.storage, config.token)? {
-            if !reward.is_zero() {
-                return Err(ContractError::RewardsPresent);
+            if !reward.amount.is_zero() {
+                return Err(ContractError::RewardsPresent {});
             }
         }
         config.token = deps.api.addr_validate(token.as_str())?;
@@ -372,24 +372,14 @@ pub(crate) fn get_current_claims(
         .map(|ui| (ui.token.clone(), ui))
         .collect::<HashMap<Addr, &UserTokenClaim>>();
 
-    /*
-        eprintln!(
-            "do_token_claims  tallies {}",
-            serde_json::to_string(&tallies).unwrap()
-        );
-    */
     for token in tallies {
         let amt = if let Some(last_claim) = user_info.get(&token.0) {
             token.1.amount - last_claim.last_claimed_amount
         } else {
             token.1.amount
         };
-        //      eprintln!("do_token_claim  amt/share {}", amt);
 
         let amt_to_send = staker_info.bond_amount * amt;
-        // amt.checked_mul(bond_amount)?;
-        //.floor();
-        //    eprintln!("do_token_claim  amt_to_send {}", amt_to_send);
         new_claims.push(UserTokenClaim {
             last_claimed_amount: token.1.amount,
             token: token.1.token,
@@ -402,12 +392,7 @@ pub(crate) fn get_current_claims(
             });
         }
     }
-    /*
-        eprintln!(
-            "do_token_claim u-info {}",
-            serde_json::to_string(&user_info).unwrap()
-        );
-    */
+
     USER_CLAIM.save(storage, addr.clone(), &new_claims)?;
     Ok(resp)
 }
@@ -421,14 +406,6 @@ pub(crate) fn gen_claim_messages(
     if let Some(pending) = USER_PENDING_CLAIM.may_load(storage, addr.clone())? {
         for claim_amount in pending {
             if !claim_amount.amount.is_zero() {
-                /*
-                let msg = Cw20ExecuteMsg::Send {
-                    contract: addr.to_string(),
-                    amount: claim_amount.amount,
-                    msg: Default::default(),
-                };
-
-                 */
                 let msg = Cw20ExecuteMsg::Transfer {
                     recipient: addr.to_string(),
                     amount: claim_amount.amount,
