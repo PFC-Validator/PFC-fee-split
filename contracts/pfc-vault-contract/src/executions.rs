@@ -196,7 +196,7 @@ pub fn update_config(
     info: MessageInfo,
     token: Option<String>,
     name: Option<String>,
-    lp_token: Option<String>,
+    //   lp_token: Option<String>,
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
 
@@ -213,12 +213,12 @@ pub fn update_config(
         config.name = name;
         response = response.add_attribute("is_updated_name", "true");
     }
-
-    if let Some(lp_token) = lp_token {
-        config.lp_token = deps.api.addr_validate(lp_token.as_str())?;
-        response = response.add_attribute("is_updated_lp_token", "true");
-    }
-
+    /*
+        if let Some(lp_token) = lp_token {
+            config.lp_token = deps.api.addr_validate(lp_token.as_str())?;
+            response = response.add_attribute("is_updated_lp_token", "true");
+        }
+    */
     config.save(deps.storage)?;
 
     Ok(response)
