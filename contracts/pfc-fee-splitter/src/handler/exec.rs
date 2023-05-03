@@ -76,6 +76,11 @@ pub fn execute_add_allocation_detail(
     if allocation == 0 {
         return Err(ContractError::AllocationZero {});
     }
+
+    if send_after.denom.trim().is_empty() {
+        return Err(ContractError::InvalidCoin { coin: send_after });
+    }
+
     if ALLOCATION_HOLDINGS.has(deps.storage, name.clone()) {
         return Err(ContractError::FeeAlreadyThere { name });
     }
