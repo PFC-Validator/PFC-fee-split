@@ -205,6 +205,11 @@ pub fn update_config(
     let mut config: Config = Config::load(deps.storage)?;
 
     if let Some(token) = token {
+        if let Some(reward) = TOTAL_REWARDS.may_load(deps.storage, config.token)? {
+            if !reward.is_zero() {
+                return Err(ContractError::RewardsPresent);
+            }
+        }
         config.token = deps.api.addr_validate(token.as_str())?;
         response = response.add_attribute("is_updated_token", "true");
     }
