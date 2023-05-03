@@ -144,13 +144,14 @@ fn send_rewards(
     if info.sender != cfg.generator_contract_addr {
         return Err(ContractError::Unauthorized {});
     };
+    let account_addr = deps.api.addr_validate(&account)?;
 
     response
         .messages
         .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: cfg.reward_token_addr.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
-                recipient: account,
+                recipient: account_addr,
                 amount,
             })?,
             funds: vec![],
