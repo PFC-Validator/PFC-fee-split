@@ -1,4 +1,6 @@
-use cosmwasm_std::{to_binary, Addr, Binary, Coin, CosmosMsg, StdResult, WasmMsg};
+use cosmwasm_std::{
+    to_binary, Addr, Binary, Coin, CosmosMsg, DepsMut, StdError, StdResult, WasmMsg,
+};
 //use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
@@ -19,10 +21,32 @@ impl ToString for SendType {
     }
 }
 impl SendType {
-    pub fn verify(&self, address:&Addr ) -> bool {
+    #[deprecated(since = "0.2.9", note = "insufficient checking. use verify_details")]
+    pub fn verify(&self, address: &Addr) -> bool {
         match &self {
             SendType::Wallet { receiver } => receiver != address,
-            SendType::SteakRewards {  receiver,.. } => receiver != address,
+            SendType::SteakRewards { receiver, .. } => receiver != address,
+        }
+    }
+    pub fn verify_details(&self, deps: &DepsMut, address: &Addr) -> Result<(), StdError> {
+        match &self {
+            SendType::Wallet { receiver } => {
+                if receiver != address {
+                    deps.api.addr_validate(receiver.as_str())?;
+                    Ok(())
+                } else {
+                    Err(StdError::generic_err("address recursion"))
+                }
+            }
+            SendType::SteakRewards { receiver, steak } => {
+                if receiver != address {
+                    deps.api.addr_validate(receiver.as_str())?;
+                    deps.api.addr_validate(steak.as_str())?;
+                    Ok(())
+                } else {
+                    Err(StdError::generic_err("address recursion"))
+                }
+            }
         }
     }
 }
