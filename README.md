@@ -1,6 +1,12 @@
 # WARNING
-v0.2.1 has been [audited](https://github.com/SCV-Security/PublicReports/blob/main/CW/NFTswitch/NFTswitch%20-%20Fee%20Split%20Contract%20Audit%20Report%201.0.pdf)
-you should still exercise caution, and do your own research.
+* v0.2.9 has been [audited](https://github.com/SCV-Security/PublicReports/blob/a2d955cac6398f78a3cd067a04bda147ec7ba5c3/CW%2FPFC%2FPFC%20-%20Steak%20%26%20Fee%20Split%20-%20Audit%20Report%20v1.0.pdf
+  ) and remediations have been applied (in 0.2.10 tag). Please pay careful attention to which contracts were audited, as 'dust-collector' were not, and are still considered unstable.
+
+* v0.2.1 has been [audited](https://github.com/SCV-Security/PublicReports/blob/main/CW/NFTswitch/NFTswitch%20-%20Fee%20Split%20Contract%20Audit%20Report%201.0.pdf)
+
+ 
+*you should still exercise caution, and do your own research. no warranty is given or implied*
+
 
 # PFC-Fee-Splitter protocol contracts
 

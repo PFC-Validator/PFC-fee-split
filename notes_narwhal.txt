@@ -1,0 +1,19 @@
+
+# narwhal
+migalood tx wasm store ./artifacts/pfc_fee_splitter.wasm --from test-admin --yes --gas-prices 0.025uwhale --gas-adjustment 1.7 --gas auto --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1
+# 23 |131
+json=$(cat ./test_files/narwhal_instantiate_feesplit.json)
+migalood tx wasm instantiate 23 "${json}" --admin migaloo1kdtdg0lvy8asxn8clnjfpusuvf93zuknltr2eh --label pfc-fee-split --from test-admin --gas-prices 0.025uwhale --gas-adjustment 1.7  --gas 324601 --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1
+
+# migaloo1d6k8pahenpmx4spwfpf80zealtecfv7v0n7v49rxeu4lpzgzhrwq4wmhkr
+
+
+
+migalood tx wasm migrate migaloo1d6k8pahenpmx4spwfpf80zealtecfv7v0n7v49rxeu4lpzgzhrwq4wmhkr 131 '{}' --from test-admin --gas-prices 0.025uwhale --gas-adjustment 1.7 --gas auto
+add_alloc=$(cat ./test_files/add_allocation_narwhal_vault_fail.json)
+migalood tx wasm exec migaloo1d6k8pahenpmx4spwfpf80zealtecfv7v0n7v49rxeu4lpzgzhrwq4wmhkr "${add_alloc}" --from test-admin --gas-prices 0.025uwhale --gas-adjustment 1.7 --gas auto
+migalood tx wasm exec migaloo1d6k8pahenpmx4spwfpf80zealtecfv7v0n7v49rxeu4lpzgzhrwq4wmhkr '{"reconcile":{}}' --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1
+
+migalood query wasm cs smart migaloo1d6k8pahenpmx4spwfpf80zealtecfv7v0n7v49rxeu4lpzgzhrwq4wmhkr '{"allocations":{}}' --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1
+
+
