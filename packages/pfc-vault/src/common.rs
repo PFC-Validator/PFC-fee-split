@@ -133,7 +133,6 @@ impl Execution {
     }
 }
 
-
 /// We currently take no arguments for migrations
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct EmptyMigrateMsg {}

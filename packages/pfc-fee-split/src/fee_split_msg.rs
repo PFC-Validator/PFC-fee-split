@@ -19,10 +19,10 @@ impl ToString for SendType {
     }
 }
 impl SendType {
-    pub fn verify(&self, address:&Addr ) -> bool {
+    pub fn verify(&self, address: &Addr) -> bool {
         match &self {
             SendType::Wallet { receiver } => receiver != address,
-            SendType::SteakRewards {  receiver,.. } => receiver != address,
+            SendType::SteakRewards { receiver, .. } => receiver != address,
         }
     }
 }

@@ -1,10 +1,13 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
-use cosmwasm_std::{from_binary, from_slice, to_binary, Coin, ContractResult, Decimal, Empty, OwnedDeps, Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery, Addr};
+use cosmwasm_std::{
+    from_binary, from_slice, to_binary, Addr, Coin, ContractResult, Decimal, Empty, OwnedDeps,
+    Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
+};
 use cw20::{BalanceResponse as Cw20BalanceResponse, Cw20QueryMsg};
-use std::collections::HashMap;
 use pfc_vault::vault::query_msgs::StakerInfoResponse;
 use pfc_vault::vault::TokenBalance;
+use std::collections::HashMap;
 
 /// mock_dependencies is a drop-in replacement for cosmwasm_std::testing::mock_dependencies
 /// this uses our CustomQuerier.
@@ -65,7 +68,7 @@ pub struct RewardQuerier {
 }
 
 impl RewardQuerier {
-    pub fn new(reward_token:&Addr, pending_reward: Uint128, deposit_amount: Uint128) -> Self {
+    pub fn new(reward_token: &Addr, pending_reward: Uint128, deposit_amount: Uint128) -> Self {
         RewardQuerier {
             reward_token: reward_token.clone(),
             pending_reward,
@@ -75,7 +78,7 @@ impl RewardQuerier {
 }
 impl Default for RewardQuerier {
     fn default() -> Self {
-        RewardQuerier{
+        RewardQuerier {
             reward_token: Addr::unchecked("DEFAULT"),
             pending_reward: Default::default(),
             deposit_amount: Default::default(),
@@ -112,7 +115,14 @@ impl WasmMockQuerier {
                     SystemResult::Ok(ContractResult::from(to_binary(&StakerInfoResponse {
                         staker: "generator0000".to_string(),
                         total_staked: self.reward_querier.deposit_amount,
-                        estimated_rewards: vec![TokenBalance{amount: Decimal::from_ratio(self.reward_querier.pending_reward,Uint128::one()), token: self.reward_querier.reward_token.clone(), last_block_rewards_seen: 0 }],
+                        estimated_rewards: vec![TokenBalance {
+                            amount: Decimal::from_ratio(
+                                self.reward_querier.pending_reward,
+                                Uint128::one(),
+                            ),
+                            token: self.reward_querier.reward_token.clone(),
+                            last_block_rewards_seen: 0,
+                        }],
                         last_claimed: None,
                     })))
                 }
@@ -169,7 +179,12 @@ impl WasmMockQuerier {
         self.token_querier = TokenQuerier::new(balances);
     }
 
-    pub fn with_reward_info(&mut self, reward_token:&Addr, pending_reward: Uint128, deposit_amount: Uint128) {
-        self.reward_querier = RewardQuerier::new(reward_token,pending_reward, deposit_amount);
+    pub fn with_reward_info(
+        &mut self,
+        reward_token: &Addr,
+        pending_reward: Uint128,
+        deposit_amount: Uint128,
+    ) {
+        self.reward_querier = RewardQuerier::new(reward_token, pending_reward, deposit_amount);
     }
 }

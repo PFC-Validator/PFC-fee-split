@@ -10,7 +10,7 @@ pub struct InstantiateMsg {
     pub name: String,
     pub lp_token: String,
     pub gov_contract: String,
-    pub astroport_generator_contract:Option<String>
+    pub astroport_generator_contract: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -32,7 +32,9 @@ pub enum ExecuteMsg {
         amount: Uint128,
     },
     // Set Astroport generator contract address
-    SetAstroportGenerator{ generator:Option<String>},
+    SetAstroportGenerator {
+        generator: Option<String>,
+    },
     /// Transfer gov-contract to another account; will not take effect unless the new owner accepts
     TransferGovContract {
         gov_contract: String,

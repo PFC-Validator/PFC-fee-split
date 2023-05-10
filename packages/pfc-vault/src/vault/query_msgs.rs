@@ -21,7 +21,7 @@ pub struct ConfigResponse {
     pub gov_contract: String,
     pub new_gov_contract: Option<String>,
     pub change_gov_contract_by_height: Option<u64>,
-    pub astroport_generator_contract:Option<String>
+    pub astroport_generator_contract: Option<String>,
 }
 
 // We define a custom struct for each query response

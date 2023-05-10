@@ -6,9 +6,7 @@ use astroport::generator_proxy::{CallbackMsg, Cw20HookMsg, ExecuteMsg, Instantia
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{from_binary, to_binary, Addr, CosmosMsg, SubMsg, Uint128, WasmMsg};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
-use pfc_vault::vault::execute_msgs::{
-    Cw20HookMsg as VkrCw20HookMsg, ExecuteMsg as VkrExecuteMsg,
-};
+use pfc_vault::vault::execute_msgs::{Cw20HookMsg as VkrCw20HookMsg, ExecuteMsg as VkrExecuteMsg};
 
 #[test]
 fn test_proper_initialization() {
@@ -98,8 +96,11 @@ fn test_deposit() {
         }))]
     );
 
-    deps.querier
-        .with_reward_info(&Addr::unchecked(msg.reward_token_addr),Uint128::from(5u128), Uint128::from(100u128));
+    deps.querier.with_reward_info(
+        &Addr::unchecked(msg.reward_token_addr),
+        Uint128::from(5u128),
+        Uint128::from(100u128),
+    );
     let res = query(deps.as_ref(), mock_env(), QueryMsg::Deposit {}).unwrap();
     let query_res: Uint128 = from_binary(&res).unwrap();
     assert_eq!(query_res, Uint128::from(100u128));
@@ -156,8 +157,11 @@ fn test_update_rewards() {
         &"vkr0000".to_string(),
         &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128::from(5u128))],
     )]);
-    deps.querier
-        .with_reward_info(&Addr::unchecked(msg.reward_token_addr), Uint128::from(0u128), Uint128::from(100u128));
+    deps.querier.with_reward_info(
+        &Addr::unchecked(msg.reward_token_addr),
+        Uint128::from(0u128),
+        Uint128::from(100u128),
+    );
 
     // token balance on contract increases from claim
     let res = query(deps.as_ref(), mock_env(), QueryMsg::Reward {}).unwrap();
