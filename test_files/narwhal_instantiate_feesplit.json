@@ -1,0 +1,17 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "migaloo1kdtdg0lvy8asxn8clnjfpusuvf93zuknltr2eh",
+  "allocation": [
+    {
+      "name": "testnet",
+      "allocation": 1,
+      "send_after": {"denom": "uwhale","amount": "1000000"},
+      "send_type": { "Wallet": {
+        "receiver": "migaloo1kdtdg0lvy8asxn8clnjfpusuvf93zuknltr2eh"
+      }
+      }
+    }
+  ]
+
+}
+

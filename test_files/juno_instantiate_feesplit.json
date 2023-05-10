@@ -1,0 +1,17 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "juno1lu92zj8q6cmrptu09rp3343x9969r9qrt84g0e",
+  "allocation": [
+    {
+      "name": "cron",
+      "allocation": 1,
+      "send_after": {"denom": "ujuno","amount": "1000000"},
+      "send_type": { "Wallet": {
+        "receiver": "juno14tuzl4y3yrrq5gcuw3u8yp54hzr6pnyfmd4c5j"
+      }
+      }
+    }
+  ]
+
+}
+

@@ -1,0 +1,17 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "inj1d3yya2s4cejxfe5et9djq38qgtvlsmn9nqjeu9",
+  "allocation": [
+    {
+      "name": "testnet",
+      "allocation": 1,
+      "send_after": {"denom": "inj","amount": "100000000000000000"},
+      "send_type": { "Wallet": {
+        "receiver": "inj1k0sxlweut6nqarhjsd0m52ruepcjp3vvgk3ly5"
+      }
+      }
+    }
+  ]
+
+}
+

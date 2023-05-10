@@ -1,6 +1,6 @@
 [package]
 name = "pfc-vault"
-version = "0.2.5"
+version = "0.3.0"
 authors = ["PFC","Valkyrie Protocol"]
 edition = "2021"
 description = "Definition and types for the Valkyrie"

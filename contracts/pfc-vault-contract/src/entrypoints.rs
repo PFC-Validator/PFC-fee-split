@@ -12,7 +12,10 @@ const CONTRACT_NAME: &str = "pfc-vault";
 /// Contract version that is used for migration.
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-use crate::executions::{execute_accept_gov_contract, execute_set_new_astroport_generator, execute_update_gov_contract, recv_reward_token};
+use crate::executions::{
+    execute_accept_gov_contract, execute_set_new_astroport_generator, execute_update_gov_contract,
+    recv_reward_token,
+};
 use pfc_vault::vault::execute_msgs::{ExecuteMsg, InstantiateMsg, MigrateMsg};
 use pfc_vault::vault::query_msgs::QueryMsg;
 
@@ -26,7 +29,11 @@ pub fn instantiate(
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 
     let admin = deps.api.addr_validate(&msg.gov_contract)?;
-    let astroport_generator_contract = if let Some(x) = msg.astroport_generator_contract {Some(deps.api.addr_validate(&x)?)} else {None};
+    let astroport_generator_contract = if let Some(x) = msg.astroport_generator_contract {
+        Some(deps.api.addr_validate(&x)?)
+    } else {
+        None
+    };
     ADMIN.set(deps.branch(), Some(admin.clone()))?;
 
     Config {
@@ -59,8 +66,8 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             token,
             name,
-            lp_token,
-        } => update_config(deps, env, info, token, name, lp_token),
+            // lp_token,
+        } => update_config(deps, env, info, token, name /*, lp_token*/),
         ExecuteMsg::MigrateReward { recipient, amount } => {
             migrate_reward(deps, env, info, recipient, amount)
         }
@@ -70,7 +77,9 @@ pub fn execute(
             blocks,
         } => execute_update_gov_contract(deps, env, info, gov_contract, blocks),
         ExecuteMsg::AcceptGovContract {} => execute_accept_gov_contract(deps, env, info),
-        ExecuteMsg::SetAstroportGenerator { generator } => execute_set_new_astroport_generator(deps,env,info, generator)
+        ExecuteMsg::SetAstroportGenerator { generator } => {
+            execute_set_new_astroport_generator(deps, env, info, generator)
+        }
     }
 }
 

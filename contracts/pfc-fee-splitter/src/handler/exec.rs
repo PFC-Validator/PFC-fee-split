@@ -3,8 +3,8 @@ use std::iter::FromIterator;
 use std::ops::Mul;
 
 use cosmwasm_std::{
-    Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal, DepsMut, Env,
-    MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdError, StdResult, to_binary, Uint128,
+    to_binary, Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal, DepsMut,
+    Env, MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdError, StdResult, Uint128,
     WasmMsg,
 };
 
@@ -66,13 +66,16 @@ pub fn execute_add_allocation_detail(
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
     //let contract = deps.api.addr_validate(contract_unverified.as_str())?;
-    if !send_type_unverified.verify(&env.contract.address) {
-        return Err(ContractError::Recursion { send_type: send_type_unverified.to_string(), contract: env.contract.address.to_string() });
-    }
+    send_type_unverified.verify_details(&deps, &env.contract.address)?;
 
     if allocation == 0 {
         return Err(ContractError::AllocationZero {});
     }
+
+    if send_after.denom.trim().is_empty() {
+        return Err(ContractError::InvalidCoin { coin: send_after });
+    }
+
     if ALLOCATION_HOLDINGS.has(deps.storage, name.clone()) {
         return Err(ContractError::FeeAlreadyThere { name });
     }
@@ -110,9 +113,7 @@ pub fn execute_modify_allocation_detail(
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
 
     //send_type_unverified.verify(deps.api)?;
-    if !send_type_unverified.verify(&env.contract.address) {
-        return Err(ContractError::Recursion { send_type: send_type_unverified.to_string(), contract: env.contract.address.to_string() });
-    }
+    send_type_unverified.verify_details(&deps, &env.contract.address)?;
 
     if allocation == 0 {
         return Err(ContractError::AllocationZero {});
@@ -158,11 +159,12 @@ pub fn execute_remove_allocation_detail(
         return Err(ContractError::NoFeesError {});
     }
     if let Some(fee_holding) = ALLOCATION_HOLDINGS.may_load(deps.storage, name.clone())? {
-        let balances = fee_holding.balance.into_iter().filter(|f| f.amount > Uint128::zero()).collect();
-        let msgs: Vec<CosmosMsg> = vec![generate_cosmos_msg(
-            fee_holding.send_type,
-            balances,
-        )?];
+        let balances = fee_holding
+            .balance
+            .into_iter()
+            .filter(|f| f.amount > Uint128::zero())
+            .collect();
+        let msgs: Vec<CosmosMsg> = vec![generate_cosmos_msg(fee_holding.send_type, balances)?];
         ALLOCATION_HOLDINGS.remove(deps.storage, name.clone());
 
         let res = Response::new()
@@ -385,8 +387,11 @@ pub(crate) fn determine_allocation(
         )
         .map(|(denom, amount)| Coin::new(u128::from(*amount), denom))
         .collect::<Vec<Coin>>();
-
-    Ok(send_coins)
+    let send_coins_non_dust = send_coins
+        .into_iter()
+        .filter(|p| p.amount > Uint128::from(100u32))
+        .collect();
+    Ok(send_coins_non_dust)
 }
 
 pub(crate) fn do_deposit(
@@ -489,8 +494,8 @@ mod exec {
     use crate::contract::execute;
     use crate::handler::query::{query_allocation, query_allocations};
     use crate::test_helpers::{
-        ALLOCATION_1, ALLOCATION_2, CREATOR, DENOM_1, DENOM_2, DENOM_3,
-        do_instantiate, GOV_CONTRACT, one_allocation, two_allocation, USER_1,
+        do_instantiate, one_allocation, two_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR,
+        DENOM_1, DENOM_2, DENOM_3, GOV_CONTRACT, USER_1,
     };
 
     use super::*;
@@ -846,12 +851,48 @@ mod exec {
          */
         Ok(())
     }
+
+    #[test]
+    fn zero_funds() -> Result<(), ContractError> {
+        // Small amount of funds sent
+        let funds: HashMap<String, Uint128> =
+            HashMap::from([(DENOM_1.into(), Uint128::from(99u128))]);
+
+        // 1 allocation is very small
+        let merged_coins = determine_allocation(1, 99, &funds, &vec![])?;
+
+        let addr_a = Addr::unchecked("a");
+        let addr_b = Addr::unchecked("b");
+
+        let send_type = SendType::SteakRewards {
+            steak: addr_a.clone(),
+            receiver: addr_b.clone(),
+        };
+
+        // Given a 0 amount coin, generate_cosmos_msg should return an error but it constructs a valid CosmosMsg
+        let msg = generate_cosmos_msg(send_type, merged_coins);
+
+        // Message with 0 amount is generated, and will error
+        assert_ne!(
+            msg.unwrap(),
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: addr_a.to_string(),
+                msg: to_binary(&pfc_steak::hub::ExecuteMsg::Bond {
+                    receiver: Some(addr_b.to_string()),
+                })
+                .unwrap(),
+                funds: vec![coin(0, String::from(DENOM_1))],
+            })
+        );
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod crud_allocations {
-    use cosmwasm_std::{Api, BankMsg, coin, CosmosMsg, StdError};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
+    use cosmwasm_std::{coin, Api, BankMsg, CosmosMsg, StdError};
 
     use pfc_fee_split::fee_split_msg::{AllocationHolding, ExecuteMsg, SendType};
 
@@ -859,7 +900,7 @@ mod crud_allocations {
     use crate::error::ContractError;
     use crate::handler::query::{query_allocation, query_allocations};
     use crate::test_helpers::{
-        ALLOCATION_1, ALLOCATION_2, CREATOR, DENOM_1, do_instantiate, GOV_CONTRACT, two_allocation,
+        do_instantiate, two_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR, DENOM_1, GOV_CONTRACT,
         USER_1,
     };
 
@@ -918,8 +959,8 @@ mod crud_allocations {
             info.clone(),
             msg_duplicate.clone(),
         )
-            .err()
-            .unwrap();
+        .err()
+        .unwrap();
         match err {
             ContractError::FeeAlreadyThere { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -999,8 +1040,8 @@ mod crud_allocations {
             info.clone(),
             msg_does_not_exist.clone(),
         )
-            .err()
-            .unwrap();
+        .err()
+        .unwrap();
         match err {
             ContractError::AllocationNotFound { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -1084,8 +1125,8 @@ mod crud_allocations {
             info.clone(),
             msg_does_not_exist.clone(),
         )
-            .err()
-            .unwrap();
+        .err()
+        .unwrap();
         match err {
             ContractError::Std(x) => match x {
                 StdError::NotFound { .. } => {}
@@ -1184,7 +1225,7 @@ mod flush_whitelist {
     use crate::error::ContractError;
     use crate::handler::query::query_flush_whitelist;
     use crate::test_helpers::{
-        CREATOR, DENOM_1, do_instantiate, GOV_CONTRACT, one_allocation, two_allocation, USER_1,
+        do_instantiate, one_allocation, two_allocation, CREATOR, DENOM_1, GOV_CONTRACT, USER_1,
     };
 
     #[test]
@@ -1299,8 +1340,8 @@ mod flush_whitelist {
             info_with_funds.clone(),
             msg_flush.clone(),
         )
-            .err()
-            .unwrap();
+        .err()
+        .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -1328,7 +1369,7 @@ mod ownership_changes {
 
     use crate::contract::execute;
     use crate::error::ContractError;
-    use crate::test_helpers::{CREATOR, do_instantiate, GOV_CONTRACT, two_allocation, USER_1};
+    use crate::test_helpers::{do_instantiate, two_allocation, CREATOR, GOV_CONTRACT, USER_1};
 
     #[test]
     fn change_owners() -> Result<(), ContractError> {
@@ -1347,8 +1388,8 @@ mod ownership_changes {
             info.clone(),
             msg_gov_transfer.clone(),
         )
-            .err()
-            .unwrap();
+        .err()
+        .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -1387,8 +1428,8 @@ mod ownership_changes {
             info.clone(),
             msg_accept_gov_transfer.clone(),
         )
-            .err()
-            .unwrap();
+        .err()
+        .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
@@ -1400,8 +1441,8 @@ mod ownership_changes {
             info.clone(),
             msg_accept_gov_transfer.clone(),
         )
-            .err()
-            .unwrap();
+        .err()
+        .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
