@@ -25,7 +25,7 @@ pub enum ExecuteMsg {
     UpdateConfig {
         token: Option<String>,
         name: Option<String>,
-        lp_token: Option<String>,
+        /*  lp_token: Option<String>,*/
     },
     MigrateReward {
         recipient: String,

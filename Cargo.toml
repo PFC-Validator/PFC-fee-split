@@ -1,8 +1,12 @@
 
 [workspace]
 members = [
-    "packages/*",
-    "contracts/*"
+    "packages/pfc-astroport_reward_holder",
+    "packages/pfc-fee-split",
+    "packages/pfc-vault",
+    "contracts/pfc-astroport-generator",
+    "contracts/pfc-fee-splitter",
+    "contracts/pfc-vault-contract"
 ]
 
 [profile.release]

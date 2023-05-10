@@ -17,21 +17,21 @@ pub fn exec(
     info: MessageInfo,
     token: Option<String>,
     pair: Option<String>,
-    lp_token: Option<String>,
+    //  lp_token: Option<String>,
 ) -> Result<Response, ContractError> {
-    update_config(deps.as_mut(), env, info, token, pair, lp_token)
+    update_config(deps.as_mut(), env, info, token, pair)
 }
 
 pub fn will_success(
     deps: &mut CustomDeps,
     token: Option<String>,
     name: Option<String>,
-    lp_token: Option<String>,
+    //lp_token: Option<String>,
 ) -> (Env, MessageInfo, Response) {
     let env = lp_env();
     let info = mock_info(DEFAULT_SENDER, &[]);
 
-    let response = exec(deps, env.clone(), info.clone(), token, name, lp_token).unwrap();
+    let response = exec(deps, env.clone(), info.clone(), token, name).unwrap();
 
     (env, info, response)
 }
@@ -46,7 +46,7 @@ fn succeed() {
         &mut deps,
         Some("terra1r0rm0evrlkfvpt0csrcpmnpmrega54czajfd86".to_string()),
         Some("NEW NAME".to_string()),
-        Some("terra199vw7724lzkwz6lf2hsx04lrxfkz09tg8dlp6r".to_string()),
+        //  Some("terra199vw7724lzkwz6lf2hsx04lrxfkz09tg8dlp6r".to_string()),
         //  Some("terra1e8ryd9ezefuucd4mje33zdms9m2s90m57878v9".to_string()),
     );
 
@@ -56,10 +56,7 @@ fn succeed() {
         Addr::unchecked("terra1r0rm0evrlkfvpt0csrcpmnpmrega54czajfd86".to_string())
     );
     assert_eq!(config.name, "NEW NAME".to_string());
-    assert_eq!(
-        config.lp_token,
-        Addr::unchecked("terra199vw7724lzkwz6lf2hsx04lrxfkz09tg8dlp6r".to_string())
-    );
+
     assert_eq!(config.gov_contract, info.sender);
 }
 
@@ -110,7 +107,7 @@ fn failed_invalid_permission() {
 
     info.sender = Addr::unchecked("terra1e8ryd9ezefuucd4mje33zdms9m2s90m57878v9");
 
-    let result = exec(&mut deps, env, info, None, None, None);
+    let result = exec(&mut deps, env, info, None, None);
 
     expect_unauthorized_err(&result);
 }

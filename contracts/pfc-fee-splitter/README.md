@@ -7,7 +7,7 @@ Do not use it.
 
 Split a collection of native tokens into multiple wallets.
 
-## how?
+## How?
 
 - money comes in via Deposit messages. When it is called, it splits the funds sent (native only)
   and sends them to the various allocation wallets based on the configured allocation ratios.

@@ -1,0 +1,15 @@
+{
+  "modify_allocation_detail": {
+    "name": "fail_vault",
+    "allocation": 200,
+    "send_after": {
+      "denom": "uwhale",
+      "amount": "100000"
+    },
+    "send_type": {
+      "Wallet": {
+        "receiver": "migaloo16q6p6nkzc0525qnnrdd93urxv6pr8zhc8an7xv"
+      }
+    }
+  }
+}

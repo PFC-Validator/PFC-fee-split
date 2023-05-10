@@ -1,0 +1,20 @@
+
+# INJ
+injectived tx wasm store ./artifacts/pfc_fee_splitter.wasm --from bone-luna --yes --gas-prices 700000000inj --gas-adjustment 1.7 --gas auto
+# inj-888
+# 539
+json=$(cat ./test_files/inj_instantiate_feesplit.json)
+injectived tx wasm instantiate 539 "${json}" --admin inj1d3yya2s4cejxfe5et9djq38qgtvlsmn9nqjeu9  --label pfc-fee-split --from bone-luna --gas-prices 700000000inj --gas-adjustment 1.7  --gas auto
+
+# inj1z7s6eqeql5r23gptjrfhvks3z79vwweuezk77g
+
+
+
+injectived tx wasm migrate inj1z7s6eqeql5r23gptjrfhvks3z79vwweuezk77g 834 '{}' --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto
+add_alloc=$(cat ./test_files/add_allocation_phoenix_vault.json)
+injectived tx wasm exec inj1z7s6eqeql5r23gptjrfhvks3z79vwweuezk77g "${add_alloc}" --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto
+injectived tx wasm exec inj1z7s6eqeql5r23gptjrfhvks3z79vwweuezk77g '{"reconcile":{}}' --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto
+
+injectived query wasm cs smart inj1z7s6eqeql5r23gptjrfhvks3z79vwweuezk77g '{"allocations":{}}'
+
+

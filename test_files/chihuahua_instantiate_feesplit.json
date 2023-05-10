@@ -1,0 +1,17 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "chihuahua1lu92zj8q6cmrptu09rp3343x9969r9qr7qmaf8",
+  "allocation": [
+    {
+      "name": "cron",
+      "allocation": 1,
+      "send_after": {"denom": "uhuahua","amount": "1000000"},
+      "send_type": { "Wallet": {
+        "receiver": "chihuahua14tuzl4y3yrrq5gcuw3u8yp54hzr6pnyfw2mdjv"
+      }
+      }
+    }
+  ]
+
+}
+

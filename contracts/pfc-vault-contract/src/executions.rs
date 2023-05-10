@@ -110,6 +110,7 @@ pub fn unbond(
             },
         ))
         // .add_messages(msgs)
+        .add_attribute("action", "unbond")
         .add_attribute("owner", sender_addr_raw.to_string())
         .add_attribute("amount", amount.to_string())
         .add_attribute("amount_staked", staker_info.bond_amount.to_string())
@@ -196,7 +197,7 @@ pub fn update_config(
     info: MessageInfo,
     token: Option<String>,
     name: Option<String>,
-    lp_token: Option<String>,
+    //   lp_token: Option<String>,
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
 
@@ -205,6 +206,11 @@ pub fn update_config(
     let mut config: Config = Config::load(deps.storage)?;
 
     if let Some(token) = token {
+        if let Some(reward) = TOTAL_REWARDS.may_load(deps.storage, config.token)? {
+            if !reward.amount.is_zero() {
+                return Err(ContractError::RewardsPresent {});
+            }
+        }
         config.token = deps.api.addr_validate(token.as_str())?;
         response = response.add_attribute("is_updated_token", "true");
     }
@@ -213,12 +219,12 @@ pub fn update_config(
         config.name = name;
         response = response.add_attribute("is_updated_name", "true");
     }
-
-    if let Some(lp_token) = lp_token {
-        config.lp_token = deps.api.addr_validate(lp_token.as_str())?;
-        response = response.add_attribute("is_updated_lp_token", "true");
-    }
-
+    /*
+        if let Some(lp_token) = lp_token {
+            config.lp_token = deps.api.addr_validate(lp_token.as_str())?;
+            response = response.add_attribute("is_updated_lp_token", "true");
+        }
+    */
     config.save(deps.storage)?;
 
     Ok(response)
@@ -366,24 +372,14 @@ pub(crate) fn get_current_claims(
         .map(|ui| (ui.token.clone(), ui))
         .collect::<HashMap<Addr, &UserTokenClaim>>();
 
-    /*
-        eprintln!(
-            "do_token_claims  tallies {}",
-            serde_json::to_string(&tallies).unwrap()
-        );
-    */
     for token in tallies {
         let amt = if let Some(last_claim) = user_info.get(&token.0) {
             token.1.amount - last_claim.last_claimed_amount
         } else {
             token.1.amount
         };
-        //      eprintln!("do_token_claim  amt/share {}", amt);
 
         let amt_to_send = staker_info.bond_amount * amt;
-        // amt.checked_mul(bond_amount)?;
-        //.floor();
-        //    eprintln!("do_token_claim  amt_to_send {}", amt_to_send);
         new_claims.push(UserTokenClaim {
             last_claimed_amount: token.1.amount,
             token: token.1.token,
@@ -396,12 +392,7 @@ pub(crate) fn get_current_claims(
             });
         }
     }
-    /*
-        eprintln!(
-            "do_token_claim u-info {}",
-            serde_json::to_string(&user_info).unwrap()
-        );
-    */
+
     USER_CLAIM.save(storage, addr.clone(), &new_claims)?;
     Ok(resp)
 }
@@ -415,14 +406,6 @@ pub(crate) fn gen_claim_messages(
     if let Some(pending) = USER_PENDING_CLAIM.may_load(storage, addr.clone())? {
         for claim_amount in pending {
             if !claim_amount.amount.is_zero() {
-                /*
-                let msg = Cw20ExecuteMsg::Send {
-                    contract: addr.to_string(),
-                    amount: claim_amount.amount,
-                    msg: Default::default(),
-                };
-
-                 */
                 let msg = Cw20ExecuteMsg::Transfer {
                     recipient: addr.to_string(),
                     amount: claim_amount.amount,

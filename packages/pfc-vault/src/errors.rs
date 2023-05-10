@@ -23,6 +23,10 @@ pub enum ContractError {
 
     #[error("Invalid zero amount")]
     InvalidZeroAmount {},
+
+    #[error("Rewards have already been calculated on this token. Can not change")]
+    RewardsPresent {},
+
     #[error("None Bonded")]
     NoneBonded {},
 

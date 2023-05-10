@@ -66,8 +66,8 @@ pub fn execute(
         ExecuteMsg::UpdateConfig {
             token,
             name,
-            lp_token,
-        } => update_config(deps, env, info, token, name, lp_token),
+            // lp_token,
+        } => update_config(deps, env, info, token, name /*, lp_token*/),
         ExecuteMsg::MigrateReward { recipient, amount } => {
             migrate_reward(deps, env, info, recipient, amount)
         }
