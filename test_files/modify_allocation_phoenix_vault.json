@@ -1,5 +1,5 @@
 {
-  "add_allocation_detail": {
+  "modify_allocation_detail": {
     "name": "sp_enterprise_dao",
     "allocation": 30,
     "send_after": {
@@ -15,4 +15,3 @@
     }
   }
 }
-

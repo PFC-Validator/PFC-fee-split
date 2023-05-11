@@ -1,19 +1,26 @@
 
 # phoenix
 terrad tx wasm store ./artifacts/pfc_fee_splitter.wasm --from boneLunaAdmin --yes --fees 300000uluna --gas 2500000
-# 572 | 580 | 771 | 834
+# 572 | 580 | 771 | 834 |1493 |1497
 json=$(cat ./test_files/phoenix_instantiate.json)
-terrad tx wasm instantiate 572 "${json}" --admin terra12097jggxd6q95hq0wt65ejjqsaggu8xeckwgms --label pfc-fee-split --from boneLunaAdmin --fees 75000uluna --gas 500000
+terrad tx wasm instantiate 1493 "${json}" --admin terra12097jggxd6q95hq0wt65ejjqsaggu8xeckwgms --label pfc-fee-split --from boneLunaAdmin --fees 75000uluna --gas 500000
 
 # terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m
 
-terrad tx wasm migrate terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m 834 '{}' --from boneLunaAdmin --fees 30000uluna
+terrad tx wasm migrate terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m 1493 '{}' --from boneLunaAdmin --fees 30000uluna
+
 add_alloc=$(cat ./test_files/add_allocation_phoenix_vault.json)
 terrad tx wasm exec terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m "${add_alloc}" --from boneLunaAdmin --fees 3000uluna
 terrad tx wasm exec terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m '{"reconcile":{}}' --from boneLunaAdmin --fees 3000uluna
 terrad query wasm cs smart terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m '{"allocations":{}}'
 
 
+# test contract
+terra1pxgu7cny8k776jc482kua5gqua5y9gnrm976jd6jz555ue05eqvsef6np0
+terrad tx wasm exec terra1pxgu7cny8k776jc482kua5gqua5y9gnrm976jd6jz555ue05eqvsef6np0 "${add_alloc}" --from boneLunaAdmin --fees 3000uluna
+terrad tx wasm migrate terra1pxgu7cny8k776jc482kua5gqua5y9gnrm976jd6jz555ue05eqvsef6np0 1497 '{}' --from boneLunaAdmin --fees 30000uluna
+
+terrad tx wasm exec terra1pxgu7cny8k776jc482kua5gqua5y9gnrm976jd6jz555ue05eqvsef6np0 '{"deposit":{"flush":false}}' --amount "100000uluna" --from boneLunaAdmin --fees 30000uluna --gas 400000
 
 
 ###
@@ -51,3 +58,4 @@ export astro_contract="terra12jvzm2cy33zspvp8asn7ns98jmyk489es2cy2j8k926mr2n7met
 export lp_token="terra1h3z2zv6aw94fx5263dy6tgz6699kxmewlx3vrcu4jjrudg6xmtyqk6vt0u"
 
 terrad tx wasm exec $lp_token '{"send":{"contract":"terra1tgpwsnndr7djj9smld3u57snyd5xacdgdsz6glr2nqhgu82hyz0sq644hz", "amount":"1000000", "msg":"e30="}}' --from boneLunaAdmin  --fees 3000uluna
+

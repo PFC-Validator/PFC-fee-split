@@ -7,15 +7,29 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub enum SendType {
-    Wallet { receiver: Addr },
-    SteakRewards { steak: Addr, receiver: Addr },
+    Wallet {
+        receiver: Addr,
+    },
+    SteakRewards {
+        steak: Addr,
+        receiver: Addr,
+        message: Option<String>,
+    },
 }
 impl ToString for SendType {
     fn to_string(&self) -> String {
         match &self {
             SendType::Wallet { receiver } => format!("Wallet -> {}", receiver),
-            SendType::SteakRewards { steak, receiver } => {
-                format!("Steak:{} -> {}", steak, receiver)
+            SendType::SteakRewards {
+                steak,
+                receiver,
+                message,
+            } => {
+                if let Some(msg) = message {
+                    format!("Steak:{} -> {} '{}'", steak, receiver, msg)
+                } else {
+                    format!("Steak:{} -> {} -", steak, receiver)
+                }
             }
         }
     }
@@ -38,7 +52,9 @@ impl SendType {
                     Err(StdError::generic_err("address recursion"))
                 }
             }
-            SendType::SteakRewards { receiver, steak } => {
+            SendType::SteakRewards {
+                receiver, steak, ..
+            } => {
                 if receiver != address {
                     deps.api.addr_validate(receiver.as_str())?;
                     deps.api.addr_validate(steak.as_str())?;

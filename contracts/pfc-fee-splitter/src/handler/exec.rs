@@ -455,9 +455,14 @@ fn generate_cosmos_msg(send_type: SendType, coins: Vec<Coin>) -> Result<CosmosMs
             };
             Ok(CosmosMsg::Bank(msg))
         }
-        SendType::SteakRewards { steak, receiver } => {
+        SendType::SteakRewards {
+            steak,
+            receiver,
+            message,
+        } => {
             let msg = pfc_steak::hub::ExecuteMsg::Bond {
                 receiver: Some(receiver.to_string()),
+                exec_msg: message,
             };
             Ok(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: steak.to_string(),
@@ -674,6 +679,7 @@ mod exec {
                     assert_eq!(funds[0].denom, DENOM_1);
                     let expected = to_binary(&pfc_steak::hub::ExecuteMsg::Bond {
                         receiver: Some(String::from("receiver")),
+                        exec_msg: None,
                     })?;
                     assert_eq!(msg, &expected)
                 }
@@ -882,6 +888,7 @@ mod crud_allocations {
             send_type: SendType::SteakRewards {
                 steak: deps.api.addr_validate("steak-contract")?,
                 receiver: deps.api.addr_validate("rewards")?,
+                message: None,
             },
         };
         //eprintln!("{}", serde_json::to_string(&msg).unwrap());
@@ -912,6 +919,7 @@ mod crud_allocations {
             send_type: SendType::SteakRewards {
                 steak: deps.api.addr_validate("steak-contract")?,
                 receiver: deps.api.addr_validate("rewards")?,
+                message: Some("fly swatter".to_string()),
             },
         };
         let err = execute(
@@ -951,7 +959,7 @@ mod crud_allocations {
         );
         assert_eq!(
             &format!("{:?}", res.messages[1].msg),
-            "Wasm(Execute { contract_addr: \"steak-contract\", msg: {\"bond\":{\"receiver\":\"rewards\"}}, funds: [Coin { denom: \"uxyz\", amount: Uint128(333333) }] })"
+            "Wasm(Execute { contract_addr: \"steak-contract\", msg: {\"bond\":{\"receiver\":\"rewards\",\"exec_msg\":null}}, funds: [Coin { denom: \"uxyz\", amount: Uint128(333333) }] })"
         );
         let allocations = query_allocation(deps.as_ref(), String::from(ALLOCATION_2))?.unwrap();
 

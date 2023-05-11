@@ -1,13 +1,34 @@
 {
   "name": "pfc-fee-split",
   "gov_contract": "terra12097jggxd6q95hq0wt65ejjqsaggu8xeckwgms",
+
   "allocation": [
     {
-      "name": "bLuna Cron",
-      "contract": "terra1e5hratq6nzt50xr8wh0fmsdar2mrs4ac36rh83",
-      "allocation": 1,
-      "send_after": {"denom": "uluna","amount": "100000"},
-      "send_type": "Wallet"
+      "name": "lp_vault",
+      "allocation": 70,
+      "send_after": {
+        "denom": "uluna",
+        "amount": "100000"
+      },
+      "send_type": {
+        "SteakRewards": {
+          "steak": "terra1l2nd99yze5fszmhl5svyh5fky9wm4nz4etlgnztfu4e8809gd52q04n3ea",
+          "receiver": "terra1tgpwsnndr7djj9smld3u57snyd5xacdgdsz6glr2nqhgu82hyz0sq644hz"
+        }
+      }
+    },
+    {
+      "name": "sp_dao",
+      "allocation": 30,
+      "send_after": {
+        "denom": "uluna",
+        "amount": "100000"
+      },
+      "send_type": {
+        "Wallet": {
+          "receiver": "terra1xxzfsunhhf8vv75xy5dv0up0xjhmpp09d8lwrn5d7m5jwng5qtjs4r8ehm"
+        }
+      }
     }
   ]
 }

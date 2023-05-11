@@ -62,6 +62,7 @@ pub(crate) fn two_allocation(api: &dyn Api) -> Vec<AllocationDetail> {
             send_type: SendType::SteakRewards {
                 steak: api.addr_validate("steak_contract").unwrap(),
                 receiver: api.addr_validate("receiver").unwrap(),
+                message: None,
             },
         },
     ]
