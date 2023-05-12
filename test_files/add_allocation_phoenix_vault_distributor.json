@@ -1,15 +1,15 @@
 {
   "modify_allocation_detail": {
-    "name": "sp_enterprise_dao",
+    "name": "sp_distributor",
     "allocation": 30,
     "send_after": {
       "denom": "uluna",
       "amount": "100000"
     },
     "send_type": {
-      "TransferSteakRewards": {
+      "DistributeSteakRewards": {
         "steak": "terra1l2nd99yze5fszmhl5svyh5fky9wm4nz4etlgnztfu4e8809gd52q04n3ea",
-        "receiver": "terra1290d4q6av48d3r8y99s4d5fqr5k75hn7l7ytz27pu3fqvg3f4jhsqr9vju"
+        "receiver": "terra13ue4uzrd2xutzv8nc49r6urtt72s5fy6gjqua33u8fylvhz3smmsz0ng9g"
       }
     }
   }

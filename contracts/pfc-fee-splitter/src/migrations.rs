@@ -59,7 +59,6 @@ impl SendTypeV100 {
             SendTypeV100::SteakRewards { steak, receiver } => Ok(SendType::SteakRewards {
                 steak: api.addr_validate(steak)?,
                 receiver: api.addr_validate(receiver)?,
-                message: None,
             }),
         }
     }

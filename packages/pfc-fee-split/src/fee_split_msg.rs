@@ -7,29 +7,23 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub enum SendType {
-    Wallet {
-        receiver: Addr,
-    },
-    SteakRewards {
-        steak: Addr,
-        receiver: Addr,
-        message: Option<String>,
-    },
+    Wallet { receiver: Addr },
+    SteakRewards { steak: Addr, receiver: Addr },
+    DistributeSteakRewards { steak: Addr, receiver: Addr },
+    TransferSteakRewards { steak: Addr, receiver: Addr },
 }
 impl ToString for SendType {
     fn to_string(&self) -> String {
         match &self {
             SendType::Wallet { receiver } => format!("Wallet -> {}", receiver),
-            SendType::SteakRewards {
-                steak,
-                receiver,
-                message,
-            } => {
-                if let Some(msg) = message {
-                    format!("Steak:{} -> {} '{}'", steak, receiver, msg)
-                } else {
-                    format!("Steak:{} -> {} -", steak, receiver)
-                }
+            SendType::SteakRewards { steak, receiver } => {
+                format!("Steak:{} -> {} -", steak, receiver)
+            }
+            SendType::DistributeSteakRewards { steak, receiver } => {
+                format!("Steak:{} -> {} DISTRIBUTE", steak, receiver)
+            }
+            SendType::TransferSteakRewards { steak, receiver } => {
+                format!("Steak:{} -> {} Transfer", steak, receiver)
             }
         }
     }
@@ -40,6 +34,8 @@ impl SendType {
         match &self {
             SendType::Wallet { receiver } => receiver != address,
             SendType::SteakRewards { receiver, .. } => receiver != address,
+            SendType::DistributeSteakRewards { receiver, .. } => receiver != address,
+            SendType::TransferSteakRewards { receiver, .. } => receiver != address,
         }
     }
     pub fn verify_details(&self, deps: &DepsMut, address: &Addr) -> Result<(), StdError> {
@@ -55,6 +51,24 @@ impl SendType {
             SendType::SteakRewards {
                 receiver, steak, ..
             } => {
+                if receiver != address {
+                    deps.api.addr_validate(receiver.as_str())?;
+                    deps.api.addr_validate(steak.as_str())?;
+                    Ok(())
+                } else {
+                    Err(StdError::generic_err("address recursion"))
+                }
+            }
+            SendType::DistributeSteakRewards { receiver, steak } => {
+                if receiver != address {
+                    deps.api.addr_validate(receiver.as_str())?;
+                    deps.api.addr_validate(steak.as_str())?;
+                    Ok(())
+                } else {
+                    Err(StdError::generic_err("address recursion"))
+                }
+            }
+            SendType::TransferSteakRewards { receiver, steak } => {
                 if receiver != address {
                     deps.api.addr_validate(receiver.as_str())?;
                     deps.api.addr_validate(steak.as_str())?;

@@ -31,6 +31,9 @@ pub enum ContractError {
     FeeAlreadyThere { name: String },
     #[error("PFC-FeeSplit: Invalid Coin - {coin:?}")]
     InvalidCoin { coin: Coin },
+    #[error("PFC-FeeSplit: Key not found - {key:?}")]
+    KeyNotFound { key: String },
+
     #[error("PFC-FeeSplit: No fees are defined. Add one before sending deposits")]
     NoFeesError {},
     #[error("PFC-FeeSplit: Fund Allocation name must be unique")]

@@ -4,9 +4,9 @@ use std::ops::Mul;
 
 use cosmwasm_std::{
     to_binary, Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal, DepsMut,
-    Env, MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdError, StdResult, Uint128,
-    WasmMsg,
+    Env, MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdResult, Uint128, WasmMsg,
 };
+use pfc_steak::hub::Cw20HookMsg;
 
 use pfc_fee_split::fee_split_msg::{AllocationHolding, SendType};
 
@@ -119,18 +119,22 @@ pub fn execute_modify_allocation_detail(
         return Err(ContractError::AllocationZero {});
     }
 
-    ALLOCATION_HOLDINGS.update(deps.storage, name.clone(), |rec| -> StdResult<_> {
-        if let Some(mut fee_holding) = rec {
-            fee_holding.send_type = send_type_unverified.clone();
-            fee_holding.send_after = send_after.clone();
-            fee_holding.allocation = allocation;
-            Ok(fee_holding)
-        } else {
-            Err(StdError::NotFound {
-                kind: name.to_string(),
-            })
-        }
-    })?;
+    ALLOCATION_HOLDINGS.update(
+        deps.storage,
+        name.clone(),
+        |rec| -> Result<_, ContractError> {
+            if let Some(mut fee_holding) = rec {
+                fee_holding.send_type = send_type_unverified.clone();
+                fee_holding.send_after = send_after.clone();
+                fee_holding.allocation = allocation;
+                Ok(fee_holding)
+            } else {
+                Err(ContractError::KeyNotFound {
+                    key: name.to_string(),
+                })
+            }
+        },
+    )?;
 
     let res = Response::new()
         .add_attribute("action", "modify_fee_detail")
@@ -164,17 +168,17 @@ pub fn execute_remove_allocation_detail(
             .into_iter()
             .filter(|f| f.amount > Uint128::zero())
             .collect();
-        let msgs: Vec<CosmosMsg> = vec![generate_cosmos_msg(fee_holding.send_type, balances)?];
         ALLOCATION_HOLDINGS.remove(deps.storage, name.clone());
 
         let res = Response::new()
             .add_attribute("action", "remove_fee_detail")
             .add_attribute("from", info.sender)
             .add_attribute("fee", name);
-        if msgs.is_empty() {
-            Ok(res)
+
+        if let Some(msg) = generate_cosmos_msg(fee_holding.send_type, balances)? {
+            Ok(res.add_message(msg))
         } else {
-            Ok(res.add_messages(msgs))
+            Ok(res)
         }
     } else {
         Err(ContractError::AllocationNotFound { name })
@@ -245,7 +249,7 @@ pub fn execute_reconcile(
                 record.balance = vec![];
                 Ok(record)
             } else {
-                Err(StdError::NotFound { kind: key })
+                Err(ContractError::KeyNotFound { key })
             }
         })?;
     }
@@ -417,10 +421,11 @@ pub(crate) fn do_deposit(
             &allocation_holding.balance,
         )?;
         if flush {
-            msgs.push(generate_cosmos_msg(
-                allocation_holding.send_type.clone(),
-                merged_coins,
-            )?);
+            if let Some(new_msg) =
+                generate_cosmos_msg(allocation_holding.send_type.clone(), merged_coins)?
+            {
+                msgs.push(new_msg);
+            }
             allocation_holding.balance = vec![];
         } else {
             let check_coin = merged_coins
@@ -428,10 +433,11 @@ pub(crate) fn do_deposit(
                 .find(|c| c.denom == allocation_holding.send_after.denom);
             if let Some(coin) = check_coin {
                 if coin.amount > allocation_holding.send_after.amount {
-                    msgs.push(generate_cosmos_msg(
-                        allocation_holding.send_type.clone(),
-                        merged_coins,
-                    )?);
+                    if let Some(new_msg) =
+                        generate_cosmos_msg(allocation_holding.send_type.clone(), merged_coins)?
+                    {
+                        msgs.push(new_msg);
+                    }
                     allocation_holding.balance = vec![];
                 } else {
                     allocation_holding.balance = merged_coins;
@@ -446,29 +452,53 @@ pub(crate) fn do_deposit(
     Ok(msgs)
 }
 
-fn generate_cosmos_msg(send_type: SendType, coins: Vec<Coin>) -> Result<CosmosMsg, ContractError> {
+fn generate_cosmos_msg(
+    send_type: SendType,
+    coins: Vec<Coin>,
+) -> Result<Option<CosmosMsg>, ContractError> {
+    if coins.is_empty() {
+        return Ok(None);
+    }
     match send_type {
         SendType::Wallet { receiver } => {
             let msg = BankMsg::Send {
                 to_address: receiver.to_string(),
                 amount: coins,
             };
-            Ok(CosmosMsg::Bank(msg))
+            Ok(Some(CosmosMsg::Bank(msg)))
         }
-        SendType::SteakRewards {
-            steak,
-            receiver,
-            message,
-        } => {
+        SendType::SteakRewards { steak, receiver } => {
             let msg = pfc_steak::hub::ExecuteMsg::Bond {
                 receiver: Some(receiver.to_string()),
-                exec_msg: message,
+                exec_msg: None,
             };
-            Ok(CosmosMsg::Wasm(WasmMsg::Execute {
+            Ok(Some(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: steak.to_string(),
                 msg: to_binary(&msg)?,
                 funds: coins,
-            }))
+            })))
+        }
+        SendType::DistributeSteakRewards { steak, receiver } => {
+            let msg = pfc_steak::hub::ExecuteMsg::Bond {
+                receiver: Some(receiver.to_string()),
+                exec_msg: Some(to_binary(&Cw20HookMsg::Distribute {})?),
+            };
+            Ok(Some(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: steak.to_string(),
+                msg: to_binary(&msg)?,
+                funds: coins,
+            })))
+        }
+        SendType::TransferSteakRewards { steak, receiver } => {
+            let msg = pfc_steak::hub::ExecuteMsg::Bond {
+                receiver: Some(receiver.to_string()),
+                exec_msg: Some(to_binary(&Cw20HookMsg::Transfer {})?),
+            };
+            Ok(Some(CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr: steak.to_string(),
+                msg: to_binary(&msg)?,
+                funds: coins,
+            })))
         }
     }
 }
@@ -642,6 +672,8 @@ mod exec {
 
     #[test]
     fn deposit_split() -> Result<(), ContractError> {
+        eprintln!("XXX {}XX", &to_binary(&Cw20HookMsg::Distribute {})?);
+
         let mut deps = mock_dependencies();
         let allocs = two_allocation(&deps.api);
 
@@ -859,7 +891,7 @@ mod exec {
 #[cfg(test)]
 mod crud_allocations {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coin, Api, BankMsg, CosmosMsg, StdError};
+    use cosmwasm_std::{coin, Api, BankMsg, CosmosMsg};
 
     use pfc_fee_split::fee_split_msg::{AllocationHolding, ExecuteMsg, SendType};
 
@@ -888,7 +920,6 @@ mod crud_allocations {
             send_type: SendType::SteakRewards {
                 steak: deps.api.addr_validate("steak-contract")?,
                 receiver: deps.api.addr_validate("rewards")?,
-                message: None,
             },
         };
         //eprintln!("{}", serde_json::to_string(&msg).unwrap());
@@ -919,7 +950,6 @@ mod crud_allocations {
             send_type: SendType::SteakRewards {
                 steak: deps.api.addr_validate("steak-contract")?,
                 receiver: deps.api.addr_validate("rewards")?,
-                message: Some("fly swatter".to_string()),
             },
         };
         let err = execute(
@@ -1097,10 +1127,7 @@ mod crud_allocations {
         .err()
         .unwrap();
         match err {
-            ContractError::Std(x) => match x {
-                StdError::NotFound { .. } => {}
-                _ => assert!(false, "wrong std error {:?}", x),
-            },
+            ContractError::KeyNotFound { .. } => {}
             _ => assert!(false, "wrong error {:?}", err),
         }
 
