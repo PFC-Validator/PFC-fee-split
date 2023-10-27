@@ -13,3 +13,6 @@ proc-macro=true
 proc-macro2 = "1.0.51"
 quote= "1.0.23"
 syn="1.0.108"
+[dev-dependencies]
+cosmwasm-schema = "1.2.7"
+cw-ownable = "0.5.1"

@@ -20,7 +20,7 @@ crate-type = ["cdylib", "rlib"]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cosmwasm-std = "1.1"
+cosmwasm-std = "1.0"
 cw-storage-plus = "0.15"
 thiserror = { version = "1.0" }
 cw2 = "0.15"

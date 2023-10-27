@@ -4,10 +4,13 @@ members = [
     "packages/pfc-astroport_reward_holder",
     "packages/pfc-fee-split",
     "packages/pfc-vault",
+    "packages/pfc-dust-collector-kujira",
     "contracts/pfc-astroport-generator",
     "contracts/pfc-fee-splitter",
-    "contracts/pfc-vault-contract"
+    "contracts/pfc-vault-contract",
+    "contracts/pfc-dust-collector-kujira"
 ]
+resolver = "1"
 
 [profile.release]
 opt-level = 3

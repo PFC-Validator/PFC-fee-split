@@ -27,7 +27,7 @@ fn merge_variants(metadata: TokenStream, left: TokenStream, right: TokenStream) 
         }),
     ) = (&mut left.data, right.data)
     {
-        variants.extend(to_add.into_iter());
+        variants.extend(to_add);
 
         quote! { #left }.into()
     } else {
@@ -43,7 +43,7 @@ fn merge_variants(metadata: TokenStream, left: TokenStream, right: TokenStream) 
 ///
 /// ```rust
 /// use cosmwasm_schema::cw_serde;
-/// use cw_ownable::cw_ownable_exeucte;
+/// use cw_ownable::cw_ownable_execute;
 /// use pfc_dust_collector_derive::pfc_dust_collect;
 ///
 /// #[pfc_dust_collect]
@@ -65,8 +65,7 @@ fn merge_variants(metadata: TokenStream, left: TokenStream, right: TokenStream) 
 ///     DustReceived {},
 ///     FlushDust {},
 ///     SetReturnContract { contract:String },
-///     Foo {},
-///     Bar {},
+
 /// }
 /// ```
 ///

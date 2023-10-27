@@ -1,0 +1,67 @@
+[package]
+
+name = "pfc-dust-collector-kujira-contract"
+version = "0.0.1"
+authors = ["PFC <pfc-validator@protonmail.com>"]
+edition = "2018"
+license = "Apache-2.0"
+description = "smart contract to convert dust into a single denom via FIN"
+exclude = [
+  # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
+  "contract.wasm",
+  "hash.txt",
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+# for more explicit tests, cargo test --features=backtraces
+backtraces = ["cosmwasm-std/backtraces"]
+# use library feature to disable all init/handle/query exports
+library=[]
+
+[dependencies]
+cw2 = "1.0.0"
+
+pfc-fee-split = { version = "0.2", path = "../../packages/pfc-fee-split" }
+cosmwasm-std = "1.2.1"
+cw-storage-plus = "1.0.1"
+kujira = "0.8.2"
+
+schemars = "0.8.15"
+serde = { version = "1.0.189", default-features = false, features = ["derive"] }
+thiserror = "1.0.49"
+pfc-steak= "3.0.8"
+cw-ownable = "0.5.0"
+pfc-dust-collector-kujira={  path="../../packages/pfc-dust-collector-kujira"}
+pfc-whitelist={ version="0.1.0", path="../../packages/pfc-whitelist"}
+#pool-network= {version="2.8.1", path="../../../white-whale-core/packages/pool-network"}
+
+[build-dependencies]
+protoc-rust = "2"
+
+[dev-dependencies]
+cosmwasm-schema = "1.0.0"
+
+serde_json = "1.0.107"
+convert_case = "0.6.0"
+
+#[profile.release]
+#overflow-checks = true
+
+[package.metadata.scripts]
+optimize = """docker run --rm -v "$(pwd)":/code \
+          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+              cosmwasm/rust-optimizer:0.12.10"""
+optimize-w32 = """docker run --rm -v c:\\pfc\\fractional\\fee-split:/code  \
+            --mount type=volume,source=pfc_fee_splitter_cache,target=/code/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+            cosmwasm/rust-optimizer:0.12.10"""
+optimize-arm64 = """docker run --rm -v "$(pwd)":/code \
+          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+              cosmwasm/rust-optimizer-arm64:0.12.10"""

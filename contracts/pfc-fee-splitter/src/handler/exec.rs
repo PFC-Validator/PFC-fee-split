@@ -672,8 +672,12 @@ mod exec {
 
     #[test]
     fn deposit_split() -> Result<(), ContractError> {
-        eprintln!("XXX {}XX", &to_binary(&Cw20HookMsg::Distribute {})?);
-
+        /*
+                eprintln!(
+                    "deposit_split:{}XX",
+                    &to_binary(&Cw20HookMsg::Distribute {})?
+                );
+        */
         let mut deps = mock_dependencies();
         let allocs = two_allocation(&deps.api);
 
@@ -989,7 +993,7 @@ mod crud_allocations {
         );
         assert_eq!(
             &format!("{:?}", res.messages[1].msg),
-            "Wasm(Execute { contract_addr: \"steak-contract\", msg: {\"bond\":{\"receiver\":\"rewards\",\"exec_msg\":null}}, funds: [Coin { denom: \"uxyz\", amount: Uint128(333333) }] })"
+            "Wasm(Execute { contract_addr: \"steak-contract\", msg: {\"bond\":{\"receiver\":\"rewards\",\"exec_msg\":null}}, funds: [Coin { 333333 \"uxyz\" }] })"
         );
         let allocations = query_allocation(deps.as_ref(), String::from(ALLOCATION_2))?.unwrap();
 
