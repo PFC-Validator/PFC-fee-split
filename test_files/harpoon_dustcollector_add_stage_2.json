@@ -1,0 +1,14 @@
+{
+  "set_asset_stages": {
+    "stages": [
+      [
+        {
+         "address": "kujira16084g6pg0qk0646erfcwkstck95m46xc70zgt48usya0juf8lf0syg6yr5",
+         "denom": "factory/kujira1643jxg8wasy5cfcn7xm8rd742yeazcksqlg4d7/umnta"
+
+        }
+      ]
+    ],
+    "denom": "factory/kujira1643jxg8wasy5cfcn7xm8rd742yeazcksqlg4d7/umnta"
+  }
+}

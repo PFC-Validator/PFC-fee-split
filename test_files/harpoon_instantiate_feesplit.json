@@ -1,0 +1,20 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m",
+  "allocation": [
+    {
+      "name": "cron",
+      "allocation": 1,
+      "send_after": {
+        "denom": "ukuji",
+        "amount": "100"
+      },
+      "send_type": {
+        "Wallet": {
+          "receiver": "kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m"
+        }
+      }
+    }
+  ]
+}
+
