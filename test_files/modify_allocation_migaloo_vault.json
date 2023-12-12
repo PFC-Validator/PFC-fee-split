@@ -1,0 +1,15 @@
+{
+  "add_allocation_detail": {
+    "name": "gravedigger",
+    "allocation": 100,
+    "send_after": {
+      "denom": "uwhale",
+      "amount": "100000"
+    },
+    "send_type": {
+      "Wallet": {
+        "receiver": "migaloo1n38kj5km2jl94jkm0n87zlk7vf6dj5dk3y9fc6"
+      }
+    }
+  }
+}

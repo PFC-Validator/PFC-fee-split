@@ -5,14 +5,12 @@ migalood tx wasm store ./artifacts/pfc_fee_splitter.wasm --from boneluna-admin -
 json=$(cat ./test_files/migaloo_instantiate_feesplit.json)
 migalood tx wasm instantiate 2 "${json}" --admin migaloo1lu92zj8q6cmrptu09rp3343x9969r9qrsplfat --label pfc-fee-split --from boneluna-admin  --gas-prices 0.025uwhale --gas-adjustment 1.7  --gas 324601
 # migaloo1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtqvk723g
+#
 
 
-
-migalood tx wasm migrate migaloo1d6k8pahenpmx4spwfpf80zealtecfv7v0n7v49rxeu4lpzgzhrwq4wmhkr 834 '{}' --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto
+migalood tx wasm migrate migaloo1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtqvk723g 834 '{}' --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto
 add_alloc=$(cat ./test_files/add_allocation_phoenix_vault.json)
-migalood tx wasm exec migaloo1d6k8pahenpmx4spwfpf80zealtecfv7v0n7v49rxeu4lpzgzhrwq4wmhkr "${add_alloc}" --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto
-migalood tx wasm exec migaloo1d6k8pahenpmx4spwfpf80zealtecfv7v0n7v49rxeu4lpzgzhrwq4wmhkr '{"reconcile":{}}' --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1
+migalood tx wasm exec migaloo1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtqvk723g "${add_alloc}" --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto
+migalood tx wasm exec migaloo1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtqvk723g '{"reconcile":{}}' --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1
 
-migalood query wasm cs smart migaloo1d6k8pahenpmx4spwfpf80zealtecfv7v0n7v49rxeu4lpzgzhrwq4wmhkr '{"allocations":{}}' --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1
-
-
+migalood query wasm cs smart migaloo1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtqvk723g '{"allocations":{}}' --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1

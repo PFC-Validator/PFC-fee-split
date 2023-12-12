@@ -1,0 +1,22 @@
+{
+  "owner": "terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902",
+  "token_router": "terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902",
+  "return_contract": "terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902",
+  "base_denom": "ukuji",
+  "assets": [
+    {
+      "denom": "ukuji",
+      "minimum": "1000"
+    },
+    {
+      "denom": "factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk",
+      "minimum": "1000"
+    },
+    {
+      "denom": "factory/kujira1643jxg8wasy5cfcn7xm8rd742yeazcksqlg4d7/umnta",
+      "minimum": "1000"
+    }
+  ],
+  "max_swaps": 3,
+  "flush_whitelist": []
+}
