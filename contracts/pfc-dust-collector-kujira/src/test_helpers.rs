@@ -10,7 +10,8 @@ use crate::error::ContractError;
 
 //pub const GOV_CONTRACT: &str = "gov_contract";
 pub const CREATOR: &str = "creator";
-pub const ROUTER: &str = "swap_contract";
+pub const MANTA_ROUTER: &str = "manta_swap_contract";
+pub const CALC_ROUTER: &str = "calc_swap_contract";
 pub const USER_1: &str = "user-0001";
 pub const USER_2: &str = "user-0002";
 pub const USER_3: &str = "user-0003";
@@ -32,7 +33,8 @@ pub(crate) fn do_instantiate(
 ) -> Result<Response, ContractError> {
     let instantiate_msg = InstantiateMsg {
         owner: CREATOR.to_string(),
-        token_router: ROUTER.to_string(),
+        manta_token_router: MANTA_ROUTER.to_string(),
+        calc_token_router: CALC_ROUTER.to_string(),
         return_contract: return_to.to_string(),
         base_denom: Denom::from(DENOM_MAIN),
         assets,

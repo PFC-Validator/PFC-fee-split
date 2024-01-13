@@ -1,0 +1,17 @@
+{
+  "set_asset_strategy": {
+    "strategy": {
+      "manta": {
+        "stages": [
+          [
+            {
+              "address": "kujira1wl003xxwqltxpg5pkre0rl605e406ktmq5gnv0ngyjamq69mc2kqm06ey6",
+              "denom": "factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk"
+            }
+          ]
+        ]
+      }
+    },
+    "denom": "factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk"
+  }
+}

@@ -7,14 +7,16 @@ use cosmwasm_std::{
 use cw2::{get_contract_version, set_contract_version};
 use kujira::Denom;
 
-use pfc_dust_collector_kujira::dust_collector::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg};
+use pfc_dust_collector_kujira::dust_collector::{
+    ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SellStrategy,
+};
 
 use crate::error::ContractError;
 use crate::handler::exec as ExecHandler;
 use crate::handler::exec::{
-    execute_clear_asset, execute_set_asset_minimum, execute_set_asset_stages,
-    execute_set_base_denom, execute_set_max_swaps, execute_set_return_contract,
-    execute_set_token_router,
+    execute_clear_asset, execute_set_asset_maximum, execute_set_asset_minimum,
+    execute_set_asset_strategy, execute_set_base_denom, execute_set_calc_token_router,
+    execute_set_manta_token_router, execute_set_max_swaps, execute_set_return_contract,
 };
 use crate::handler::query as QueryHandler;
 use crate::state;
@@ -41,7 +43,8 @@ pub fn instantiate(
         deps.storage,
         &state::Config {
             //this: deps.api.addr_validate(env.contract.address.as_str())?,
-            token_router: deps.api.addr_validate(&msg.token_router)?,
+            manta_token_router: deps.api.addr_validate(&msg.manta_token_router)?,
+            calc_token_router: deps.api.addr_validate(&msg.calc_token_router)?,
             base_denom: msg.base_denom.clone(),
             return_contract: deps.api.addr_validate(&msg.return_contract)?,
             max_swaps: msg.max_swaps,
@@ -58,7 +61,11 @@ pub fn instantiate(
         //  }
 
         ASSET_HOLDINGS.save(deps.storage, row.denom.to_string(), &row.minimum)?;
-        ASSET_STAGES.save(deps.storage, row.denom.to_string(), &Vec::new())?;
+        ASSET_STAGES.save(
+            deps.storage,
+            row.denom.to_string(),
+            &SellStrategy::default(),
+        )?;
     }
 
     let mut res = Response::new();
@@ -115,9 +122,13 @@ pub fn execute(
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_return_contract(deps, &info.sender, &contract)
         }
-        ExecuteMsg::SetTokenRouter { contract } => {
+        ExecuteMsg::SetMantaTokenRouter { contract } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
-            execute_set_token_router(deps, &info.sender, &contract)
+            execute_set_manta_token_router(deps, &info.sender, &contract)
+        }
+        ExecuteMsg::SetCalcTokenRouter { contract } => {
+            cw_ownable::assert_owner(deps.storage, &info.sender)?;
+            execute_set_calc_token_router(deps, &info.sender, &contract)
         }
         ExecuteMsg::SetBaseDenom { denom } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
@@ -126,6 +137,10 @@ pub fn execute(
         ExecuteMsg::SetAssetMinimum { denom, minimum } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_asset_minimum(deps, &info.sender, denom, minimum)
+        }
+        ExecuteMsg::SetAssetMaximum { denom, maximum } => {
+            cw_ownable::assert_owner(deps.storage, &info.sender)?;
+            execute_set_asset_maximum(deps, &info.sender, denom, maximum)
         }
         ExecuteMsg::ClearAsset { denom } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
@@ -142,8 +157,8 @@ pub fn execute(
             pfc_whitelist::remove_entry(deps.storage, deps.api, address)?;
             Ok(Response::default())
         }
-        ExecuteMsg::SetAssetStages { denom, stages } => {
-            execute_set_asset_stages(deps, &info.sender, &denom, &stages)
+        ExecuteMsg::SetAssetStrategy { denom, strategy } => {
+            execute_set_asset_strategy(deps, &info.sender, &denom, &strategy)
         }
         ExecuteMsg::SetMaxSwaps { max_swaps } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
@@ -214,6 +229,7 @@ mod tests {
 
         use pfc_dust_collector_kujira::dust_collector::{
             AssetHolding, AssetMinimum, CollectorResponse, InitHook, InstantiateMsg, QueryMsg,
+            SellStrategy,
         };
         use pfc_whitelist::Whitelist;
 
@@ -230,7 +246,8 @@ mod tests {
             let hook_msg = Binary::from(r#"{"some": 123}"#.as_bytes());
             let instantiate_msg = InstantiateMsg {
                 owner: "owner".to_string(),
-                token_router: "swap".to_string(),
+                manta_token_router: "swap".to_string(),
+                calc_token_router: "calc".to_string(),
                 return_contract: "jim".to_string(),
                 base_denom: Denom::from(DENOM_3),
                 assets: vec![
@@ -295,7 +312,7 @@ mod tests {
                         assert!(false, "{} not expected", entry.denom)
                     }
                 }
-                assert_eq!(entry.stages.is_empty(), true);
+                assert_eq!(entry.strategy, SellStrategy::Hold);
                 assert_eq!(entry.balance, Uint128::zero());
             }
             assert_eq!(seen_denom_1, 1, "wantred to see DENOM_1 once");
@@ -307,7 +324,7 @@ mod tests {
                 .iter()
                 .find(|p| p.denom.to_string() == DENOM_2)
                 .unwrap();
-            assert_eq!(denom_2.stages.is_empty(), true, "should be empty");
+            assert_eq!(denom_2.strategy, SellStrategy::Hold, "should be hold");
             assert_eq!(
                 denom_2.minimum,
                 Uint128::from(20u128),
@@ -316,7 +333,8 @@ mod tests {
 
             let instantiate_msg_fail = InstantiateMsg {
                 owner: "owner".to_string(),
-                token_router: "swap".to_string(),
+                manta_token_router: "swap".to_string(),
+                calc_token_router: "calc".to_string(),
                 return_contract: "jim".to_string(),
                 base_denom: Denom::from(DENOM_3),
                 assets: vec![
@@ -355,7 +373,8 @@ mod tests {
             }
             let instantiate_msg_2 = InstantiateMsg {
                 owner: "owner".to_string(),
-                token_router: "swap".to_string(),
+                manta_token_router: "swap".to_string(),
+                calc_token_router: "calc".to_string(),
                 return_contract: "jim".to_string(),
                 base_denom: Denom::from(DENOM_MAIN),
                 assets: vec![

@@ -1,0 +1,23 @@
+{
+  "owner": "kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m",
+  "manta_token_router": "kujira1j80m5dtnxjcdewgccppjpl3sd6z6gnmvzs8avfnkyu96492qdu3qdsrnx3",
+  "calc_token_router": "kujira1j80m5dtnxjcdewgccppjpl3sd6z6gnmvzs8avfnkyu96492qdu3qdsrnx3",
+  "return_contract": "kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m",
+  "base_denom": "ukuji",
+  "assets": [
+    {
+      "denom": "ukuji",
+      "minimum": "1000"
+    },
+    {
+      "denom": "factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk",
+      "minimum": "1000"
+    },
+    {
+      "denom": "factory/kujira1643jxg8wasy5cfcn7xm8rd742yeazcksqlg4d7/umnta",
+      "minimum": "1000"
+    }
+  ],
+  "max_swaps": 3,
+  "flush_whitelist": []
+}

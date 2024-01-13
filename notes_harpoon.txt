@@ -1,0 +1,45 @@
+
+# harpoon
+###
+### FEE SPLIT
+###
+kujirad tx wasm store ./artifacts/pfc_fee_splitter.wasm --from andromeda-pfc-testnet --yes --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+# feesplit -2528
+json=$(cat ./test_files/harpoon_instantiate_feesplit.json)
+kujirad tx wasm instantiate 2528 "${json}" --admin kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m --label pfc-feesplit --from andromeda-pfc-testnet  --gas-prices 0.00125ukuji --gas-adjustment 1.7  --gas auto
+# kujira1nd3yn5ztn3dl2l7w4h4xelglls08ns5uz6wq8x08t47lh44md7rqvng8h5
+kujirad tx wasm migrate kujira1nd3yn5ztn3dl2l7w4h4xelglls08ns5uz6wq8x08t47lh44md7rqvng8h5 2528 '{}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+
+###
+### DUST COLLECTOR
+###
+kujirad tx wasm store ./artifacts/pfc_dust_collector_kujira_contract.wasm --from andromeda-pfc-testnet --yes --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+# dust- 2533 | 2796
+json=$(cat ./test_files/harpoon_instantiate_dustcollector.json)
+kujirad tx wasm instantiate 2796 "${json}" --admin kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m --label pfc-dustcollector --from andromeda-pfc-testnet  --gas-prices 0.00125ukuji --gas-adjustment 1.7  --gas auto
+
+# kujira12lr0d5y0lz83nlgttdrhfydczphvu6arl2akks36wla8hmx85raq8l3lkn
+# kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf -- latest (2024-01-09)
+
+
+kujirad tx wasm migrate kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz 2533 '{}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+
+add_stage=$(cat ./test_files/harpoon_dustcollector_add_stage.json)
+kujirad tx wasm exec kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf "${add_stage}" --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+
+# mantaDAO testnet
+kujirad query wasm cs smart kujira1j80m5dtnxjcdewgccppjpl3sd6z6gnmvzs8avfnkyu96492qdu3qdsrnx3 '{"config":{}}'
+kujirad query wasm cs smart kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz '{"config":{}}'
+kujirad query wasm cs smart kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz '{"assets":{}}'
+kujirad query wasm cs smart kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"config":{}}'
+kujirad query wasm cs smart kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"assets":{}}'
+
+
+kujirad tx wasm exec kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz '{"set_asset_minimum":{"denom":"ukuji", "minimum":"100000"}}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+
+kujirad tx wasm exec kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz '{"dust_received":{}}'  --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto --amount "970factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk"
+
+kujirad tx wasm exec kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz '{"set_return_contract":{"contract":"kujira1p6wkv8lycu5yhrr4cgf0qnp7l3pfwucckgw3y4sjzrzcx6h4385q2fkk2u"}}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+kujirad tx wasm exec kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"set_return_contract":{"contract":"kujira1p6wkv8lycu5yhrr4cgf0qnp7l3pfwucckgw3y4sjzrzcx6h4385q2fkk2u"}}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+kujirad tx wasm exec kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"dust_received":{}}'  --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto --amount "3970factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk"
+kujirad tx wasm exec kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"set_asset_maximum":{"denom":"factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk", "maximum":"2000"}}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto

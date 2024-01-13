@@ -1,0 +1,95 @@
+testnet:
+DAO: terra1723jf2ugdvw4z9pxeqrcr77hfapm84ss55dlxjjgwptq8npjv6rqky5hje
+feesplit:
+ terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k
+
+phoenix:
+    terra18f9eklmlvk9hl78e2kwneymunppu8ncvhpsrn2zhc085sah2w3rsa5gssp
+feesplit:
+    terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m
+
+-- phoenix
+-- cw20
+terrad tx wasm set-contract-admin terra17aj4ty4sz4yhgm08na8drc0v03v2jwr3waxcqrwhajj729zhl7zqnpc0ml terra18f9eklmlvk9hl78e2kwneymunppu8ncvhpsrn2zhc085sah2w3rsa5gssp --from boneLunaAdmin  --fees 75000uluna --gas 500000
+
+terrad query wasm cs smart terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m '{"ownership":{}}'
+terrad tx wasm exec terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m \
+    '{"transfer_gov_contract": { "gov_contract": "terra18f9eklmlvk9hl78e2kwneymunppu8ncvhpsrn2zhc085sah2w3rsa5gssp", "blocks": 999999 }}' \
+    --from boneLunaAdmin  --fees 75000uluna --gas 500000
+
+
+terrad tx wasm exec terra18f9eklmlvk9hl78e2kwneymunppu8ncvhpsrn2zhc085sah2w3rsa5gssp '
+{
+  "create_proposal": {
+    "description": "Accept Gov Ownership",
+    "proposal_actions": [
+      {
+        "execute_msgs": {
+          "action_type": "execute",
+          "msgs": [
+                "{\"wasm\":{\"execute\":{\"contract_addr\":\"terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m\",\"funds\":[],\"msg\":\"eyJhY2NlcHRfZ292X2NvbnRyYWN0Ijp7fX0=\"}}}"
+              ]
+        }
+      }
+    ],
+    "title": "Accept ownership "
+  }
+}' --from PFC  --fees 75000uluna --gas 500000
+terrad tx wasm exec terra18f9eklmlvk9hl78e2kwneymunppu8ncvhpsrn2zhc085sah2w3rsa5gssp '
+{
+  "create_proposal": {
+    "description": "Stop sending fees to Astroport",
+    "proposal_actions": [
+      {
+        "execute_msgs": {
+          "action_type": "execute",
+          "msgs": [
+                "{\"wasm\":{\"execute\":{\"contract_addr\":\"terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m\",\"funds\":[],\"msg\":\"eyJyZW1vdmVfYWxsb2NhdGlvbl9kZXRhaWwiOnsibmFtZSI6ImxwX3ZhdWx0In19\"}}}"
+              ]
+        }
+      }
+    ],
+    "title": "Remove LP-Vault Allocation"
+  }
+}' --from PFC  --fees 75000uluna --gas 500000
+
+terrad tx wasm exec terra18f9eklmlvk9hl78e2kwneymunppu8ncvhpsrn2zhc085sah2w3rsa5gssp '{"cast_vote":{"proposal_id":1, "outcome":"yes"}}' --from PFC  --fees 75000uluna --gas 500000 --yes
+
+
+-- pisco
+
+terrad query wasm cs smart terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k '{"ownership":{}}'
+terrad tx wasm set-contract-admin terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k terra1723jf2ugdvw4z9pxeqrcr77hfapm84ss55dlxjjgwptq8npjv6rqky5hje --from testadmin  --fees 75000uluna --gas 500000
+terrad tx wasm exec terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k \
+    '{"transfer_gov_contract": { "gov_contract": "terra1723jf2ugdvw4z9pxeqrcr77hfapm84ss55dlxjjgwptq8npjv6rqky5hje", "blocks": 999999 }}' \
+--from testadmin  --fees 75000uluna --gas 500000
+
+{"accept_gov_contract":{}}
+eyJhY2NlcHRfZ292X2NvbnRyYWN0Ijp7fX0=
+
+
+terrad tx wasm exec terra1723jf2ugdvw4z9pxeqrcr77hfapm84ss55dlxjjgwptq8npjv6rqky5hje '
+{
+  "create_proposal": {
+    "description": "Accept Gov Ownership",
+    "proposal_actions": [
+      {
+        "execute_msgs": {
+          "action_type": "execute",
+          "msgs": [
+                "{\"wasm\":{\"execute\":{\"contract_addr\":\"terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k\",\"funds\":[],\"msg\":\"eyJhY2NlcHRfZ292X2NvbnRyYWN0Ijp7fX0=\"}}}"
+              ]
+        }
+      }
+    ],
+    "title": "Accept ownership "
+  }
+}' --from pisco-validator  --fees 75000uluna --gas 500000
+
+terrad tx wasm exec terra1723jf2ugdvw4z9pxeqrcr77hfapm84ss55dlxjjgwptq8npjv6rqky5hje '{"cast_vote":{"proposal_id":3, "outcome":"yes"}}' --from pisco-validator  --fees 75000uluna --gas 500000 --yes
+terrad tx wasm exec terra1723jf2ugdvw4z9pxeqrcr77hfapm84ss55dlxjjgwptq8npjv6rqky5hje '{"cast_vote":{"proposal_id":3, "outcome":"yes"}}' --from PFC  --fees 75000uluna --gas 500000 --yes
+
+terrad query wasm cs smart terra1723jf2ugdvw4z9pxeqrcr77hfapm84ss55dlxjjgwptq8npjv6rqky5hje '{"proposal_status": {"proposal_id":3}}'
+
+
+terrad tx wasm exec terra1723jf2ugdvw4z9pxeqrcr77hfapm84ss55dlxjjgwptq8npjv6rqky5hje '{"execute_proposal":{"proposal_id":3}}' --from pisco-validator  --fees 75000uluna --gas 1500000 --yes

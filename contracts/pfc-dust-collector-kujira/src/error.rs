@@ -1,4 +1,4 @@
-use cosmwasm_std::{OverflowError, StdError};
+use cosmwasm_std::{OverflowError, StdError, Uint128};
 use cw_ownable::OwnershipError;
 use kujira::Denom;
 use thiserror::Error;
@@ -42,6 +42,8 @@ pub enum ContractError {
     DenomNotUnique {},
     #[error("PFC-Dust-Kujira: Don't send funds here")]
     NoFundsRequired {},
+    #[error("PFC-Dust-Kujira: Min {min:?} > Max {max:?} ?")]
+    MinMax { min: Uint128, max: Uint128 },
 
     #[error("PFC-Dust-Kujira: Contract can't be migrated! {current_name:?} {current_version:?}")]
     MigrationError {

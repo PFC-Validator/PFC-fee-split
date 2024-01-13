@@ -1,0 +1,21 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "terra12g4nkvsjjnl0t7fvq3hdcw7y8dc9fq69nt4p4n",
+
+  "allocation": [
+    {
+      "name": "pfc-validator",
+      "allocation": 30,
+      "send_after": {
+        "denom": "uluna",
+        "amount": "100000"
+      },
+      "send_type": {
+        "Wallet": {
+          "receiver": "terra12g4nkvsjjnl0t7fvq3hdcw7y8dc9fq69nt4p4n"
+        }
+      }
+    }
+  ]
+}
+

@@ -16,26 +16,77 @@ pub struct Stage {
     pub denom: Denom,
 }
 
+#[cw_serde]
+pub struct MantaSellStrategy {
+    pub stages: Vec<Vec<Stage>>,
+}
+
+#[cw_serde]
+pub struct CalcSellStrategy {
+    msg: Binary,
+}
+
+#[cw_serde]
+pub struct CustomSellStrategy {
+    contract: Addr,
+    msg: Binary,
+}
+
+#[cw_serde]
+pub struct AirdropSellStrategy {
+    contract: Addr,
+}
+
+#[cw_serde]
+#[derive(Default)]
+pub enum SellStrategy {
+    #[default]
+    Hold,
+    Manta(MantaSellStrategy),
+    Calc(CalcSellStrategy),
+    Airdrop(AirdropSellStrategy),
+    Custom(CustomSellStrategy),
+}
+
 #[pfc_dust_collect]
 #[pfc_whitelist_exec]
 #[cw_ownable_execute]
 #[cw_serde]
 pub enum ExecuteMsg {
     /// get some dust
-    SetTokenRouter { contract: String },
+    SetMantaTokenRouter {
+        contract: String,
+    },
+    SetCalcTokenRouter {
+        contract: String,
+    },
     /// Set Base denom
-    SetBaseDenom { denom: Denom },
-    /// Change the number of funds/swaps we can do at a time. ADMIN ONLY
-    SetMaxSwaps { max_swaps: u64 },
-    /// minimum of zero
-    SetAssetMinimum { denom: Denom, minimum: Uint128 },
-    /// set the route path to exchange denom 'X' into something else.
-    SetAssetStages {
+    SetBaseDenom {
         denom: Denom,
-        stages: Vec<Vec<Stage>>,
+    },
+    /// Change the number of funds/swaps we can do at a time. ADMIN ONLY
+    SetMaxSwaps {
+        max_swaps: u64,
+    },
+    /// minimum of zero
+    SetAssetMinimum {
+        denom: Denom,
+        minimum: Uint128,
+    },
+    /// defaults to unlimited
+    SetAssetMaximum {
+        denom: Denom,
+        maximum: Uint128,
+    },
+    /// set the route path to exchange denom 'X' into something else.
+    SetAssetStrategy {
+        denom: Denom,
+        strategy: SellStrategy,
     },
     /// passing this asset moving forward will just hold it, and not attempt to convert it. a 'Flush' will send it back (to avoid loops)
-    ClearAsset { denom: Denom },
+    ClearAsset {
+        denom: Denom,
+    },
 }
 
 #[cw_ownable_query]
@@ -71,12 +122,14 @@ pub struct AssetHolding {
     pub denom: Denom,
     pub minimum: Uint128, // only send $ after we have this amount in this coin
     pub balance: Uint128,
-    pub stages: Vec<Vec<(Addr, Denom)>>,
+    pub strategy: SellStrategy,
+    pub maximum: Uint128, // only send up to maximum at any one stage
 }
 #[cw_serde]
 pub struct InstantiateMsg {
     pub owner: String,
-    pub token_router: String,
+    pub manta_token_router: String,
+    pub calc_token_router: String,
     pub return_contract: String,
     pub base_denom: Denom,
     pub assets: Vec<AssetMinimum>,
