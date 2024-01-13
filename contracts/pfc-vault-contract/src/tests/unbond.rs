@@ -91,7 +91,7 @@ fn claim_after_unbond() {
     match err {
         ContractError::NoneBonded {} => {}
         _ => {
-            assert!(false, "should have failed with NoneBonded")
+            unreachable!("should have failed with NoneBonded")
         }
     }
 }

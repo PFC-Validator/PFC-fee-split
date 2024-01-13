@@ -188,7 +188,7 @@ fn succeed() {
             "{} is not within range {} -> {}",
             info2.estimated_rewards[0].amount, range_low, range_high
         );
-        assert!(false, "amount not in desired range");
+        unreachable!("amount not in desired range");
     }
 
     let res = exec_withdraw(&mut deps, env.clone(), sender2.clone()).unwrap();

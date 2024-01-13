@@ -2,15 +2,12 @@ use crate::states::PendingClaimAmount;
 use cosmwasm_std::{Addr, Uint128};
 use std::collections::HashMap;
 
-pub fn merge_claims(
-    a: &Vec<PendingClaimAmount>,
-    b: &Vec<PendingClaimAmount>,
-) -> Vec<PendingClaimAmount> {
+pub fn merge_claims(a: &[PendingClaimAmount], b: &[PendingClaimAmount]) -> Vec<PendingClaimAmount> {
     if a.is_empty() {
-        return b.clone();
+        return b.to_owned();
     }
     if b.is_empty() {
-        return a.clone();
+        return a.to_owned();
     }
     let mut a_map = a
         .iter()

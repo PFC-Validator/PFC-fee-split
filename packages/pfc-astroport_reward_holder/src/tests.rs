@@ -7,8 +7,8 @@ fn query_cw20_balance() {
     let mut deps = custom_deps();
 
     deps.querier.with_token_balances(&[(
-        &"liquidity0000".to_string(),
-        &[(&MOCK_CONTRACT_ADDR.to_string(), &Uint128::from(123u128))],
+        "liquidity0000",
+        &[(MOCK_CONTRACT_ADDR, &Uint128::from(123u128))],
     )]);
 
     assert_eq!(

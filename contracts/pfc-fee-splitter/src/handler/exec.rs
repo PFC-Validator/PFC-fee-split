@@ -245,7 +245,7 @@ pub fn execute_reconcile(
     }
     for key in keys {
         ALLOCATION_HOLDINGS.update(deps.storage, key.clone(), |rec| {
-            if let Some(mut record) = rec {
+            if let Some(mut record) = rec.clone() {
                 record.balance = vec![];
                 Ok(record)
             } else {
@@ -515,7 +515,7 @@ pub(crate) fn get_native_balances(
 }
 
 #[cfg(test)]
-mod exec {
+mod exec_test {
     use cosmwasm_std::coin;
     use cosmwasm_std::testing::{
         mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info,
@@ -534,23 +534,23 @@ mod exec {
 
     #[test]
     fn allocations_1() -> Result<(), ContractError> {
-        let zero = determine_allocation(1, 1, &HashMap::default(), &vec![])?;
+        let zero = determine_allocation(1, 1, &HashMap::default(), &[])?;
         assert!(zero.is_empty(), "should have been empty");
         let funds: HashMap<String, Uint128> =
             HashMap::from([(DENOM_1.into(), Uint128::from(1_000_000u128))]);
-        let full = determine_allocation(1, 1, &funds, &vec![])?;
+        let full = determine_allocation(1, 1, &funds, &[])?;
         assert_eq!(full, vec![coin(1_000_000u128, String::from(DENOM_1))]);
-        let tenth = determine_allocation(1, 10, &funds, &vec![])?;
+        let tenth = determine_allocation(1, 10, &funds, &[])?;
         assert_eq!(tenth, vec![coin(100_000, String::from(DENOM_1))]);
-        let third = determine_allocation(1, 3, &funds, &vec![])?;
+        let third = determine_allocation(1, 3, &funds, &[])?;
         assert_eq!(third, vec![coin(333_333, String::from(DENOM_1))]);
-        let three_quarters = determine_allocation(3, 4, &funds, &vec![])?;
+        let three_quarters = determine_allocation(3, 4, &funds, &[])?;
         assert_eq!(three_quarters, vec![coin(750_000, String::from(DENOM_1))]);
         let funds2: HashMap<String, Uint128> = HashMap::from([
             (DENOM_1.into(), Uint128::from(1_000_000u128)),
             (DENOM_2.into(), Uint128::from(9_000u128)),
         ]);
-        let two_parts = determine_allocation(3, 4, &funds2, &vec![])?;
+        let two_parts = determine_allocation(3, 4, &funds2, &[])?;
         assert_eq!(
             two_parts.iter().find(|c| c.denom == DENOM_1).unwrap(),
             &coin(750_000, String::from(DENOM_1))
@@ -703,28 +703,23 @@ mod exec {
             })
         );
         match &res.messages[1].msg {
-            CosmosMsg::Wasm(wasmmsg) => match wasmmsg {
-                WasmMsg::Execute {
-                    contract_addr,
-                    msg,
-                    funds,
-                } => {
-                    assert_eq!(contract_addr, "steak_contract");
-                    assert_eq!(funds.len(), 1);
-                    assert_eq!(funds[0].amount, Uint128::new(25_000_000));
-                    assert_eq!(funds[0].denom, DENOM_1);
-                    let expected = to_binary(&pfc_steak::hub::ExecuteMsg::Bond {
-                        receiver: Some(String::from("receiver")),
-                        exec_msg: None,
-                    })?;
-                    assert_eq!(msg, &expected)
-                }
-                _ => {
-                    assert!(false, "Invalid MSG {:?}", res.messages[1].msg)
-                }
-            },
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                contract_addr,
+                msg,
+                funds,
+            }) => {
+                assert_eq!(contract_addr, "steak_contract");
+                assert_eq!(funds.len(), 1);
+                assert_eq!(funds[0].amount, Uint128::new(25_000_000));
+                assert_eq!(funds[0].denom, DENOM_1);
+                let expected = to_binary(&pfc_steak::hub::ExecuteMsg::Bond {
+                    receiver: Some(String::from("receiver")),
+                    exec_msg: None,
+                })?;
+                assert_eq!(msg, &expected)
+            }
             _ => {
-                assert!(false, "Invalid MSG {:?}", res.messages[1].msg)
+                unreachable!("Invalid MSG {:?}", res.messages[1].msg)
             }
         }
 
@@ -737,7 +732,7 @@ mod exec {
 
     #[test]
     fn reconcile_basic() -> Result<(), ContractError> {
-        let mut deps = mock_dependencies_with_balance(&vec![
+        let mut deps = mock_dependencies_with_balance(&[
             Coin::new(1_000_000, DENOM_2),
             Coin::new(50_000, DENOM_1),
         ]);
@@ -751,7 +746,7 @@ mod exec {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[Coin::new(1_000, DENOM_1)]);
         let env = mock_env();
@@ -760,7 +755,7 @@ mod exec {
             .unwrap();
         match err {
             ContractError::ReconcileWithFunds { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
         let env = mock_env();
@@ -784,11 +779,11 @@ mod exec {
                     )
                 }
                 _ => {
-                    assert!(false, "invalid bank message {:?} ", b)
+                    panic!("invalid bank message {:?} ", b)
                 }
             },
             _ => {
-                assert!(false, "invalid message {:?} ", res.messages[0])
+                panic!("invalid message {:?} ", res.messages[0])
             }
         }
 
@@ -796,7 +791,7 @@ mod exec {
         assert_eq!(allocations.allocations.len(), 2);
         if allocations.allocations[0].name == ALLOCATION_1 {
             assert_eq!(allocations.allocations[0].name, ALLOCATION_1);
-            assert_eq!(allocations.allocations[0].balance.is_empty(), true);
+            assert!(allocations.allocations[0].balance.is_empty());
             assert_eq!(allocations.allocations[1].name, ALLOCATION_2);
             assert_eq!(allocations.allocations[1].balance.len(), 2);
             assert_eq!(
@@ -815,7 +810,7 @@ mod exec {
             );
         } else {
             assert_eq!(allocations.allocations[1].name, ALLOCATION_1);
-            assert_eq!(allocations.allocations[1].balance.is_empty(), true);
+            assert!(allocations.allocations[1].balance.is_empty());
             assert_eq!(allocations.allocations[0].name, ALLOCATION_2);
             assert_eq!(
                 allocations.allocations[0]
@@ -934,7 +929,7 @@ mod crud_allocations {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(CREATOR, &[]);
 
@@ -943,7 +938,7 @@ mod crud_allocations {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
         let msg_duplicate = ExecuteMsg::AddAllocationDetail {
@@ -966,11 +961,11 @@ mod crud_allocations {
         .unwrap();
         match err {
             ContractError::FeeAlreadyThere { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
 
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
-        assert!(res.attributes.len() > 0, "attributes should be present");
+        assert!(!res.attributes.is_empty(), "attributes should be present");
 
         let allocations = query_allocations(deps.as_ref(), None, None)?;
         assert_eq!(allocations.allocations.len(), 3);
@@ -1022,7 +1017,7 @@ mod crud_allocations {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(CREATOR, &[]);
 
@@ -1031,7 +1026,7 @@ mod crud_allocations {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
         let msg_does_not_exist = ExecuteMsg::RemoveAllocationDetail {
@@ -1047,11 +1042,11 @@ mod crud_allocations {
         .unwrap();
         match err {
             ContractError::AllocationNotFound { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
 
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
-        assert!(res.attributes.len() > 0, "attributes should be present");
+        assert!(!res.attributes.is_empty(), "attributes should be present");
 
         let allocations = query_allocations(deps.as_ref(), None, None)?;
         assert_eq!(allocations.allocations.len(), 1);
@@ -1102,7 +1097,7 @@ mod crud_allocations {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(CREATOR, &[]);
 
@@ -1111,7 +1106,7 @@ mod crud_allocations {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
         let msg_does_not_exist = ExecuteMsg::ModifyAllocationDetail {
@@ -1132,7 +1127,7 @@ mod crud_allocations {
         .unwrap();
         match err {
             ContractError::KeyNotFound { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
 
         let msg_deposit = ExecuteMsg::Deposit { flush: false };
@@ -1160,7 +1155,7 @@ mod crud_allocations {
         // do the update
         let info = mock_info(GOV_CONTRACT, &[]);
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
-        assert!(res.attributes.len() > 0, "attributes should be present");
+        assert!(!res.attributes.is_empty(), "attributes should be present");
 
         let allocations = query_allocations(deps.as_ref(), None, None)?;
         assert_eq!(allocations.allocations.len(), 2);
@@ -1243,7 +1238,7 @@ mod flush_whitelist {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         // the one creating it has no admin privs
         let info = mock_info(CREATOR, &[]);
@@ -1253,7 +1248,7 @@ mod flush_whitelist {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
 
         let info = mock_info(GOV_CONTRACT, &[]);
@@ -1268,7 +1263,7 @@ mod flush_whitelist {
         let mut whitelist = query_flush_whitelist(deps.as_ref())?.allowed;
         whitelist.sort();
         assert_eq!(whitelist.len(), 2);
-        assert_eq!(whitelist.get(0).unwrap(), "jimmy");
+        assert_eq!(whitelist.first().unwrap(), "jimmy");
         assert_eq!(whitelist.get(1).unwrap(), "johnny");
 
         let msg = ExecuteMsg::RemoveFromFlushWhitelist {
@@ -1281,7 +1276,7 @@ mod flush_whitelist {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
 
         // the one creating it has no admin privs
@@ -1292,7 +1287,7 @@ mod flush_whitelist {
             .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
 
         let info = mock_info(GOV_CONTRACT, &[]);
@@ -1307,7 +1302,7 @@ mod flush_whitelist {
         let mut whitelist = query_flush_whitelist(deps.as_ref())?.allowed;
         whitelist.sort();
         assert_eq!(whitelist.len(), 1);
-        assert_eq!(whitelist.get(0).unwrap(), "jimmy");
+        assert_eq!(whitelist.first().unwrap(), "jimmy");
 
         Ok(())
     }
@@ -1344,7 +1339,7 @@ mod flush_whitelist {
         .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info_auth_with_funds =
             mock_info("jimmy", &[coin(1_000_000u128, String::from(DENOM_1))]);
@@ -1392,7 +1387,7 @@ mod ownership_changes {
         .unwrap();
         match err {
             ContractError::AdminError { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
         let _res = execute(
@@ -1411,7 +1406,7 @@ mod ownership_changes {
             .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
 
         // old gov still good
@@ -1432,7 +1427,7 @@ mod ownership_changes {
         .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
         let err = execute(
@@ -1445,7 +1440,7 @@ mod ownership_changes {
         .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info("new_gov", &[]);
         let _res = execute(
@@ -1464,7 +1459,7 @@ mod ownership_changes {
             .unwrap();
         match err {
             ContractError::Unauthorized { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => panic!("wrong error {:?}", err),
         }
 
         // new gov is good

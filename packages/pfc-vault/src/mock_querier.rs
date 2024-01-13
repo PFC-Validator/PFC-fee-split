@@ -186,8 +186,8 @@ impl WasmMockQuerier {
 
     fn query_balance(&self, contract_addr: &String, key: &[u8]) -> Option<QuerierResult> {
         let prefix_balance = to_length_prefixed(b"balance").to_vec();
-        if key[..prefix_balance.len()].to_vec() == prefix_balance {}
-
+        // if key[..prefix_balance.len()].to_vec() == prefix_balance {}
+        let _ = key[..prefix_balance.len()].to_vec() == prefix_balance;
         let balances = self.token_querier.balances.get(contract_addr);
 
         if balances.is_none() {

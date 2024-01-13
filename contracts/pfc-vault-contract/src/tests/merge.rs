@@ -5,15 +5,15 @@ use crate::utils::merge_claims;
 
 #[test]
 fn merge() {
-    let c = merge_claims(&vec![], &vec![]);
+    let c = merge_claims(&[], &[]);
     assert!(c.is_empty(), "should be empty");
     let a: Vec<PendingClaimAmount> = vec![PendingClaimAmount {
         amount: Uint128::from(5u128),
         token: Addr::unchecked("test"),
     }];
-    let c = merge_claims(&a, &vec![]);
+    let c = merge_claims(&a, &[]);
     assert_eq!(a, c);
-    let c = merge_claims(&vec![], &a);
+    let c = merge_claims(&[], &a);
     assert_eq!(a, c);
     let b: Vec<PendingClaimAmount> = vec![PendingClaimAmount {
         amount: Uint128::one(),

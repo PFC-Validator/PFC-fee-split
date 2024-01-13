@@ -309,7 +309,7 @@ mod tests {
                         assert_eq!(entry.minimum, Uint128::from(20u128))
                     }
                     _ => {
-                        assert!(false, "{} not expected", entry.denom)
+                        unreachable!("{} not expected", entry.denom)
                     }
                 }
                 assert_eq!(entry.strategy, SellStrategy::Hold);
@@ -369,7 +369,7 @@ mod tests {
             let err = instantiate(deps.as_mut(), env, info, instantiate_msg_fail).unwrap_err();
             match err {
                 ContractError::DenomNotUnique {} => {}
-                _ => assert!(false, "wrong error {:?}", err),
+                _ => unreachable!("wrong error {:?}", err),
             }
             let instantiate_msg_2 = InstantiateMsg {
                 owner: "owner".to_string(),

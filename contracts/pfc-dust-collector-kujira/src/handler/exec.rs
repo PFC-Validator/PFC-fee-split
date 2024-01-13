@@ -363,7 +363,7 @@ pub(crate) fn execute_contract_reply(
 }
 */
 #[cfg(test)]
-mod exec {
+mod exec_test {
     use cosmwasm_std::testing::{
         mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info,
     };
@@ -442,7 +442,7 @@ mod exec {
         .unwrap_err();
         match err {
             ContractError::Unauthorized { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => unreachable!("wrong error {:?}", err),
         }
         let err = execute(
             deps.as_mut(),
@@ -461,7 +461,7 @@ mod exec {
         .unwrap_err();
         match err {
             ContractError::NoFundsRequired { .. } => {}
-            _ => assert!(false, "wrong error {:?}", err),
+            _ => unreachable!("wrong error {:?}", err),
         };
         execute(
             deps.as_mut(),
@@ -556,7 +556,7 @@ mod exec {
             ExecuteMsg::DustReceived {},
         )?;
 
-        assert_eq!(res.messages.is_empty(), true, "no messages for this one");
+        assert!(res.messages.is_empty(), "no messages for this one");
         Ok(())
     }
     #[test]
@@ -600,27 +600,25 @@ mod exec {
         assert_eq!(res.messages.len(), 1, "1 swap pls");
 
         let submsg = res.messages.first().unwrap();
-
-        match submsg {
-            SubMsg {
-                id: _,
-                msg,
-                gas_limit: _,
-                reply_on: _,
-            } => match msg {
-                CosmosMsg::Wasm(wasmmsg) => {
-                    //eprintln!("WASM-MSG {:?}", wasmmsg);
-                    assert_eq!(format!("{:?}", wasmmsg), "Execute { contract_addr: \"manta_swap_contract\", msg: {\"swap\":{\"stages\":[[[\"LP_xyz_main\",\"umain\"]]],\"recipient\":null,\"min_return\":null}}, funds: [Coin { 1000 \"uxyz\" }] }", "wrong message generated")
-                }
-                _ => {
-                    assert_eq!(
-                        format!("{:?}", msg),
-                        "wrong type",
-                        "wrong type of message generated"
-                    )
-                }
-            },
-        }
+        let SubMsg {
+            id: _,
+            msg,
+            gas_limit: _,
+            reply_on: _,
+        } = submsg;
+        match msg {
+            CosmosMsg::Wasm(wasmmsg) => {
+                //eprintln!("WASM-MSG {:?}", wasmmsg);
+                assert_eq!(format!("{:?}", wasmmsg), "Execute { contract_addr: \"manta_swap_contract\", msg: {\"swap\":{\"stages\":[[[\"LP_xyz_main\",\"umain\"]]],\"recipient\":null,\"min_return\":null}}, funds: [Coin { 1000 \"uxyz\" }] }", "wrong message generated")
+            }
+            _ => {
+                assert_eq!(
+                    format!("{:?}", msg),
+                    "wrong type",
+                    "wrong type of message generated"
+                )
+            }
+        };
 
         Ok(())
     }
@@ -732,7 +730,7 @@ mod exec {
                         }
                         _ => {
                             eprintln!("{:?}", wasm);
-                            assert!(false, "invalid WASM message")
+                            panic!("invalid WASM message")
                         }
                     }
                 }
@@ -749,12 +747,12 @@ mod exec {
                         }
                         _ => {
                             eprintln!("{:?}", bank);
-                            assert!(false, "invalid bank message")
+                            panic!("invalid bank message")
                         }
                     }
                 }
                 _ => {
-                    assert!(false, "unknown message type")
+                    unreachable!("unknown message type")
                 }
             }
         }
@@ -903,61 +901,38 @@ mod exec {
             .messages
             .iter()
             .find(|sm| match sm.msg.clone() {
-                CosmosMsg::Wasm(wasm) => match wasm {
-                    WasmMsg::Execute { funds, .. } => {
-                        if funds[0].denom == DENOM_1 {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    _ => return false,
-                },
-                _ => return false,
+                CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => funds[0].denom == DENOM_1,
+                _ => false,
             })
             .unwrap();
         let denom_2_msg = res
             .messages
             .iter()
             .find(|sm| match sm.msg.clone() {
-                CosmosMsg::Wasm(wasm) => match wasm {
-                    WasmMsg::Execute { funds, .. } => {
-                        if funds[0].denom == DENOM_2 {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    _ => return false,
-                },
-                _ => return false,
+                CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => funds[0].denom == DENOM_2,
+
+                _ => false,
             })
             .unwrap();
         match denom_1_msg.msg.clone() {
-            CosmosMsg::Wasm(wasm) => match wasm {
-                WasmMsg::Execute { funds, .. } => {
-                    assert_eq!(funds.len(), 1);
-                    let fund = funds[0].clone();
-                    assert_eq!(fund.denom, DENOM_1);
-                    assert_eq!(fund.amount, Uint128::from(10_000u32));
-                }
-
-                _ => panic!("expected a wasmMsg::exec"),
-            },
+            CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => {
+                assert_eq!(funds.len(), 1);
+                let fund = funds[0].clone();
+                assert_eq!(fund.denom, DENOM_1);
+                assert_eq!(fund.amount, Uint128::from(10_000u32));
+            }
 
             _ => panic!("expected a wasmMsg::exec"),
         }
-        match denom_2_msg.msg.clone() {
-            CosmosMsg::Wasm(wasm) => match wasm {
-                WasmMsg::Execute { funds, .. } => {
-                    assert_eq!(funds.len(), 1);
-                    let fund = funds[0].clone();
-                    assert_eq!(fund.denom, DENOM_2);
-                    assert_eq!(fund.amount, Uint128::from(200_000u32));
-                }
 
-                _ => panic!("expected a wasmMsg::exec"),
-            },
+        match denom_2_msg.msg.clone() {
+            CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => {
+                assert_eq!(funds.len(), 1);
+                let fund = funds[0].clone();
+                assert_eq!(fund.denom, DENOM_2);
+                assert_eq!(fund.amount, Uint128::from(200_000u32));
+            }
+
             _ => {
                 eprintln!("{:?}", res.messages[1].msg);
                 panic!("expected a wasmMsg::exec")
@@ -988,7 +963,7 @@ mod exec {
                         }
                         _ => {
                             eprintln!("{:?}", wasm);
-                            assert!(false, "invalid WASM message")
+                            unreachable!("invalid WASM message")
                         }
                     }
                 }
@@ -1005,12 +980,12 @@ mod exec {
                         }
                         _ => {
                             eprintln!("{:?}", bank);
-                            assert!(false, "invalid bank message")
+                            unreachable!("invalid bank message")
                         }
                     }
                 }
                 _ => {
-                    assert!(false, "unknown message type")
+                    unreachable!("unknown message type")
                 }
             }
         }
@@ -1139,47 +1114,25 @@ mod exec {
             .messages
             .iter()
             .find(|sm| match sm.msg.clone() {
-                CosmosMsg::Wasm(wasm) => match wasm {
-                    WasmMsg::Execute { funds, .. } => {
-                        if funds[0].denom == DENOM_1 {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    _ => return false,
-                },
-                _ => return false,
+                CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => funds[0].denom == DENOM_1,
+                _ => false,
             })
             .unwrap();
         let denom_2_msg = res
             .messages
             .iter()
             .find(|sm| match sm.msg.clone() {
-                CosmosMsg::Wasm(wasm) => match wasm {
-                    WasmMsg::Execute { funds, .. } => {
-                        if funds[0].denom == DENOM_2 {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    }
-                    _ => return false,
-                },
-                _ => return false,
+                CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => funds[0].denom == DENOM_2,
+                _ => false,
             })
             .unwrap();
         match denom_1_msg.msg.clone() {
-            CosmosMsg::Wasm(wasm) => match wasm {
-                WasmMsg::Execute { funds, .. } => {
-                    assert_eq!(funds.len(), 1);
-                    let fund = funds[0].clone();
-                    assert_eq!(fund.denom, DENOM_1);
-                    assert_eq!(fund.amount, Uint128::from(5_000u32));
-                }
-
-                _ => panic!("expected a wasmMsg::exec"),
-            },
+            CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => {
+                assert_eq!(funds.len(), 1);
+                let fund = funds[0].clone();
+                assert_eq!(fund.denom, DENOM_1);
+                assert_eq!(fund.amount, Uint128::from(5_000u32));
+            }
 
             _ => panic!("expected a wasmMsg::exec"),
         }

@@ -250,10 +250,10 @@ mod tests {
             {
                 match err {
                     ContractError::NoFeesError { .. } => {}
-                    _ => assert!(false, "Invalid Error type {}", err),
+                    _ => unreachable!("Invalid Error type {}", err),
                 }
             } else {
-                assert!(false, "should have failed")
+                unreachable!("should have failed")
             }
         }
 
@@ -277,7 +277,7 @@ mod tests {
                     AllocationDetail {
                         name: ALLOCATION_2.to_string(),
                         allocation: 1,
-                        send_after: coin(1_0000_000u128, DENOM_1),
+                        send_after: coin(10_000_000u128, DENOM_1),
                         send_type: SendType::Wallet {
                             receiver: deps.api.addr_validate("allocation_2_addr").unwrap(),
                         },
@@ -285,7 +285,7 @@ mod tests {
                     AllocationDetail {
                         name: ALLOCATION_1.to_string(),
                         allocation: 3,
-                        send_after: coin(1_0000_000u128, DENOM_1),
+                        send_after: coin(10_000_000u128, DENOM_1),
                         send_type: SendType::Wallet {
                             receiver: deps.api.addr_validate("allocation_3_addr").unwrap(),
                         },
@@ -301,10 +301,7 @@ mod tests {
             match err {
                 ContractError::FundAllocationNotUnique {} => {}
                 _ => {
-                    assert!(
-                        false,
-                        "this should have returned an FundAllocationNotUnique error"
-                    )
+                    unreachable!("this should have returned an FundAllocationNotUnique error")
                 }
             }
         }
