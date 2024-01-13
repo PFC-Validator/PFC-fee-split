@@ -1,6 +1,7 @@
 {
   "owner": "kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m",
-  "token_router": "kujira1j80m5dtnxjcdewgccppjpl3sd6z6gnmvzs8avfnkyu96492qdu3qdsrnx3",
+  "manta_token_router": "kujira1j80m5dtnxjcdewgccppjpl3sd6z6gnmvzs8avfnkyu96492qdu3qdsrnx3",
+  "calc_token_router": "kujira1j80m5dtnxjcdewgccppjpl3sd6z6gnmvzs8avfnkyu96492qdu3qdsrnx3",
   "return_contract": "kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m",
   "base_denom": "ukuji",
   "assets": [

@@ -73,6 +73,11 @@ pub enum ExecuteMsg {
         denom: Denom,
         minimum: Uint128,
     },
+    /// defaults to unlimited
+    SetAssetMaximum {
+        denom: Denom,
+        maximum: Uint128,
+    },
     /// set the route path to exchange denom 'X' into something else.
     SetAssetStrategy {
         denom: Denom,
@@ -118,6 +123,7 @@ pub struct AssetHolding {
     pub minimum: Uint128, // only send $ after we have this amount in this coin
     pub balance: Uint128,
     pub strategy: SellStrategy,
+    pub maximum: Uint128, // only send up to maximum at any one stage
 }
 #[cw_serde]
 pub struct InstantiateMsg {

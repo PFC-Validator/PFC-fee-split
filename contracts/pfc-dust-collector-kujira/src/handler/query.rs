@@ -1,4 +1,4 @@
-use crate::state::{ASSET_HOLDINGS, ASSET_STAGES, CONFIG};
+use crate::state::{ASSET_HOLDINGS, ASSET_HOLDINGS_MAX, ASSET_STAGES, CONFIG};
 use cosmwasm_std::{Addr, Deps, Order, StdResult, Uint128};
 
 use kujira::Denom;
@@ -29,6 +29,9 @@ pub(crate) fn query_asset(
     let minimum = ASSET_HOLDINGS
         .may_load(deps.storage, denom.to_string())?
         .unwrap_or(Uint128::zero());
+    let maximum = ASSET_HOLDINGS_MAX
+        .may_load(deps.storage, denom.to_string())?
+        .unwrap_or(Uint128::MAX);
 
     let strategy = ASSET_STAGES
         .may_load(deps.storage, denom.to_string())?
@@ -39,11 +42,14 @@ pub(crate) fn query_asset(
     Ok(Some(AssetHolding {
         denom,
         minimum,
+        maximum,
         balance: coin.amount,
         strategy,
     }))
 }
 
+/// show the holdings, and ones where there are set minimums.
+/// if there is no holdings, and no minimum,  and a maximum it won't show
 pub(crate) fn query_assets(
     deps: Deps,
     contract_address: &Addr,
@@ -57,6 +63,7 @@ pub(crate) fn query_assets(
     let mut holdings: Vec<AssetHolding> = Default::default();
     for coin in balances {
         let minimum = ASSET_HOLDINGS.may_load(deps.storage, coin.denom.clone())?;
+        let maximum = ASSET_HOLDINGS_MAX.may_load(deps.storage, coin.denom.clone())?;
         if minimum.is_some() {
             minimums.remove(&coin.denom);
         }
@@ -67,11 +74,13 @@ pub(crate) fn query_assets(
             denom: Denom::from(coin.denom),
             balance: coin.amount,
             minimum: minimum.unwrap_or(Uint128::zero()),
+            maximum: maximum.unwrap_or(Uint128::MAX),
             strategy,
         });
     }
     for denom in minimums {
         let minimum = ASSET_HOLDINGS.may_load(deps.storage, denom.clone())?;
+        let maximum = ASSET_HOLDINGS_MAX.may_load(deps.storage, denom.clone())?;
         let strategy = ASSET_STAGES
             .may_load(deps.storage, denom.clone())?
             .unwrap_or(SellStrategy::default());
@@ -79,6 +88,7 @@ pub(crate) fn query_assets(
             denom: Denom::from(denom),
             balance: Uint128::zero(),
             minimum: minimum.unwrap_or(Uint128::zero()),
+            maximum: maximum.unwrap_or(Uint128::MAX),
             strategy,
         });
     }

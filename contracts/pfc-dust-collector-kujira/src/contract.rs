@@ -14,9 +14,9 @@ use pfc_dust_collector_kujira::dust_collector::{
 use crate::error::ContractError;
 use crate::handler::exec as ExecHandler;
 use crate::handler::exec::{
-    execute_clear_asset, execute_set_asset_minimum, execute_set_asset_strategy,
-    execute_set_base_denom, execute_set_calc_token_router, execute_set_manta_token_router,
-    execute_set_max_swaps, execute_set_return_contract,
+    execute_clear_asset, execute_set_asset_maximum, execute_set_asset_minimum,
+    execute_set_asset_strategy, execute_set_base_denom, execute_set_calc_token_router,
+    execute_set_manta_token_router, execute_set_max_swaps, execute_set_return_contract,
 };
 use crate::handler::query as QueryHandler;
 use crate::state;
@@ -137,6 +137,10 @@ pub fn execute(
         ExecuteMsg::SetAssetMinimum { denom, minimum } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_asset_minimum(deps, &info.sender, denom, minimum)
+        }
+        ExecuteMsg::SetAssetMaximum { denom, maximum } => {
+            cw_ownable::assert_owner(deps.storage, &info.sender)?;
+            execute_set_asset_maximum(deps, &info.sender, denom, maximum)
         }
         ExecuteMsg::ClearAsset { denom } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;

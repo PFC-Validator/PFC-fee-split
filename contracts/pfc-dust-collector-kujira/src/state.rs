@@ -9,11 +9,13 @@ use pfc_dust_collector_kujira::dust_collector::SellStrategy;
 
 pub(crate) const CONFIG_KEY: &str = "config_001";
 pub(crate) const DENOM_KEY: &str = "denom_001";
+pub(crate) const DENOM_MAX_KEY: &str = "denom_max_001";
 pub(crate) const DENOM_STAGES: &str = "stages_001";
 
 pub const CONFIG: Item<Config> = Item::new(CONFIG_KEY);
 /// denom - minimum amount to hold
 pub const ASSET_HOLDINGS: Map<String, Uint128> = Map::new(DENOM_KEY);
+pub const ASSET_HOLDINGS_MAX: Map<String, Uint128> = Map::new(DENOM_MAX_KEY);
 pub const ASSET_STAGES: Map<String, SellStrategy> = Map::new(DENOM_STAGES);
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]

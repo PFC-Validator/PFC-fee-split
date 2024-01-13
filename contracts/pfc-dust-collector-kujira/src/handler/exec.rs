@@ -12,7 +12,8 @@ use pfc_dust_collector_kujira::mantaswap;
 
 //use crate::contract::{REPLY_RETURN, REPLY_SWAP};
 use crate::error::ContractError;
-use crate::state::{ASSET_HOLDINGS, ASSET_STAGES, CONFIG};
+use crate::error::ContractError::MinMax;
+use crate::state::{ASSET_HOLDINGS, ASSET_HOLDINGS_MAX, ASSET_STAGES, CONFIG};
 
 pub fn execute_set_asset_strategy(
     deps: DepsMut,
@@ -96,12 +97,37 @@ pub fn execute_set_asset_minimum(
     denom: Denom,
     minimum: Uint128,
 ) -> Result<Response, ContractError> {
+    if let Some(max) = ASSET_HOLDINGS_MAX.may_load(deps.storage, denom.to_string())? {
+        if minimum > max {
+            return Err(MinMax { min: minimum, max });
+        }
+    }
     ASSET_HOLDINGS.save(deps.storage, denom.to_string(), &minimum)?;
     let res = Response::new()
         .add_attribute("action", "new_denom")
         .add_attribute("from", sender)
         .add_attribute("denom", denom.to_string())
         .add_attribute("minimum", format!("{}", minimum));
+
+    Ok(res)
+}
+pub fn execute_set_asset_maximum(
+    deps: DepsMut,
+    sender: &Addr,
+    denom: Denom,
+    maximum: Uint128,
+) -> Result<Response, ContractError> {
+    if let Some(min) = ASSET_HOLDINGS.may_load(deps.storage, denom.to_string())? {
+        if min > maximum {
+            return Err(MinMax { min, max: maximum });
+        }
+    }
+    ASSET_HOLDINGS_MAX.save(deps.storage, denom.to_string(), &maximum)?;
+    let res = Response::new()
+        .add_attribute("action", "new_denom")
+        .add_attribute("from", sender)
+        .add_attribute("denom", denom.to_string())
+        .add_attribute("maximum", format!("{}", maximum));
 
     Ok(res)
 }
@@ -222,6 +248,7 @@ pub(crate) fn do_deposit(
     for coin_balance in funds_to_swap.into_iter() {
         if let Some(minimum) = ASSET_HOLDINGS.may_load(deps.storage, coin_balance.0.clone())? {
             if coin_balance.1.ge(&minimum) || flush {
+                // we don't have a maximum base_denom to send
                 if coin_balance.0 == config.base_denom.to_string() {
                     let coin: Coin = Coin::new(coin_balance.1.u128(), coin_balance.0);
                     let contract_info = deps
@@ -245,6 +272,11 @@ pub(crate) fn do_deposit(
                     if let Some(strategy) =
                         ASSET_STAGES.may_load(deps.storage, coin_balance.0.clone())?
                     {
+                        let maximum = ASSET_HOLDINGS_MAX
+                            .may_load(deps.storage, coin_balance.0.clone())?
+                            .unwrap_or(Uint128::MAX);
+                        // cap amount to max if it is above it
+                        let max_amt = coin_balance.1.min(maximum);
                         match strategy {
                             SellStrategy::Hold => {}
                             SellStrategy::Manta(mantaswap) => {
@@ -252,7 +284,7 @@ pub(crate) fn do_deposit(
                                     &router,
                                     &coin_balance.0,
                                     &mantaswap,
-                                    coin_balance.1,
+                                    max_amt,
                                 )?;
                                 swaps.push(swap); //SubMsg::reply_on_error(swap, REPLY_SWAP));
                                 swap_msg_count += 1;
@@ -465,6 +497,7 @@ mod exec {
             AssetHolding {
                 denom: Denom::from(DENOM_1),
                 minimum: Uint128::from(1_000u128),
+                maximum: Uint128::MAX,
                 balance: Uint128::zero(),
                 strategy: SellStrategy::Manta(MantaSellStrategy {
                     stages: vec![vec![Stage {
@@ -503,6 +536,7 @@ mod exec {
             AssetHolding {
                 denom: Denom::from(DENOM_2),
                 minimum: Uint128::zero(),
+                maximum: Uint128::MAX,
                 balance: Uint128::zero(),
                 strategy: SellStrategy::Manta(MantaSellStrategy {
                     stages: vec![vec![Stage {
@@ -817,9 +851,12 @@ mod exec {
             ),
             ExecuteMsg::DustReceived {},
         )?;
+        /*
         for msg in &res.messages {
             eprintln!("swap_test_4:{:?}", msg);
         }
+
+         */
 
         assert_eq!(res.messages.len(), 3);
 
@@ -829,7 +866,7 @@ mod exec {
             mock_info(CREATOR, &[]),
             ExecuteMsg::SetAssetMinimum {
                 denom: Denom::from(DENOM_3),
-                minimum: Uint128::from(5_000u128),
+                minimum: Uint128::from(10_000u128),
             },
         )?;
         // multi-stage.
@@ -862,6 +899,71 @@ mod exec {
         )?;
 
         assert_eq!(res.messages.len(), 3);
+        let denom_1_msg = res
+            .messages
+            .iter()
+            .find(|sm| match sm.msg.clone() {
+                CosmosMsg::Wasm(wasm) => match wasm {
+                    WasmMsg::Execute { funds, .. } => {
+                        if funds[0].denom == DENOM_1 {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                    _ => return false,
+                },
+                _ => return false,
+            })
+            .unwrap();
+        let denom_2_msg = res
+            .messages
+            .iter()
+            .find(|sm| match sm.msg.clone() {
+                CosmosMsg::Wasm(wasm) => match wasm {
+                    WasmMsg::Execute { funds, .. } => {
+                        if funds[0].denom == DENOM_2 {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                    _ => return false,
+                },
+                _ => return false,
+            })
+            .unwrap();
+        match denom_1_msg.msg.clone() {
+            CosmosMsg::Wasm(wasm) => match wasm {
+                WasmMsg::Execute { funds, .. } => {
+                    assert_eq!(funds.len(), 1);
+                    let fund = funds[0].clone();
+                    assert_eq!(fund.denom, DENOM_1);
+                    assert_eq!(fund.amount, Uint128::from(10_000u32));
+                }
+
+                _ => panic!("expected a wasmMsg::exec"),
+            },
+
+            _ => panic!("expected a wasmMsg::exec"),
+        }
+        match denom_2_msg.msg.clone() {
+            CosmosMsg::Wasm(wasm) => match wasm {
+                WasmMsg::Execute { funds, .. } => {
+                    assert_eq!(funds.len(), 1);
+                    let fund = funds[0].clone();
+                    assert_eq!(fund.denom, DENOM_2);
+                    assert_eq!(fund.amount, Uint128::from(200_000u32));
+                }
+
+                _ => panic!("expected a wasmMsg::exec"),
+            },
+            _ => {
+                eprintln!("{:?}", res.messages[1].msg);
+                panic!("expected a wasmMsg::exec")
+            }
+        }
+
         let stage = query_helper::<Option<AssetHolding>>(
             deps.as_ref(),
             QueryMsg::Asset {
@@ -920,6 +1022,184 @@ mod exec {
             eprintln!("{:?}", res.messages);
             assert_eq!(seen_bank_cnt, 1, "wrong number of Bank messages")
         }
+        Ok(())
+    }
+    #[test]
+    // ensure max amounts are displayed, and only MAX amount is swapped.
+    pub fn swap_test_maxes() -> Result<(), ContractError> {
+        let mut deps = mock_dependencies_with_balance(&[
+            Coin::new(10_000, DENOM_1),
+            Coin::new(10_000, DENOM_MAIN),
+            Coin::new(200_000, DENOM_2),
+        ]);
+
+        do_instantiate(
+            deps.as_mut(),
+            CREATOR,
+            vec![
+                AssetMinimum {
+                    denom: DENOM_1.into(),
+                    minimum: Uint128::from(1_000u128),
+                },
+                AssetMinimum {
+                    denom: DENOM_MAIN.into(),
+                    minimum: Uint128::from(5_000u128),
+                },
+            ],
+            USER_1,
+        )?;
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(WL_USER_1, &[]),
+            ExecuteMsg::SetAssetStrategy {
+                denom: Denom::from(DENOM_1),
+                strategy: SellStrategy::Manta(MantaSellStrategy {
+                    stages: vec![vec![Stage {
+                        address: Addr::unchecked(LP_1.to_string()),
+                        denom: Denom::from(DENOM_MAIN),
+                    }]],
+                }),
+            },
+        )?;
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(CREATOR, &[]),
+            ExecuteMsg::SetAssetStrategy {
+                denom: Denom::from(DENOM_2),
+                strategy: SellStrategy::Manta(MantaSellStrategy {
+                    stages: vec![vec![Stage {
+                        address: Addr::unchecked(LP_2.to_string()),
+                        denom: Denom::from(DENOM_MAIN),
+                    }]],
+                }),
+            },
+        )?;
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(CREATOR, &[]),
+            ExecuteMsg::SetAssetMinimum {
+                denom: Denom::from(DENOM_2),
+                minimum: Uint128::from(100_000u128),
+            },
+        )?;
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(CREATOR, &[]),
+            ExecuteMsg::SetAssetMinimum {
+                denom: Denom::from(DENOM_MAIN),
+                minimum: Uint128::from(5_000u128),
+            },
+        )?;
+        // denom 2 - max & min set
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(CREATOR, &[]),
+            ExecuteMsg::SetAssetMaximum {
+                denom: Denom::from(DENOM_2),
+                maximum: Uint128::from(150_000u128),
+            },
+        )?;
+        // denom 1 - no minimum, but a maximum
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(CREATOR, &[]),
+            ExecuteMsg::SetAssetMaximum {
+                denom: Denom::from(DENOM_1),
+                maximum: Uint128::from(5_000u128),
+            },
+        )?;
+        let res = execute(
+            deps.as_mut(),
+            mock_env(),
+            mock_info(
+                USER_3,
+                &[
+                    Coin::new(40_000, DENOM_1),
+                    Coin::new(10_000, DENOM_MAIN),
+                    Coin::new(600_000, DENOM_2),
+                ],
+            ),
+            ExecuteMsg::DustReceived {},
+        )?;
+        /*
+                for msg in &res.messages {
+                    eprintln!("swap_test_max:{:?}", msg);
+                }
+        */
+        assert_eq!(res.messages.len(), 3);
+        let denom_1_msg = res
+            .messages
+            .iter()
+            .find(|sm| match sm.msg.clone() {
+                CosmosMsg::Wasm(wasm) => match wasm {
+                    WasmMsg::Execute { funds, .. } => {
+                        if funds[0].denom == DENOM_1 {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                    _ => return false,
+                },
+                _ => return false,
+            })
+            .unwrap();
+        let denom_2_msg = res
+            .messages
+            .iter()
+            .find(|sm| match sm.msg.clone() {
+                CosmosMsg::Wasm(wasm) => match wasm {
+                    WasmMsg::Execute { funds, .. } => {
+                        if funds[0].denom == DENOM_2 {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                    _ => return false,
+                },
+                _ => return false,
+            })
+            .unwrap();
+        match denom_1_msg.msg.clone() {
+            CosmosMsg::Wasm(wasm) => match wasm {
+                WasmMsg::Execute { funds, .. } => {
+                    assert_eq!(funds.len(), 1);
+                    let fund = funds[0].clone();
+                    assert_eq!(fund.denom, DENOM_1);
+                    assert_eq!(fund.amount, Uint128::from(5_000u32));
+                }
+
+                _ => panic!("expected a wasmMsg::exec"),
+            },
+
+            _ => panic!("expected a wasmMsg::exec"),
+        }
+        match denom_2_msg.msg.clone() {
+            CosmosMsg::Wasm(wasm) => match wasm {
+                WasmMsg::Execute { funds, .. } => {
+                    assert_eq!(funds.len(), 1);
+                    let fund = funds[0].clone();
+                    assert_eq!(fund.denom, DENOM_2);
+                    assert_eq!(fund.amount, Uint128::from(150_000u32));
+                }
+
+                _ => panic!("expected a wasmMsg::exec"),
+            },
+            _ => {
+                eprintln!("{:?}", res.messages[1].msg);
+                panic!("expected a wasmMsg::exec")
+            }
+        }
+
         Ok(())
     }
 }
