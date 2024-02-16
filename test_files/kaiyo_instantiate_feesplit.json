@@ -1,0 +1,20 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90",
+  "allocation": [
+    {
+      "name": "base",
+      "allocation": 1,
+      "send_after": {
+        "denom": "ukuji",
+        "amount": "100"
+      },
+      "send_type": {
+        "Wallet": {
+          "receiver": "kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90"
+        }
+      }
+    }
+  ]
+}
+

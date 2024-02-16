@@ -1,0 +1,70 @@
+
+# Kaiyo
+###
+### FEE SPLIT
+###
+kujirad tx wasm store ./artifacts/pfc_fee_splitter.wasm --from boneLunaAdmin --yes --gas-prices 0.025ukuji --gas-adjustment 1.7 --gas auto
+# feesplit - 218
+# kujira17r7sl0admy4p3l8l4t8uvypwuus6f7gjskceyfkfe4sh84q7c4uqk5m7ll
+kujirad tx wasm store ./artifacts/pfc_dust_collector_kujira_contract.wasm --from boneLunaAdmin --yes --gas-prices 0.025ukuji --gas-adjustment 1.7 --gas auto
+# dust- 219
+# kujira1eglkunk27sj3he6u0pewy30erxcevw9pch4y4n4drw4rxsxje6zs4zed7m
+
+# how to create a prop for fee-split
+kujirad tx wasm submit-proposal  instantiate-contract 218 '{
+  "name": "pfc-fee-split",
+  "gov_contract": "kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90",
+  "allocation": [
+    {
+      "name": "base",
+      "allocation": 1,
+      "send_after": {
+        "denom": "ukuji",
+        "amount": "100"
+      },
+      "send_type": {
+        "Wallet": {
+          "receiver": "kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90"
+        }
+      }
+    }
+  ]
+}
+' --authority kujira10d07y265gmmuvt4z0w9aw880jnsr700jt23ame --label 'boneKuji feesplit-1' --title 'deploy bonekuji feelsplit' --summary 'bonekuji feesplit 2/3' --admin kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90 --deposit 100000000factory/kujira1qk00h5atutpsv900x202pxx42npjr9thg58dnqpa72f2p7m2luase444a7/uusk --from kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90  --gas-prices 0.025ukuji --gas-adjustment 1.7 --gas auto
+
+kujirad tx wasm submit-proposal update-instantiate-config 219:kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90 --authority kujira10d07y265gmmuvt4z0w9aw880jnsr700jt23ame --from boneLunaAdmin --title 'UpdateInstantiateConfig bKuji/DustCollector' --summary 'This allows kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90 to instantiate the contract manually.' --deposit 100000000factory/kujira1qk00h5atutpsv900x202pxx42npjr9thg58dnqpa72f2p7m2luase444a7/uusk  --fees 680ukuji
+
+json=$(cat ./test_files/kaiyo_instantiate_feesplit.json)
+kujirad tx wasm instantiate 218 "${json}" --admin kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m --label pfc-feesplit --from andromeda-pfc-testnet  --gas-prices 0.00125ukuji --gas-adjustment 1.7  --gas auto
+# kujira17r7sl0admy4p3l8l4t8uvypwuus6f7gjskceyfkfe4sh84q7c4uqk5m7ll
+kujirad tx wasm migrate kujira17r7sl0admy4p3l8l4t8uvypwuus6f7gjskceyfkfe4sh84q7c4uqk5m7ll 2528 '{}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+
+###
+### DUST COLLECTOR
+###
+
+json=$(cat ./test_files/kaiyo_instantiate_dustcollector.json)
+kujirad tx wasm instantiate 219 "${json}" --admin kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90 --label pfc-dustcollector --from boneLunaAdmin --gas-prices 0.025ukuji --gas-adjustment 1.7  --gas auto
+
+
+kujirad tx wasm migrate kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz 2533 '{}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+
+add_stage=$(cat ./test_files/harpoon_dustcollector_add_stage.json)
+kujirad tx wasm exec kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf "${add_stage}" --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+
+# mantaDAO testnet
+kujirad query wasm cs smart kujira1j80m5dtnxjcdewgccppjpl3sd6z6gnmvzs8avfnkyu96492qdu3qdsrnx3 '{"config":{}}'
+kujirad query wasm cs smart kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz '{"config":{}}'
+kujirad query wasm cs smart kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz '{"assets":{}}'
+kujirad query wasm cs smart kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"config":{}}'
+kujirad query wasm cs smart kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"assets":{}}'
+
+
+kujirad tx wasm exec kujira1eglkunk27sj3he6u0pewy30erxcevw9pch4y4n4drw4rxsxje6zs4zed7m '{"set_asset_minimum":{"denom":"ukuji", "minimum":"1000000"}}'  --from boneLunaAdmin --gas-prices  "0.01186factory/kujira1qk00h5atutpsv900x202pxx42npjr9thg58dnqpa72f2p7m2luase444a7/uusk" --gas-adjustment 1.7  --gas auto
+
+kujirad tx wasm exec kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz '{"dust_received":{}}'  --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto --amount "970factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk"
+
+kujirad tx wasm exec kujira1952r8uqzs5yue8c8gmmnyw3x6c04l5fpcdwdwyp84j0sdfnm0qssfnqtlz '{"set_return_contract":{"contract":"kujira1p6wkv8lycu5yhrr4cgf0qnp7l3pfwucckgw3y4sjzrzcx6h4385q2fkk2u"}}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+kujirad tx wasm exec kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"set_return_contract":{"contract":"kujira1p6wkv8lycu5yhrr4cgf0qnp7l3pfwucckgw3y4sjzrzcx6h4385q2fkk2u"}}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+kujirad tx wasm exec kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"dust_received":{}}'  --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto --amount "3970factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk"
+kujirad tx wasm exec kujira1c2gemd9harv24za0g4yasr2nw66q6err4cmmu9aymdsvh9g3qsaqjq9luf '{"set_asset_maximum":{"denom":"factory/kujira1r85reqy6h0lu02vyz0hnzhv5whsns55gdt4w0d7ft87utzk7u0wqr4ssll/uusk", "maximum":"2000"}}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto

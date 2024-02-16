@@ -1,0 +1,28 @@
+{
+  "owner": "kujira1lu92zj8q6cmrptu09rp3343x9969r9qrva5t90",
+  "manta_token_router": "kujira1t080uepm2jmlrduqk433fappatjy2zha7tqg0p0dj55f4zccqzmqmvcgj6",
+  "calc_token_router": "kujira1t080uepm2jmlrduqk433fappatjy2zha7tqg0p0dj55f4zccqzmqmvcgj6",
+  "return_contract": "kujira15e8q5wzlk5k38gjxlhse3vu6vqnafysncx2ltexd6y9gx50vuj2qpt7dgv",
+  "base_denom": "ukuji",
+  "assets": [
+    {
+      "denom": "ukuji",
+      "minimum": "1000"
+    },
+    {
+      "denom": "factory/kujira1qk00h5atutpsv900x202pxx42npjr9thg58dnqpa72f2p7m2luase444a7/uusk",
+      "minimum": "1000"
+    },
+    {
+      "denom": "factory/kujira1643jxg8wasy5cfcn7xm8rd742yeazcksqlg4d7/umnta",
+      "minimum": "1000"
+    }
+  ],
+  "max_swaps": 3,
+  "flush_whitelist": [
+    {
+      "address": "kujira14tuzl4y3yrrq5gcuw3u8yp54hzr6pnyfuh5m7y",
+      "reason": "steakcron"
+    }
+  ]
+}
