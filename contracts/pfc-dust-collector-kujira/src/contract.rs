@@ -1,26 +1,29 @@
 use std::collections::HashSet;
 
-use cosmwasm_std::{entry_point, to_json_binary};
 use cosmwasm_std::{
-    Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    entry_point, to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response,
+    StdResult, WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
 use kujira::Denom;
-
 use pfc_dust_collector_kujira::dust_collector::{
     ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg, SellStrategy,
 };
 
-use crate::error::ContractError;
-use crate::handler::exec as ExecHandler;
-use crate::handler::exec::{
-    execute_clear_asset, execute_set_asset_maximum, execute_set_asset_minimum,
-    execute_set_asset_strategy, execute_set_base_denom, execute_set_calc_token_router,
-    execute_set_manta_token_router, execute_set_max_swaps, execute_set_return_contract,
+use crate::{
+    error::ContractError,
+    handler::{
+        exec as ExecHandler,
+        exec::{
+            execute_clear_asset, execute_set_asset_maximum, execute_set_asset_minimum,
+            execute_set_asset_strategy, execute_set_base_denom, execute_set_calc_token_router,
+            execute_set_manta_token_router, execute_set_max_swaps, execute_set_return_contract,
+        },
+        query as QueryHandler,
+    },
+    state,
+    state::{ASSET_HOLDINGS, ASSET_STAGES, CONFIG},
 };
-use crate::handler::query as QueryHandler;
-use crate::state;
-use crate::state::{ASSET_HOLDINGS, ASSET_STAGES, CONFIG};
 
 /// Contract name that is used for migration.
 const CONTRACT_NAME: &str = "pfc-dust-collector-kujira";
@@ -61,11 +64,7 @@ pub fn instantiate(
         //  }
 
         ASSET_HOLDINGS.save(deps.storage, row.denom.to_string(), &row.minimum)?;
-        ASSET_STAGES.save(
-            deps.storage,
-            row.denom.to_string(),
-            &SellStrategy::default(),
-        )?;
+        ASSET_STAGES.save(deps.storage, row.denom.to_string(), &SellStrategy::default())?;
     }
 
     let mut res = Response::new();
@@ -101,7 +100,12 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     if !info.funds.is_empty() {
         match &msg {
-            ExecuteMsg::DustReceived { .. } | ExecuteMsg::FlushDust { .. } => {}
+            ExecuteMsg::DustReceived {
+                ..
+            }
+            | ExecuteMsg::FlushDust {
+                ..
+            } => {},
             _ => return Err(ContractError::NoFundsRequired {}),
         }
     }
@@ -111,59 +115,83 @@ pub fn execute(
 
             cw_ownable::update_ownership(deps, &env.block, &info.sender, action)?;
             Ok(Response::default())
-        }
+        },
         ExecuteMsg::DustReceived {} => {
             ExecHandler::execute_deposit(deps, &env.contract.address, info)
-        }
+        },
         ExecuteMsg::FlushDust {} => {
             ExecHandler::execute_flushdust(deps, &env.contract.address, info)
-        }
-        ExecuteMsg::SetReturnContract { contract } => {
+        },
+        ExecuteMsg::SetReturnContract {
+            contract,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_return_contract(deps, &info.sender, &contract)
-        }
-        ExecuteMsg::SetMantaTokenRouter { contract } => {
+        },
+        ExecuteMsg::SetMantaTokenRouter {
+            contract,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_manta_token_router(deps, &info.sender, &contract)
-        }
-        ExecuteMsg::SetCalcTokenRouter { contract } => {
+        },
+        ExecuteMsg::SetCalcTokenRouter {
+            contract,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_calc_token_router(deps, &info.sender, &contract)
-        }
-        ExecuteMsg::SetBaseDenom { denom } => {
+        },
+        ExecuteMsg::SetBaseDenom {
+            denom,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_base_denom(deps, &info.sender, denom)
-        }
-        ExecuteMsg::SetAssetMinimum { denom, minimum } => {
+        },
+        ExecuteMsg::SetAssetMinimum {
+            denom,
+            minimum,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_asset_minimum(deps, &info.sender, denom, minimum)
-        }
-        ExecuteMsg::SetAssetMaximum { denom, maximum } => {
+        },
+        ExecuteMsg::SetAssetMaximum {
+            denom,
+            maximum,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_asset_maximum(deps, &info.sender, denom, maximum)
-        }
-        ExecuteMsg::ClearAsset { denom } => {
+        },
+        ExecuteMsg::ClearAsset {
+            denom,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_clear_asset(deps, &info.sender, denom)
-        }
+        },
 
-        ExecuteMsg::AddToWhiteList { address, reason } => {
+        ExecuteMsg::AddToWhiteList {
+            address,
+            reason,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             pfc_whitelist::add_entry(deps.storage, deps.api, address, reason)?;
             Ok(Response::default())
-        }
-        ExecuteMsg::RemoveFromWhitelist { address } => {
+        },
+        ExecuteMsg::RemoveFromWhitelist {
+            address,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             pfc_whitelist::remove_entry(deps.storage, deps.api, address)?;
             Ok(Response::default())
-        }
-        ExecuteMsg::SetAssetStrategy { denom, strategy } => {
-            execute_set_asset_strategy(deps, &info.sender, &denom, &strategy)
-        }
-        ExecuteMsg::SetMaxSwaps { max_swaps } => {
+        },
+        ExecuteMsg::SetAssetStrategy {
+            denom,
+            strategy,
+        } => execute_set_asset_strategy(deps, &info.sender, &denom, &strategy),
+        ExecuteMsg::SetMaxSwaps {
+            max_swaps,
+        } => {
             cw_ownable::assert_owner(deps.storage, &info.sender)?;
             execute_set_max_swaps(deps, max_swaps)
-        }
+        },
     }
 }
 #[entry_point]
@@ -171,21 +199,20 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::Config {} => to_json_binary(&QueryHandler::query_config(deps)?),
         QueryMsg::Ownership {} => to_json_binary(&cw_ownable::get_ownership(deps.storage)?),
-        QueryMsg::Assets { .. } => {
-            to_json_binary(&QueryHandler::query_assets(deps, &env.contract.address)?)
-        }
+        QueryMsg::Assets {
+            ..
+        } => to_json_binary(&QueryHandler::query_assets(deps, &env.contract.address)?),
 
-        QueryMsg::Asset { denom } => to_json_binary(&QueryHandler::query_asset(
-            deps,
-            &env.contract.address,
+        QueryMsg::Asset {
             denom,
-        )?),
-        QueryMsg::Whitelist { start_after, limit } => to_json_binary(
-            &pfc_whitelist::query_entries(deps.storage, start_after, limit)?,
-        ),
-        QueryMsg::WhitelistEntry { address } => {
-            to_json_binary(&pfc_whitelist::query_entry(deps.storage, address)?)
-        }
+        } => to_json_binary(&QueryHandler::query_asset(deps, &env.contract.address, denom)?),
+        QueryMsg::Whitelist {
+            start_after,
+            limit,
+        } => to_json_binary(&pfc_whitelist::query_entries(deps.storage, start_after, limit)?),
+        QueryMsg::WhitelistEntry {
+            address,
+        } => to_json_binary(&pfc_whitelist::query_entry(deps.storage, address)?),
     }
 }
 
@@ -197,14 +224,14 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
         #[allow(clippy::single_match)]
         #[allow(clippy::match_single_binding)]
         "pfc-dust-collector-kujira" => match &contract_version.version {
-            _ => {}
+            _ => {},
         },
         _ => {
             return Err(ContractError::MigrationError {
                 current_name: contract_version.contract,
                 current_version: contract_version.version,
-            })
-        }
+            });
+        },
     }
 
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
@@ -218,25 +245,27 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
 #[cfg(test)]
 mod tests {
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{CosmosMsg, SubMsg, WasmMsg};
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_env, mock_info},
+        CosmosMsg, SubMsg, WasmMsg,
+    };
 
     mod instantiate {
         use cosmwasm_std::{Binary, Uint128};
         use kujira::Denom;
-
         use pfc_dust_collector_kujira::dust_collector::{
             AssetHolding, AssetMinimum, CollectorResponse, InitHook, InstantiateMsg, QueryMsg,
             SellStrategy,
         };
         use pfc_whitelist::Whitelist;
 
-        use crate::contract::instantiate;
-        use crate::error::ContractError;
-        use crate::querier::qry::query_helper;
-        use crate::test_helpers::{CREATOR, DENOM_1, DENOM_2, DENOM_3, DENOM_MAIN};
-
         use super::*;
+        use crate::{
+            contract::instantiate,
+            error::ContractError,
+            querier::qry::query_helper,
+            test_helpers::{CREATOR, DENOM_1, DENOM_2, DENOM_3, DENOM_MAIN},
+        };
 
         #[test]
         fn basic() {
@@ -301,14 +330,14 @@ mod tests {
                     DENOM_1 => {
                         seen_denom_1 += 1;
                         assert_eq!(entry.minimum, Uint128::from(10u128))
-                    }
+                    },
                     DENOM_2 => {
                         seen_denom_2 += 1;
                         assert_eq!(entry.minimum, Uint128::from(20u128))
-                    }
+                    },
                     _ => {
                         unreachable!("{} not expected", entry.denom)
-                    }
+                    },
                 }
                 assert_eq!(entry.strategy, SellStrategy::Hold);
                 assert_eq!(entry.balance, Uint128::zero());
@@ -317,17 +346,9 @@ mod tests {
             assert_eq!(seen_denom_2, 1, "wantred to see DENOM_2 once");
             assert_eq!(2, stages.entries.len(), "should have 2 entries");
 
-            let denom_2 = stages
-                .entries
-                .iter()
-                .find(|p| p.denom.to_string() == DENOM_2)
-                .unwrap();
+            let denom_2 = stages.entries.iter().find(|p| p.denom.to_string() == DENOM_2).unwrap();
             assert_eq!(denom_2.strategy, SellStrategy::Hold, "should be hold");
-            assert_eq!(
-                denom_2.minimum,
-                Uint128::from(20u128),
-                "denom2 minimum should be 20"
-            );
+            assert_eq!(denom_2.minimum, Uint128::from(20u128), "denom2 minimum should be 20");
 
             let instantiate_msg_fail = InstantiateMsg {
                 owner: "owner".to_string(),
@@ -366,7 +387,7 @@ mod tests {
             let env = mock_env();
             let err = instantiate(deps.as_mut(), env, info, instantiate_msg_fail).unwrap_err();
             match err {
-                ContractError::DenomNotUnique {} => {}
+                ContractError::DenomNotUnique {} => {},
                 _ => unreachable!("wrong error {:?}", err),
             }
             let instantiate_msg_2 = InstantiateMsg {

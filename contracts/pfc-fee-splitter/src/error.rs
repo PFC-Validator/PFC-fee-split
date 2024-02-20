@@ -11,7 +11,8 @@ pub enum ContractError {
     Overflow(#[from] OverflowError),
 
     #[error(
-    "PFC-FeeSplit: Unauthorized (action: {action:?}, expected: {expected:?}, actual: {actual:?})"
+        "PFC-FeeSplit: Unauthorized (action: {action:?}, expected: {expected:?}, actual: \
+         {actual:?})"
     )]
     Unauthorized {
         action: String,
@@ -19,20 +20,33 @@ pub enum ContractError {
         actual: String,
     },
     #[error("PFC-FeeSplit: Recursion Send_type {send_type:?} - {contract:?}")]
-    Recursion { send_type: String, contract: String },
+    Recursion {
+        send_type: String,
+        contract: String,
+    },
     #[error(transparent)]
     AdminError(#[from] cw_controllers::AdminError),
 
     #[error("PFC-FeeSplit: ExecuteError Failed - {action:?}")]
-    ExecuteError { action: String },
+    ExecuteError {
+        action: String,
+    },
     #[error("PFC-FeeSplit: Fee not found - {name:?}")]
-    AllocationNotFound { name: String },
+    AllocationNotFound {
+        name: String,
+    },
     #[error("PFC-FeeSplit: Fee already exists - {name:?}")]
-    FeeAlreadyThere { name: String },
+    FeeAlreadyThere {
+        name: String,
+    },
     #[error("PFC-FeeSplit: Invalid Coin - {coin:?}")]
-    InvalidCoin { coin: Coin },
+    InvalidCoin {
+        coin: Coin,
+    },
     #[error("PFC-FeeSplit: Key not found - {key:?}")]
-    KeyNotFound { key: String },
+    KeyNotFound {
+        key: String,
+    },
 
     #[error("PFC-FeeSplit: No fees are defined. Add one before sending deposits")]
     NoFeesError {},

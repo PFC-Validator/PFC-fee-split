@@ -1,10 +1,9 @@
 use cosmwasm_std::{Addr, Uint128};
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
 use cw_storage_plus::{Item, Map};
 use kujira::Denom;
 use pfc_dust_collector_kujira::dust_collector::SellStrategy;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 //use kujira::Denom;
 
 pub(crate) const CONFIG_KEY: &str = "config_001";

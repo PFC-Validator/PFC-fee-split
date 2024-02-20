@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::iter::FromIterator;
+use std::{collections::HashMap, iter::FromIterator};
 
 //use crate::contract::{REPLY_RETURN, REPLY_SWAP};
 use cosmwasm_std::{
@@ -7,14 +6,17 @@ use cosmwasm_std::{
     WasmMsg,
 };
 use kujira::Denom;
-
-use pfc_dust_collector_kujira::dust_collector::{MantaSellStrategy, SellStrategy};
-use pfc_dust_collector_kujira::mantaswap;
+use pfc_dust_collector_kujira::{
+    dust_collector::{MantaSellStrategy, SellStrategy},
+    mantaswap,
+};
 
 //use crate::contract::{REPLY_RETURN, REPLY_SWAP};
 use crate::error::ContractError;
-use crate::error::ContractError::MinMax;
-use crate::state::{ASSET_HOLDINGS, ASSET_HOLDINGS_MAX, ASSET_STAGES, CONFIG};
+use crate::{
+    error::ContractError::MinMax,
+    state::{ASSET_HOLDINGS, ASSET_HOLDINGS_MAX, ASSET_STAGES, CONFIG},
+};
 
 pub fn execute_set_asset_strategy(
     deps: DepsMut,
@@ -100,7 +102,10 @@ pub fn execute_set_asset_minimum(
 ) -> Result<Response, ContractError> {
     if let Some(max) = ASSET_HOLDINGS_MAX.may_load(deps.storage, denom.to_string())? {
         if minimum > max {
-            return Err(MinMax { min: minimum, max });
+            return Err(MinMax {
+                min: minimum,
+                max,
+            });
         }
     }
     ASSET_HOLDINGS.save(deps.storage, denom.to_string(), &minimum)?;
@@ -120,7 +125,10 @@ pub fn execute_set_asset_maximum(
 ) -> Result<Response, ContractError> {
     if let Some(min) = ASSET_HOLDINGS.may_load(deps.storage, denom.to_string())? {
         if min > maximum {
-            return Err(MinMax { min, max: maximum });
+            return Err(MinMax {
+                min,
+                max: maximum,
+            });
         }
     }
     ASSET_HOLDINGS_MAX.save(deps.storage, denom.to_string(), &maximum)?;
@@ -211,7 +219,9 @@ pub fn execute_clear_asset(
     if !ASSET_HOLDINGS.has(deps.storage, denom.to_string())
         && !ASSET_STAGES.has(deps.storage, denom.to_string())
     {
-        return Err(ContractError::DenomNotFound { denom });
+        return Err(ContractError::DenomNotFound {
+            denom,
+        });
     }
     ASSET_HOLDINGS.remove(deps.storage, denom.to_string());
     ASSET_STAGES.remove(deps.storage, denom.to_string());
@@ -252,9 +262,8 @@ pub(crate) fn do_deposit(
                 // we don't have a maximum base_denom to send
                 if coin_balance.0 == config.base_denom.to_string() {
                     let coin: Coin = Coin::new(coin_balance.1.u128(), coin_balance.0);
-                    let contract_info = deps
-                        .querier
-                        .query_wasm_contract_info(config.return_contract.to_string());
+                    let contract_info =
+                        deps.querier.query_wasm_contract_info(config.return_contract.to_string());
 
                     let return_msg = match contract_info {
                         Ok(_) => CosmosMsg::Wasm(WasmMsg::Execute {
@@ -279,7 +288,7 @@ pub(crate) fn do_deposit(
                         // cap amount to max if it is above it
                         let max_amt = coin_balance.1.min(maximum);
                         match strategy {
-                            SellStrategy::Hold => {}
+                            SellStrategy::Hold => {},
                             SellStrategy::Manta(mantaswap) => {
                                 let swap = create_manta_swap_message(
                                     &router,
@@ -289,10 +298,10 @@ pub(crate) fn do_deposit(
                                 )?;
                                 swaps.push(swap); //SubMsg::reply_on_error(swap, REPLY_SWAP));
                                 swap_msg_count += 1;
-                            }
-                            SellStrategy::Calc(_) => {}
-                            SellStrategy::Airdrop(_) => {}
-                            SellStrategy::Custom(_) => {}
+                            },
+                            SellStrategy::Calc(_) => {},
+                            SellStrategy::Airdrop(_) => {},
+                            SellStrategy::Custom(_) => {},
                         }
                     }
                 }
@@ -303,7 +312,6 @@ pub(crate) fn do_deposit(
 }
 
 /// this is a VERY basic swap.
-///
 fn create_manta_swap_message(
     router: &Addr,
     from_denom: &str,
@@ -365,23 +373,23 @@ pub(crate) fn execute_contract_reply(
 */
 #[cfg(test)]
 mod exec_test {
-    use cosmwasm_std::testing::{
-        mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info,
+    use cosmwasm_std::{
+        testing::{mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info},
+        SubMsg,
     };
-    use cosmwasm_std::SubMsg;
-
     use pfc_dust_collector_kujira::dust_collector::{
         AssetHolding, AssetMinimum, ConfigResponse, ExecuteMsg, QueryMsg, Stage,
     };
 
-    use crate::contract::execute;
-    use crate::querier::qry::query_helper;
-    use crate::test_helpers::{
-        do_instantiate, CREATOR, DENOM_1, DENOM_2, DENOM_3, DENOM_MAIN, LP_1, LP_2, LP_3,
-        MANTA_ROUTER, USER_1, USER_2, USER_3, WL_USER_1,
-    };
-
     use super::*;
+    use crate::{
+        contract::execute,
+        querier::qry::query_helper,
+        test_helpers::{
+            do_instantiate, CREATOR, DENOM_1, DENOM_2, DENOM_3, DENOM_MAIN, LP_1, LP_2, LP_3,
+            MANTA_ROUTER, USER_1, USER_2, USER_3, WL_USER_1,
+        },
+    };
 
     #[test]
     fn basic_init() -> Result<(), ContractError> {
@@ -442,7 +450,9 @@ mod exec_test {
         )
         .unwrap_err();
         match err {
-            ContractError::Unauthorized { .. } => {}
+            ContractError::Unauthorized {
+                ..
+            } => {},
             _ => unreachable!("wrong error {:?}", err),
         }
         let err = execute(
@@ -461,7 +471,9 @@ mod exec_test {
         )
         .unwrap_err();
         match err {
-            ContractError::NoFundsRequired { .. } => {}
+            ContractError::NoFundsRequired {
+                ..
+            } => {},
             _ => unreachable!("wrong error {:?}", err),
         };
         execute(
@@ -610,15 +622,17 @@ mod exec_test {
         match msg {
             CosmosMsg::Wasm(wasmmsg) => {
                 //eprintln!("WASM-MSG {:?}", wasmmsg);
-                assert_eq!(format!("{:?}", wasmmsg), "Execute { contract_addr: \"manta_swap_contract\", msg: {\"swap\":{\"stages\":[[[\"LP_xyz_main\",\"umain\"]]],\"recipient\":null,\"min_return\":null}}, funds: [Coin { 1000 \"uxyz\" }] }", "wrong message generated")
-            }
-            _ => {
                 assert_eq!(
-                    format!("{:?}", msg),
-                    "wrong type",
-                    "wrong type of message generated"
+                    format!("{:?}", wasmmsg),
+                    "Execute { contract_addr: \"manta_swap_contract\", msg: \
+                     {\"swap\":{\"stages\":[[[\"LP_xyz_main\",\"umain\"]]],\"recipient\":null,\"\
+                     min_return\":null}}, funds: [Coin { 1000 \"uxyz\" }] }",
+                    "wrong message generated"
                 )
-            }
+            },
+            _ => {
+                assert_eq!(format!("{:?}", msg), "wrong type", "wrong type of message generated")
+            },
         };
 
         Ok(())
@@ -727,34 +741,44 @@ mod exec_test {
                                 "wrong amount"
                             );
 
-                            assert_eq!("Execute { contract_addr: \"manta_swap_contract\", msg: {\"swap\":{\"stages\":[[[\"LP_xyz_main\",\"umain\"]]],\"recipient\":null,\"min_return\":null}}, funds: [Coin { 10000 \"uxyz\" }] }", format!("{:?}",wasm),"wrong message?")
-                        }
+                            assert_eq!(
+                                "Execute { contract_addr: \"manta_swap_contract\", msg: \
+                                 {\"swap\":{\"stages\":[[[\"LP_xyz_main\",\"umain\"]]],\"\
+                                 recipient\":null,\"min_return\":null}}, funds: [Coin { 10000 \
+                                 \"uxyz\" }] }",
+                                format!("{:?}", wasm),
+                                "wrong message?"
+                            )
+                        },
                         _ => {
                             eprintln!("{:?}", wasm);
                             panic!("invalid WASM message")
-                        }
+                        },
                     }
-                }
+                },
                 CosmosMsg::Bank(bank) => {
                     seen_bank_cnt += 1;
                     match bank {
-                        BankMsg::Send { to_address, amount } => {
+                        BankMsg::Send {
+                            to_address,
+                            amount,
+                        } => {
                             assert_eq!(to_address, USER_1, "wrong to address");
                             assert_eq!(
                                 format!("{:?}", amount),
                                 "[Coin { 10000 \"umain\" }]",
                                 "wrong amount"
                             );
-                        }
+                        },
                         _ => {
                             eprintln!("{:?}", bank);
                             panic!("invalid bank message")
-                        }
+                        },
                     }
-                }
+                },
                 _ => {
                     unreachable!("unknown message type")
-                }
+                },
             }
         }
         if seen_exec_cnt != 1 {
@@ -902,7 +926,10 @@ mod exec_test {
             .messages
             .iter()
             .find(|sm| match sm.msg.clone() {
-                CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => funds[0].denom == DENOM_1,
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    funds,
+                    ..
+                }) => funds[0].denom == DENOM_1,
                 _ => false,
             })
             .unwrap();
@@ -910,34 +937,43 @@ mod exec_test {
             .messages
             .iter()
             .find(|sm| match sm.msg.clone() {
-                CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => funds[0].denom == DENOM_2,
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    funds,
+                    ..
+                }) => funds[0].denom == DENOM_2,
 
                 _ => false,
             })
             .unwrap();
         match denom_1_msg.msg.clone() {
-            CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => {
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds,
+                ..
+            }) => {
                 assert_eq!(funds.len(), 1);
                 let fund = funds[0].clone();
                 assert_eq!(fund.denom, DENOM_1);
                 assert_eq!(fund.amount, Uint128::from(10_000u32));
-            }
+            },
 
             _ => panic!("expected a wasmMsg::exec"),
         }
 
         match denom_2_msg.msg.clone() {
-            CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => {
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds,
+                ..
+            }) => {
                 assert_eq!(funds.len(), 1);
                 let fund = funds[0].clone();
                 assert_eq!(fund.denom, DENOM_2);
                 assert_eq!(fund.amount, Uint128::from(200_000u32));
-            }
+            },
 
             _ => {
                 eprintln!("{:?}", res.messages[1].msg);
                 panic!("expected a wasmMsg::exec")
-            }
+            },
         }
 
         let stage = query_helper::<Option<AssetHolding>>(
@@ -961,33 +997,36 @@ mod exec_test {
                             funds: _,
                         } => {
                             assert_eq!(MANTA_ROUTER, contract_addr);
-                        }
+                        },
                         _ => {
                             eprintln!("{:?}", wasm);
                             unreachable!("invalid WASM message")
-                        }
+                        },
                     }
-                }
+                },
                 CosmosMsg::Bank(bank) => {
                     seen_bank_cnt += 1;
                     match bank {
-                        BankMsg::Send { to_address, amount } => {
+                        BankMsg::Send {
+                            to_address,
+                            amount,
+                        } => {
                             assert_eq!(to_address, USER_1, "wrong to address");
                             assert_eq!(
                                 format!("{:?}", amount),
                                 "[Coin { 10000 \"umain\" }]",
                                 "wrong amount"
                             );
-                        }
+                        },
                         _ => {
                             eprintln!("{:?}", bank);
                             unreachable!("invalid bank message")
-                        }
+                        },
                     }
-                }
+                },
                 _ => {
                     unreachable!("unknown message type")
-                }
+                },
             }
         }
         if seen_exec_cnt != 2 {
@@ -1115,7 +1154,10 @@ mod exec_test {
             .messages
             .iter()
             .find(|sm| match sm.msg.clone() {
-                CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => funds[0].denom == DENOM_1,
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    funds,
+                    ..
+                }) => funds[0].denom == DENOM_1,
                 _ => false,
             })
             .unwrap();
@@ -1123,35 +1165,44 @@ mod exec_test {
             .messages
             .iter()
             .find(|sm| match sm.msg.clone() {
-                CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => funds[0].denom == DENOM_2,
+                CosmosMsg::Wasm(WasmMsg::Execute {
+                    funds,
+                    ..
+                }) => funds[0].denom == DENOM_2,
                 _ => false,
             })
             .unwrap();
         match denom_1_msg.msg.clone() {
-            CosmosMsg::Wasm(WasmMsg::Execute { funds, .. }) => {
+            CosmosMsg::Wasm(WasmMsg::Execute {
+                funds,
+                ..
+            }) => {
                 assert_eq!(funds.len(), 1);
                 let fund = funds[0].clone();
                 assert_eq!(fund.denom, DENOM_1);
                 assert_eq!(fund.amount, Uint128::from(5_000u32));
-            }
+            },
 
             _ => panic!("expected a wasmMsg::exec"),
         }
         match denom_2_msg.msg.clone() {
             CosmosMsg::Wasm(wasm) => match wasm {
-                WasmMsg::Execute { funds, .. } => {
+                WasmMsg::Execute {
+                    funds,
+                    ..
+                } => {
                     assert_eq!(funds.len(), 1);
                     let fund = funds[0].clone();
                     assert_eq!(fund.denom, DENOM_2);
                     assert_eq!(fund.amount, Uint128::from(150_000u32));
-                }
+                },
 
                 _ => panic!("expected a wasmMsg::exec"),
             },
             _ => {
                 eprintln!("{:?}", res.messages[1].msg);
                 panic!("expected a wasmMsg::exec")
-            }
+            },
         }
 
         Ok(())

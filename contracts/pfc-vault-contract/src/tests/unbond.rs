@@ -1,17 +1,19 @@
-use crate::states::StakerInfo;
-use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, SubMsg, Uint128, WasmMsg};
-
-use crate::tests::{
-    exec_send_reward_token, exec_unbond, exec_withdraw, init_default, query_staker_info,
-    SENDER_REWARD,
-};
-use cw20::Cw20ExecuteMsg;
-use pfc_vault::errors::ContractError;
-use pfc_vault::mock_querier::custom_deps;
-use pfc_vault::test_constants::REWARD_TOKEN;
-use pfc_vault::test_utils::expect_generic_err;
-use pfc_vault::vault::TokenBalance;
 use std::ops::Add;
+
+use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, SubMsg, Uint128, WasmMsg};
+use cw20::Cw20ExecuteMsg;
+use pfc_vault::{
+    errors::ContractError, mock_querier::custom_deps, test_constants::REWARD_TOKEN,
+    test_utils::expect_generic_err, vault::TokenBalance,
+};
+
+use crate::{
+    states::StakerInfo,
+    tests::{
+        exec_send_reward_token, exec_unbond, exec_withdraw, init_default, query_staker_info,
+        SENDER_REWARD,
+    },
+};
 
 #[test]
 fn succeed() {
@@ -89,10 +91,10 @@ fn claim_after_unbond() {
     );
     let err = exec_withdraw(&mut deps, env.clone(), info.clone()).unwrap_err();
     match err {
-        ContractError::NoneBonded {} => {}
+        ContractError::NoneBonded {} => {},
         _ => {
             unreachable!("should have failed with NoneBonded")
-        }
+        },
     }
 }
 

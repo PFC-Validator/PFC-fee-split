@@ -1,7 +1,4 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::marker::PhantomData;
+use std::{collections::HashMap, marker::PhantomData};
 
 //use crate::proxy::execute_msgs::SwapOperation;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
@@ -11,6 +8,8 @@ use cosmwasm_std::{
     SystemError, SystemResult, Uint128, WasmQuery,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 //use crate::proxy::query_msgs::QueryMsg::SimulateSwapOperations;
 //use crate::proxy::query_msgs::SimulateSwapOperationsResponse;
@@ -83,7 +82,7 @@ impl Querier for WasmMockQuerier {
                     error: "Parsing query request".to_string(),
                     request: bin_request.into(),
                 });
-            }
+            },
         };
         self.handle_query(&request)
     }
@@ -92,12 +91,14 @@ impl Querier for WasmMockQuerier {
 impl WasmMockQuerier {
     pub fn handle_query(&self, request: &QueryRequest<QueryWrapper>) -> QuerierResult {
         match &request {
-            QueryRequest::Wasm(WasmQuery::Raw { contract_addr, key }) => {
-                self.handle_wasm_raw(contract_addr, key)
-            }
-            QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => {
-                self.handle_wasm_smart(contract_addr, msg)
-            }
+            QueryRequest::Wasm(WasmQuery::Raw {
+                contract_addr,
+                key,
+            }) => self.handle_wasm_raw(contract_addr, key),
+            QueryRequest::Wasm(WasmQuery::Smart {
+                contract_addr,
+                msg,
+            }) => self.handle_wasm_smart(contract_addr, msg),
             _ => self.base.handle_query(request),
         }
     }
@@ -134,16 +135,20 @@ impl WasmMockQuerier {
 
     fn handle_cw20(&self, contract_addr: &String, msg: &Binary) -> Option<QuerierResult> {
         match from_json(msg) {
-            Ok(Cw20QueryMsg::Balance { address }) => {
+            Ok(Cw20QueryMsg::Balance {
+                address,
+            }) => {
                 let default = Uint128::zero();
                 let balance = *self.token_querier.balances[contract_addr]
                     .get(address.as_str())
                     .unwrap_or(&default);
 
                 Some(SystemResult::Ok(ContractResult::from(to_json_binary(
-                    &cw20::BalanceResponse { balance },
+                    &cw20::BalanceResponse {
+                        balance,
+                    },
                 ))))
-            }
+            },
             Ok(_) => Some(QuerierResult::Err(SystemError::UnsupportedRequest {
                 kind: "handle_wasm_smart:cw20".to_string(),
             })),
@@ -209,7 +214,7 @@ impl WasmMockQuerier {
                     error: "Parsing query request".to_string(),
                     request: key.into(),
                 }));
-            }
+            },
         };
         let balance = match balances.get(&address) {
             Some(v) => v,
@@ -218,12 +223,10 @@ impl WasmMockQuerier {
                     error: "Balance not found".to_string(),
                     request: key.into(),
                 }));
-            }
+            },
         };
 
-        Some(SystemResult::Ok(ContractResult::Ok(
-            to_json_binary(&balance).unwrap(),
-        )))
+        Some(SystemResult::Ok(ContractResult::Ok(to_json_binary(&balance).unwrap())))
     }
 }
 
@@ -248,15 +251,9 @@ impl WasmMockQuerier {
             let token_contract = token_contract.to_string();
 
             if !self.token_querier.balances.contains_key(&token_contract) {
-                self.token_querier
-                    .balances
-                    .insert(token_contract.clone(), HashMap::new());
+                self.token_querier.balances.insert(token_contract.clone(), HashMap::new());
             }
-            let token_balances = self
-                .token_querier
-                .balances
-                .get_mut(&token_contract)
-                .unwrap();
+            let token_balances = self.token_querier.balances.get_mut(&token_contract).unwrap();
 
             for (account, balance) in balances.iter() {
                 let account = account.to_string();
@@ -272,15 +269,9 @@ impl WasmMockQuerier {
             let token_contract = token_contract.to_string();
 
             if !self.token_querier.balances.contains_key(&token_contract) {
-                self.token_querier
-                    .balances
-                    .insert(token_contract.clone(), HashMap::new());
+                self.token_querier.balances.insert(token_contract.clone(), HashMap::new());
             }
-            let token_balances = self
-                .token_querier
-                .balances
-                .get_mut(&token_contract)
-                .unwrap();
+            let token_balances = self.token_querier.balances.get_mut(&token_contract).unwrap();
 
             for (account, balance) in balances.iter() {
                 let account = account.to_string();
@@ -314,8 +305,7 @@ impl WasmMockQuerier {
             }
         }
 
-        self.base
-            .update_balance(Addr::unchecked(address.to_string()), current_balances);
+        self.base.update_balance(Addr::unchecked(address.to_string()), current_balances);
     }
 
     pub fn minus_native_balance(&mut self, address: &str, balances: Vec<Coin>) {
@@ -341,14 +331,12 @@ impl WasmMockQuerier {
             }
         }
 
-        self.base
-            .update_balance(Addr::unchecked(address.to_string()), current_balances);
+        self.base.update_balance(Addr::unchecked(address.to_string()), current_balances);
     }
 
     pub fn with_balance(&mut self, balances: &[(&str, &[Coin])]) {
         for (addr, balance) in balances {
-            self.base
-                .update_balance(Addr::unchecked(addr.to_string()), balance.to_vec());
+            self.base.update_balance(Addr::unchecked(addr.to_string()), balance.to_vec());
         }
     }
 }

@@ -5,16 +5,15 @@ use cosmwasm_std::{
     StdResult, Storage, Uint128, WasmMsg,
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
+use pfc_vault::{errors::ContractError, message_factories, vault::TokenBalance};
 
-use pfc_vault::errors::ContractError;
-use pfc_vault::message_factories;
-use pfc_vault::vault::TokenBalance;
-
-use crate::states::{
-    Config, PendingClaimAmount, StakerInfo, UserTokenClaim, ADMIN, NUM_STAKED, TOTAL_REWARDS,
-    USER_CLAIM, USER_LAST_CLAIM, USER_PENDING_CLAIM,
+use crate::{
+    states::{
+        Config, PendingClaimAmount, StakerInfo, UserTokenClaim, ADMIN, NUM_STAKED, TOTAL_REWARDS,
+        USER_CLAIM, USER_LAST_CLAIM, USER_PENDING_CLAIM,
+    },
+    utils::merge_claims,
 };
-use crate::utils::merge_claims;
 
 pub fn bond(
     deps: DepsMut,
@@ -44,13 +43,13 @@ pub fn bond(
         )?;
         //    } else {
     }
-    //  let msgs = do_token_claims_and_gen_messages(deps.storage, env.block.height, &sender_addr_raw)?;
+    //  let msgs = do_token_claims_and_gen_messages(deps.storage, env.block.height,
+    // &sender_addr_raw)?;
     update_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
     // Increase bond_amount
-    let num_staked = NUM_STAKED.update(deps.storage, |num| -> StdResult<Uint128> {
-        Ok(num + amount)
-    })?;
+    let num_staked =
+        NUM_STAKED.update(deps.storage, |num| -> StdResult<Uint128> { Ok(num + amount) })?;
     staker_info.bond_amount += amount;
     staker_info.save(deps.storage)?;
 
@@ -84,13 +83,13 @@ pub fn unbond(
         )));
     }
 
-    //  let msgs = do_token_claims_and_gen_messages(deps.storage, env.block.height, &sender_addr_raw)?;
+    //  let msgs = do_token_claims_and_gen_messages(deps.storage, env.block.height,
+    // &sender_addr_raw)?;
     update_token_claims(deps.storage, env.block.height, &sender_addr_raw)?;
 
     // Decrease bond_amount
-    let num_staked = NUM_STAKED.update(deps.storage, |num| -> StdResult<Uint128> {
-        Ok(num.checked_sub(amount)?)
-    })?;
+    let num_staked = NUM_STAKED
+        .update(deps.storage, |num| -> StdResult<Uint128> { Ok(num.checked_sub(amount)?) })?;
 
     staker_info.bond_amount = (staker_info.bond_amount.checked_sub(amount))?;
     if staker_info.bond_amount.is_zero() {
@@ -128,17 +127,13 @@ pub fn recv_reward_token(
     //   eprintln!("Num_staked ={} msg.amount={}", num_staked, msg.amount);
 
     if num_staked.is_zero() {
-        return Err(ContractError::Std(StdError::generic_err(
-            "num staked is zero",
-        )));
+        return Err(ContractError::Std(StdError::generic_err("num staked is zero")));
     }
     let amount_per_stake = Decimal::from_ratio(msg.amount, 1u128)
         .checked_div(Decimal::from_ratio(num_staked, 1u128))?;
 
     if amount_per_stake.is_zero() {
-        return Err(ContractError::Std(StdError::generic_err(
-            "Amount per stake is zero",
-        )));
+        return Err(ContractError::Std(StdError::generic_err("Amount per stake is zero")));
     }
     let upd_token =
         if let Some(mut token) = TOTAL_REWARDS.may_load(deps.storage, info.sender.clone())? {
@@ -169,9 +164,8 @@ pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> Result<Response, 
     let sender_addr_raw = info.sender;
 
     let staker_info = StakerInfo::load_or_default(deps.storage, &sender_addr_raw)?;
-    let has_pending = USER_PENDING_CLAIM
-        .may_load(deps.storage, sender_addr_raw.clone())?
-        .unwrap_or_default();
+    let has_pending =
+        USER_PENDING_CLAIM.may_load(deps.storage, sender_addr_raw.clone())?.unwrap_or_default();
 
     if staker_info.bond_amount.is_zero() && has_pending.is_empty() {
         staker_info.delete(deps.storage);
@@ -336,9 +330,7 @@ pub(crate) fn update_token_claims(
     block_height: u64,
     addr: &Addr,
 ) -> Result<(), ContractError> {
-    let previous = USER_PENDING_CLAIM
-        .may_load(storage, addr.clone())?
-        .unwrap_or_default();
+    let previous = USER_PENDING_CLAIM.may_load(storage, addr.clone())?.unwrap_or_default();
     let current = get_current_claims(storage, block_height, addr)?;
     let merged = merge_claims(&previous, &current);
     USER_PENDING_CLAIM.save(storage, addr.clone(), &merged)?;
@@ -364,9 +356,7 @@ pub(crate) fn get_current_claims(
 
     USER_LAST_CLAIM.save(storage, addr.clone(), &block_height)?;
 
-    let user_info_vec = USER_CLAIM
-        .may_load(storage, addr.clone())?
-        .unwrap_or_default();
+    let user_info_vec = USER_CLAIM.may_load(storage, addr.clone())?.unwrap_or_default();
     let user_info = user_info_vec
         .iter()
         .map(|ui| (ui.token.clone(), ui))

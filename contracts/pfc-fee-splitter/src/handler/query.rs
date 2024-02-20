@@ -1,9 +1,10 @@
-use crate::state::{ALLOCATION_HOLDINGS, CONFIG, FLUSH_WHITELIST};
 use cosmwasm_std::{Deps, Order, StdResult};
 use cw_storage_plus::Bound;
 use pfc_fee_split::fee_split_msg::{
     AllocationHolding, AllocationResponse, OwnershipResponse, WhitelistResponse,
 };
+
+use crate::state::{ALLOCATION_HOLDINGS, CONFIG, FLUSH_WHITELIST};
 
 const DEFAULT_LIMIT: u32 = 10;
 const MAX_LIMIT: u32 = 30;
@@ -27,7 +28,9 @@ pub(crate) fn query_flush_whitelist(deps: Deps) -> StdResult<WhitelistResponse> 
         .items(deps.storage, None, None, Order::Ascending)
         .map(|x| x.map(|f| f.to_string()))
         .collect::<StdResult<Vec<String>>>()?;
-    Ok(WhitelistResponse { allowed: list })
+    Ok(WhitelistResponse {
+        allowed: list,
+    })
 }
 
 pub(crate) fn query_allocations(

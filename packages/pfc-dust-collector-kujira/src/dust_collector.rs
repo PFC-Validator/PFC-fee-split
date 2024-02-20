@@ -2,7 +2,6 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, Empty, Uint128};
 use cw_ownable_derive::{cw_ownable_execute, cw_ownable_query};
 use kujira::Denom;
-
 use pfc_dust_collector_derive::pfc_dust_collect;
 use pfc_whitelist::Whitelist;
 use pfc_whitelist_derive::{pfc_whitelist_exec, pfc_whitelist_query};
@@ -83,7 +82,8 @@ pub enum ExecuteMsg {
         denom: Denom,
         strategy: SellStrategy,
     },
-    /// passing this asset moving forward will just hold it, and not attempt to convert it. a 'Flush' will send it back (to avoid loops)
+    /// passing this asset moving forward will just hold it, and not attempt to convert it. a
+    /// 'Flush' will send it back (to avoid loops)
     ClearAsset {
         denom: Denom,
     },
@@ -100,7 +100,9 @@ pub enum QueryMsg {
         limit: Option<u32>,
     },
     #[returns(AssetHolding)]
-    Asset { denom: Denom },
+    Asset {
+        denom: Denom,
+    },
     #[returns(ConfigResponse)]
     Config {},
 }

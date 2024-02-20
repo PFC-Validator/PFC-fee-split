@@ -1,8 +1,9 @@
-use crate::tf::{cosmos, injective, kujira, osmosis};
+use std::{fmt::Display, str::FromStr};
+
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, CosmosMsg, Uint128};
-use std::fmt::Display;
-use std::str::FromStr;
+
+use crate::tf::{cosmos, injective, kujira, osmosis};
 
 #[cw_serde]
 pub enum TokenFactoryType {
@@ -24,6 +25,7 @@ impl Display for TokenFactoryType {
 }
 impl FromStr for TokenFactoryType {
     type Err = ();
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "CosmWasm" => Ok(TokenFactoryType::CosmWasm),
@@ -76,6 +78,7 @@ impl TokenFactoryType {
             },
         }
     }
+
     pub fn mint(&self, address: Addr, denom: &str, amount: Uint128) -> CosmosMsg {
         match self {
             TokenFactoryType::CosmWasm => {
@@ -118,6 +121,7 @@ impl TokenFactoryType {
             },
         }
     }
+
     pub fn change_admin(&self, sender: Addr, denom: &str, new_admin: Addr) -> CosmosMsg {
         match self {
             TokenFactoryType::CosmWasm => <cosmos::denom::MsgChangeAdmin as Into<CosmosMsg>>::into(
@@ -152,6 +156,7 @@ impl TokenFactoryType {
             ),
         }
     }
+
     pub fn admin_path(&self) -> String {
         match self {
             TokenFactoryType::CosmWasm => "/cosmwasm.tokenfactory.v1.Query/DenomInfo",

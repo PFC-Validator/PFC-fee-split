@@ -1,6 +1,5 @@
 use cosmwasm_std::{CheckedFromRatioError, DivideByZeroError, OverflowError, StdError};
 use cw_ownable::OwnershipError;
-
 use thiserror::Error;
 
 #[derive(Error, Debug, PartialEq)]

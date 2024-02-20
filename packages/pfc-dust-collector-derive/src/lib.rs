@@ -21,9 +21,13 @@ fn merge_variants(metadata: TokenStream, left: TokenStream, right: TokenStream) 
     let right: DeriveInput = parse_macro_input!(right);
 
     if let (
-        Enum(DataEnum { variants, .. }),
         Enum(DataEnum {
-            variants: to_add, ..
+            variants,
+            ..
+        }),
+        Enum(DataEnum {
+            variants: to_add,
+            ..
         }),
     ) = (&mut left.data, right.data)
     {
@@ -68,7 +72,7 @@ fn merge_variants(metadata: TokenStream, left: TokenStream, right: TokenStream) 
 
 /// }
 /// ```
-///
+/// 
 /// Note: `#[pfc_dust_collect]` must be applied _before_ `#[cw_serde]`.
 #[proc_macro_attribute]
 pub fn pfc_dust_collect(metadata: TokenStream, input: TokenStream) -> TokenStream {

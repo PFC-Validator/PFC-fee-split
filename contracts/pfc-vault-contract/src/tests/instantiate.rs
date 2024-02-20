@@ -1,7 +1,6 @@
-use crate::states::Config;
-use crate::tests::init_default;
-use pfc_vault::mock_querier::custom_deps;
-use pfc_vault::test_constants::liquidity::*;
+use pfc_vault::{mock_querier::custom_deps, test_constants::liquidity::*};
+
+use crate::{states::Config, tests::init_default};
 
 #[test]
 fn succeed() {

@@ -1,8 +1,7 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
 use cosmwasm_std::Uint128;
 use cw20::Cw20ReceiveMsg;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
@@ -25,7 +24,7 @@ pub enum ExecuteMsg {
     UpdateConfig {
         token: Option<String>,
         name: Option<String>,
-        /*  lp_token: Option<String>,*/
+        /* lp_token: Option<String>, */
     },
     MigrateReward {
         recipient: String,

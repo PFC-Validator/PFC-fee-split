@@ -1,9 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::Uint128;
 use cw_ownable_derive::{cw_ownable_execute, cw_ownable_query};
-
 use pfc_dust_collector_derive::pfc_dust_collect;
-
 use pfc_whitelist_derive::{pfc_whitelist_exec, pfc_whitelist_query};
 #[cw_serde]
 pub struct CollectorResponse<T> {
@@ -16,13 +14,23 @@ pub struct CollectorResponse<T> {
 #[cw_serde]
 pub enum ExecuteMsg {
     /// get some dust
-    SetTokenRouter { contract: String },
+    SetTokenRouter {
+        contract: String,
+    },
     /// Set Base denom
-    SetBaseDenom { denom: String },
+    SetBaseDenom {
+        denom: String,
+    },
     /// minimum of zero
-    SetAssetMinimum { denom: String, minimum: Uint128 },
-    /// passing this asset moving forward will just hold it, and not attempt to convert it. a 'Flush' will send it back (to avoid loops)
-    ClearAsset { denom: String },
+    SetAssetMinimum {
+        denom: String,
+        minimum: Uint128,
+    },
+    /// passing this asset moving forward will just hold it, and not attempt to convert it. a
+    /// 'Flush' will send it back (to avoid loops)
+    ClearAsset {
+        denom: String,
+    },
 }
 
 #[cw_ownable_query]
@@ -36,7 +44,9 @@ pub enum QueryMsg {
         limit: Option<u32>,
     },
     #[returns(AssetHolding)]
-    Asset { denom: String },
+    Asset {
+        denom: String,
+    },
     #[returns(ConfigResponse)]
     Config {},
 }

@@ -1,11 +1,10 @@
-use crate::state::{Config, ALLOCATION_HOLDINGS, CONFIG_KEY};
 use cosmwasm_std::{Addr, Api, Coin, DepsMut, Order, StdError, StdResult, Storage};
-
 use cw_storage_plus::{Item, Map};
 use pfc_fee_split::fee_split_msg::{AllocationHolding, SendType};
-
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+
+use crate::state::{Config, ALLOCATION_HOLDINGS, CONFIG_KEY};
 
 const CONFIG_V100_KEY: &str = "config_001";
 const FEE_KEY_V100: &str = "fees_001";
@@ -29,9 +28,7 @@ pub struct ConfigV100 {
 impl ConfigV100 {
     pub fn load(storage: &dyn Storage) -> StdResult<Self> {
         if CONFIG_V100_KEY == CONFIG_KEY {
-            Err(StdError::generic_err(
-                "PFC-Fee-Split: Migration Failed. Config keys are the same",
-            ))
+            Err(StdError::generic_err("PFC-Fee-Split: Migration Failed. Config keys are the same"))
         } else {
             CONFIG_V100.load(storage)
         }
@@ -50,18 +47,27 @@ impl ConfigV100 {
 #[allow(clippy::upper_case_acronyms)]
 pub enum SendTypeV100 {
     WALLET,
-    SteakRewards { steak: String, receiver: String },
+    SteakRewards {
+        steak: String,
+        receiver: String,
+    },
 }
 impl SendTypeV100 {
     pub fn convert(&self, api: &dyn Api, wallet: Addr) -> StdResult<SendType> {
         match self {
-            SendTypeV100::WALLET => Ok(SendType::Wallet { receiver: wallet }),
-            SendTypeV100::SteakRewards { steak, receiver } => Ok(SendType::SteakRewards {
+            SendTypeV100::WALLET => Ok(SendType::Wallet {
+                receiver: wallet,
+            }),
+            SendTypeV100::SteakRewards {
+                steak,
+                receiver,
+            } => Ok(SendType::SteakRewards {
                 steak: api.addr_validate(steak)?,
                 receiver: api.addr_validate(receiver)?,
             }),
         }
     }
+
     pub fn migrate_sendtype_v100(deps: DepsMut) -> StdResult<()> {
         let old_vec = ALLOCATION_HOLDINGSV100
             .range(deps.storage, None, None, Order::Ascending)

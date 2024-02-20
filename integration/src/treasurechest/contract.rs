@@ -1,11 +1,10 @@
-use cosmwasm_std::{Addr, Coin, CosmosMsg, Empty, StdResult, to_json_binary, WasmMsg, WasmQuery};
+use cosmwasm_std::{to_json_binary, Addr, Coin, CosmosMsg, Empty, StdResult, WasmMsg, WasmQuery};
 use cw_multi_test::{App, Contract, ContractWrapper};
-use schemars::JsonSchema;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-
 use pfc_treasurechest::chest::{
     ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg, StateResponse,
 };
+use schemars::JsonSchema;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// CwTemplateContract is a wrapper around Addr that provides a lot of helpers
 /// for working with this.

@@ -7,24 +7,46 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, JsonSchema)]
 pub enum SendType {
-    Wallet { receiver: Addr },
-    SteakRewards { steak: Addr, receiver: Addr },
-    DistributeSteakRewards { steak: Addr, receiver: Addr },
-    TransferSteakRewards { steak: Addr, receiver: Addr },
+    Wallet {
+        receiver: Addr,
+    },
+    SteakRewards {
+        steak: Addr,
+        receiver: Addr,
+    },
+    DistributeSteakRewards {
+        steak: Addr,
+        receiver: Addr,
+    },
+    TransferSteakRewards {
+        steak: Addr,
+        receiver: Addr,
+    },
 }
 impl ToString for SendType {
     fn to_string(&self) -> String {
         match &self {
-            SendType::Wallet { receiver } => format!("Wallet -> {}", receiver),
-            SendType::SteakRewards { steak, receiver } => {
+            SendType::Wallet {
+                receiver,
+            } => format!("Wallet -> {}", receiver),
+            SendType::SteakRewards {
+                steak,
+                receiver,
+            } => {
                 format!("Steak:{} -> {} -", steak, receiver)
-            }
-            SendType::DistributeSteakRewards { steak, receiver } => {
+            },
+            SendType::DistributeSteakRewards {
+                steak,
+                receiver,
+            } => {
                 format!("Steak:{} -> {} DISTRIBUTE", steak, receiver)
-            }
-            SendType::TransferSteakRewards { steak, receiver } => {
+            },
+            SendType::TransferSteakRewards {
+                steak,
+                receiver,
+            } => {
                 format!("Steak:{} -> {} Transfer", steak, receiver)
-            }
+            },
         }
     }
 }
@@ -32,24 +54,40 @@ impl SendType {
     #[deprecated(since = "0.2.9", note = "insufficient checking. use verify_details")]
     pub fn verify(&self, address: &Addr) -> bool {
         match &self {
-            SendType::Wallet { receiver } => receiver != address,
-            SendType::SteakRewards { receiver, .. } => receiver != address,
-            SendType::DistributeSteakRewards { receiver, .. } => receiver != address,
-            SendType::TransferSteakRewards { receiver, .. } => receiver != address,
+            SendType::Wallet {
+                receiver,
+            } => receiver != address,
+            SendType::SteakRewards {
+                receiver,
+                ..
+            } => receiver != address,
+            SendType::DistributeSteakRewards {
+                receiver,
+                ..
+            } => receiver != address,
+            SendType::TransferSteakRewards {
+                receiver,
+                ..
+            } => receiver != address,
         }
     }
+
     pub fn verify_details(&self, deps: &DepsMut, address: &Addr) -> Result<(), StdError> {
         match &self {
-            SendType::Wallet { receiver } => {
+            SendType::Wallet {
+                receiver,
+            } => {
                 if receiver != address {
                     deps.api.addr_validate(receiver.as_str())?;
                     Ok(())
                 } else {
                     Err(StdError::generic_err("address recursion"))
                 }
-            }
+            },
             SendType::SteakRewards {
-                receiver, steak, ..
+                receiver,
+                steak,
+                ..
             } => {
                 if receiver != address {
                     deps.api.addr_validate(receiver.as_str())?;
@@ -58,8 +96,11 @@ impl SendType {
                 } else {
                     Err(StdError::generic_err("address recursion"))
                 }
-            }
-            SendType::DistributeSteakRewards { receiver, steak } => {
+            },
+            SendType::DistributeSteakRewards {
+                receiver,
+                steak,
+            } => {
                 if receiver != address {
                     deps.api.addr_validate(receiver.as_str())?;
                     deps.api.addr_validate(steak.as_str())?;
@@ -67,8 +108,11 @@ impl SendType {
                 } else {
                     Err(StdError::generic_err("address recursion"))
                 }
-            }
-            SendType::TransferSteakRewards { receiver, steak } => {
+            },
+            SendType::TransferSteakRewards {
+                receiver,
+                steak,
+            } => {
                 if receiver != address {
                     deps.api.addr_validate(receiver.as_str())?;
                     deps.api.addr_validate(steak.as_str())?;
@@ -76,7 +120,7 @@ impl SendType {
                 } else {
                     Err(StdError::generic_err("address recursion"))
                 }
-            }
+            },
         }
     }
 }
@@ -121,7 +165,9 @@ pub struct MigrateMsg {}
 
 pub enum ExecuteMsg {
     /// what other contracts will call to start the fly-wheel or fee distribution
-    Deposit { flush: bool },
+    Deposit {
+        flush: bool,
+    },
 
     AddAllocationDetail {
         name: String,
@@ -137,18 +183,27 @@ pub enum ExecuteMsg {
         send_type: SendType,
     },
     /// Removes the 'fee', sending whatever balance is there over
-    RemoveAllocationDetail { name: String },
-    /// Queries tokens held, and then re-assigns them to allocations, wiping out whatever was there.
-    /// This is a ADMIN only function (must be called by current gov_contract)
+    RemoveAllocationDetail {
+        name: String,
+    },
+    /// Queries tokens held, and then re-assigns them to allocations, wiping out whatever was
+    /// there. This is a ADMIN only function (must be called by current gov_contract)
     Reconcile {},
     /// Transfer gov-contract to another account; will not take effect unless the new owner accepts
-    TransferGovContract { gov_contract: String, blocks: u64 },
+    TransferGovContract {
+        gov_contract: String,
+        blocks: u64,
+    },
     /// Accept an gov-contract transfer
     AcceptGovContract {},
     /// allow this address to flush funds
-    AddToFlushWhitelist { address: String },
+    AddToFlushWhitelist {
+        address: String,
+    },
     /// remove this address from flush funds whitelist
-    RemoveFromFlushWhitelist { address: String },
+    RemoveFromFlushWhitelist {
+        address: String,
+    },
 }
 impl ExecuteMsg {
     /// serializes the message
@@ -187,7 +242,9 @@ pub enum QueryMsg {
     },
     /// Returns allocation with name 'name'
     /// Return Type: AllocationHolding
-    Allocation { name: String },
+    Allocation {
+        name: String,
+    },
     /// returns ownership
     Ownership {},
     /// returns list of addresses allowed to flush

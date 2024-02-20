@@ -1,7 +1,6 @@
 use cosmwasm_std::{Addr, Uint128};
 
-use crate::states::PendingClaimAmount;
-use crate::utils::merge_claims;
+use crate::{states::PendingClaimAmount, utils::merge_claims};
 
 #[test]
 fn merge() {

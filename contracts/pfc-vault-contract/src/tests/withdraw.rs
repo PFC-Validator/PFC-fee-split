@@ -1,16 +1,22 @@
-use cosmwasm_std::testing::mock_info;
-use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, SubMsg, Uint128, WasmMsg};
-use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
+
+use cosmwasm_std::{
+    testing::mock_info, to_json_binary, Addr, CosmosMsg, Decimal, SubMsg, Uint128, WasmMsg,
+};
+use cw20::Cw20ExecuteMsg;
+use pfc_vault::{
+    mock_querier::custom_deps,
+    test_constants::{
+        liquidity::{LP_LIQUIDITY_TOKEN, LP_REWARD_TOKEN},
+        REWARD_TOKEN,
+    },
+    vault::TokenBalance,
+};
 
 use crate::tests::{
     exec_bond, exec_send_reward_token, exec_unbond, exec_withdraw, find_attribute, find_exec,
     init_default, query_staker_info, SENDER_1, SENDER_2, SENDER_REWARD,
 };
-use pfc_vault::mock_querier::custom_deps;
-use pfc_vault::test_constants::liquidity::{LP_LIQUIDITY_TOKEN, LP_REWARD_TOKEN};
-use pfc_vault::test_constants::REWARD_TOKEN;
-use pfc_vault::vault::TokenBalance;
 
 #[test]
 fn succeed() {

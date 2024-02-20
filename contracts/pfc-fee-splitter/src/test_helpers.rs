@@ -1,11 +1,11 @@
-use cosmwasm_std::{coin, Api, DepsMut, Response};
-
-use cosmwasm_std::testing::{mock_env, mock_info};
-
+use cosmwasm_std::{
+    coin,
+    testing::{mock_env, mock_info},
+    Api, DepsMut, Response,
+};
 use pfc_fee_split::fee_split_msg::{AllocationDetail, InstantiateMsg, SendType};
 
-use crate::contract::instantiate;
-use crate::error::ContractError;
+use crate::{contract::instantiate, error::ContractError};
 
 pub const GOV_CONTRACT: &str = "gov_contract";
 pub const CREATOR: &str = "creator";

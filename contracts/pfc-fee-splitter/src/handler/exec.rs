@@ -1,18 +1,17 @@
-use std::collections::HashMap;
-use std::iter::FromIterator;
-use std::ops::Mul;
+use std::{collections::HashMap, iter::FromIterator, ops::Mul};
 
 use cosmwasm_std::{
     to_json_binary, Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal,
     DepsMut, Env, MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdResult, Uint128,
     WasmMsg,
 };
+use pfc_fee_split::fee_split_msg::{AllocationHolding, SendType};
 use pfc_steak::hub::Cw20HookMsg;
 
-use pfc_fee_split::fee_split_msg::{AllocationHolding, SendType};
-
-use crate::error::ContractError;
-use crate::state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG, FLUSH_WHITELIST};
+use crate::{
+    error::ContractError,
+    state::{ADMIN, ALLOCATION_HOLDINGS, CONFIG, FLUSH_WHITELIST},
+};
 
 pub fn execute_deposit(
     deps: DepsMut,
@@ -74,11 +73,15 @@ pub fn execute_add_allocation_detail(
     }
 
     if send_after.denom.trim().is_empty() {
-        return Err(ContractError::InvalidCoin { coin: send_after });
+        return Err(ContractError::InvalidCoin {
+            coin: send_after,
+        });
     }
 
     if ALLOCATION_HOLDINGS.has(deps.storage, name.clone()) {
-        return Err(ContractError::FeeAlreadyThere { name });
+        return Err(ContractError::FeeAlreadyThere {
+            name,
+        });
     }
     ALLOCATION_HOLDINGS.save(
         deps.storage,
@@ -120,22 +123,18 @@ pub fn execute_modify_allocation_detail(
         return Err(ContractError::AllocationZero {});
     }
 
-    ALLOCATION_HOLDINGS.update(
-        deps.storage,
-        name.clone(),
-        |rec| -> Result<_, ContractError> {
-            if let Some(mut fee_holding) = rec {
-                fee_holding.send_type = send_type_unverified.clone();
-                fee_holding.send_after = send_after.clone();
-                fee_holding.allocation = allocation;
-                Ok(fee_holding)
-            } else {
-                Err(ContractError::KeyNotFound {
-                    key: name.to_string(),
-                })
-            }
-        },
-    )?;
+    ALLOCATION_HOLDINGS.update(deps.storage, name.clone(), |rec| -> Result<_, ContractError> {
+        if let Some(mut fee_holding) = rec {
+            fee_holding.send_type = send_type_unverified.clone();
+            fee_holding.send_after = send_after.clone();
+            fee_holding.allocation = allocation;
+            Ok(fee_holding)
+        } else {
+            Err(ContractError::KeyNotFound {
+                key: name.to_string(),
+            })
+        }
+    })?;
 
     let res = Response::new()
         .add_attribute("action", "modify_fee_detail")
@@ -156,19 +155,12 @@ pub fn execute_remove_allocation_detail(
 ) -> Result<Response, ContractError> {
     ADMIN.assert_admin(deps.as_ref(), &info.sender)?;
 
-    if ALLOCATION_HOLDINGS
-        .keys(deps.storage, None, None, Order::Ascending)
-        .count()
-        <= 1
-    {
+    if ALLOCATION_HOLDINGS.keys(deps.storage, None, None, Order::Ascending).count() <= 1 {
         return Err(ContractError::NoFeesError {});
     }
     if let Some(fee_holding) = ALLOCATION_HOLDINGS.may_load(deps.storage, name.clone())? {
-        let balances = fee_holding
-            .balance
-            .into_iter()
-            .filter(|f| f.amount > Uint128::zero())
-            .collect();
+        let balances =
+            fee_holding.balance.into_iter().filter(|f| f.amount > Uint128::zero()).collect();
         ALLOCATION_HOLDINGS.remove(deps.storage, name.clone());
 
         let res = Response::new()
@@ -182,7 +174,9 @@ pub fn execute_remove_allocation_detail(
             Ok(res)
         }
     } else {
-        Err(ContractError::AllocationNotFound { name })
+        Err(ContractError::AllocationNotFound {
+            name,
+        })
     }
 }
 
@@ -250,7 +244,9 @@ pub fn execute_reconcile(
                 record.balance = vec![];
                 Ok(record)
             } else {
-                Err(ContractError::KeyNotFound { key })
+                Err(ContractError::KeyNotFound {
+                    key,
+                })
             }
         })?;
     }
@@ -264,9 +260,7 @@ pub fn execute_reconcile(
         HashMap::from_iter(funds.iter().map(|c| (c.denom.clone(), c.amount)));
 
     let msgs = do_deposit(deps, funds_in, false)?;
-    let res = Response::new()
-        .add_attribute("action", "reconcile")
-        .add_messages(msgs);
+    let res = Response::new().add_attribute("action", "reconcile").add_messages(msgs);
     Ok(res)
 }
 
@@ -363,10 +357,8 @@ pub(crate) fn determine_allocation(
                 (denom.clone(), Uint128::zero())
             } else {
                 let places = portion.decimal_places();
-                let portion_u128 = portion
-                    .atomics()
-                    .checked_div(Uint128::from(10u32).pow(places))
-                    .unwrap();
+                let portion_u128 =
+                    portion.atomics().checked_div(Uint128::from(10u32).pow(places)).unwrap();
                 (denom.clone(), portion_u128)
             }
         })
@@ -386,9 +378,7 @@ pub(crate) fn determine_allocation(
     let send_coins = bal
         .iter()
         .chain(
-            funds_sent_alloc
-                .iter()
-                .filter(|(denom, _amount)| !bal.contains_key(&(*denom).clone())),
+            funds_sent_alloc.iter().filter(|(denom, _amount)| !bal.contains_key(&(*denom).clone())),
         )
         .map(|(denom, amount)| Coin::new(u128::from(*amount), denom))
         .collect::<Vec<Coin>>();
@@ -405,9 +395,8 @@ pub(crate) fn do_deposit(
 
     let mut msgs: Vec<CosmosMsg> = Vec::new();
 
-    let keys = ALLOCATION_HOLDINGS
-        .keys(deps.storage, None, None, Order::Ascending)
-        .collect::<Vec<_>>();
+    let keys =
+        ALLOCATION_HOLDINGS.keys(deps.storage, None, None, Order::Ascending).collect::<Vec<_>>();
     if keys.is_empty() {
         return Err(ContractError::NoFeesError {});
     }
@@ -429,9 +418,8 @@ pub(crate) fn do_deposit(
             }
             allocation_holding.balance = vec![];
         } else {
-            let check_coin = merged_coins
-                .iter()
-                .find(|c| c.denom == allocation_holding.send_after.denom);
+            let check_coin =
+                merged_coins.iter().find(|c| c.denom == allocation_holding.send_after.denom);
             if let Some(coin) = check_coin {
                 if coin.amount > allocation_holding.send_after.amount {
                     if let Some(new_msg) =
@@ -461,14 +449,19 @@ fn generate_cosmos_msg(
         return Ok(None);
     }
     match send_type {
-        SendType::Wallet { receiver } => {
+        SendType::Wallet {
+            receiver,
+        } => {
             let msg = BankMsg::Send {
                 to_address: receiver.to_string(),
                 amount: coins,
             };
             Ok(Some(CosmosMsg::Bank(msg)))
-        }
-        SendType::SteakRewards { steak, receiver } => {
+        },
+        SendType::SteakRewards {
+            steak,
+            receiver,
+        } => {
             let msg = pfc_steak::hub::ExecuteMsg::Bond {
                 receiver: Some(receiver.to_string()),
                 exec_msg: None,
@@ -478,8 +471,11 @@ fn generate_cosmos_msg(
                 msg: to_json_binary(&msg)?,
                 funds: coins,
             })))
-        }
-        SendType::DistributeSteakRewards { steak, receiver } => {
+        },
+        SendType::DistributeSteakRewards {
+            steak,
+            receiver,
+        } => {
             let msg = pfc_steak::hub::ExecuteMsg::Bond {
                 receiver: Some(receiver.to_string()),
                 exec_msg: Some(to_json_binary(&Cw20HookMsg::Distribute {})?),
@@ -489,8 +485,11 @@ fn generate_cosmos_msg(
                 msg: to_json_binary(&msg)?,
                 funds: coins,
             })))
-        }
-        SendType::TransferSteakRewards { steak, receiver } => {
+        },
+        SendType::TransferSteakRewards {
+            steak,
+            receiver,
+        } => {
             let msg = pfc_steak::hub::ExecuteMsg::Bond {
                 receiver: Some(receiver.to_string()),
                 exec_msg: Some(to_json_binary(&Cw20HookMsg::Transfer {})?),
@@ -500,7 +499,7 @@ fn generate_cosmos_msg(
                 msg: to_json_binary(&msg)?,
                 funds: coins,
             })))
-        }
+        },
     }
 }
 
@@ -517,21 +516,21 @@ pub(crate) fn get_native_balances(
 
 #[cfg(test)]
 mod exec_test {
-    use cosmwasm_std::coin;
-    use cosmwasm_std::testing::{
-        mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info,
+    use cosmwasm_std::{
+        coin,
+        testing::{mock_dependencies, mock_dependencies_with_balance, mock_env, mock_info},
     };
-
     use pfc_fee_split::fee_split_msg::ExecuteMsg;
 
-    use crate::contract::execute;
-    use crate::handler::query::{query_allocation, query_allocations};
-    use crate::test_helpers::{
-        do_instantiate, one_allocation, two_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR,
-        DENOM_1, DENOM_2, DENOM_3, GOV_CONTRACT, USER_1,
-    };
-
     use super::*;
+    use crate::{
+        contract::execute,
+        handler::query::{query_allocation, query_allocations},
+        test_helpers::{
+            do_instantiate, one_allocation, two_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR,
+            DENOM_1, DENOM_2, DENOM_3, GOV_CONTRACT, USER_1,
+        },
+    };
 
     #[test]
     fn allocations_1() -> Result<(), ContractError> {
@@ -580,10 +579,8 @@ mod exec_test {
             test_1.iter().find(|c| c.denom == DENOM_2).unwrap(),
             &coin(6_750, String::from(DENOM_2))
         );
-        let funds_held = vec![
-            coin(100_000, String::from(DENOM_1)),
-            coin(20_000, String::from(DENOM_2)),
-        ];
+        let funds_held =
+            vec![coin(100_000, String::from(DENOM_1)), coin(20_000, String::from(DENOM_2))];
 
         let test_2 = determine_allocation(3, 4, &funds2, &funds_held)?;
         assert_eq!(
@@ -613,10 +610,8 @@ mod exec_test {
             test_3.iter().find(|c| c.denom == DENOM_3).unwrap(),
             &coin(90_000, String::from(DENOM_3))
         );
-        let funds_held_2 = vec![
-            coin(100_000, String::from(DENOM_1)),
-            coin(20_000, String::from(DENOM_2)),
-        ];
+        let funds_held_2 =
+            vec![coin(100_000, String::from(DENOM_1)), coin(20_000, String::from(DENOM_2))];
         let funds3: HashMap<String, Uint128> = HashMap::from([
             (DENOM_1.into(), Uint128::from(1_000_000u128)),
             (DENOM_3.into(), Uint128::from(9_000u128)),
@@ -643,7 +638,9 @@ mod exec_test {
         let mut deps = mock_dependencies();
         let alloc = one_allocation(&deps.api);
         let _res = do_instantiate(deps.as_mut(), CREATOR, alloc)?;
-        let msg = ExecuteMsg::Deposit { flush: false };
+        let msg = ExecuteMsg::Deposit {
+            flush: false,
+        };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
@@ -683,7 +680,9 @@ mod exec_test {
         let allocs = two_allocation(&deps.api);
 
         let _res = do_instantiate(deps.as_mut(), CREATOR, allocs)?;
-        let msg = ExecuteMsg::Deposit { flush: false };
+        let msg = ExecuteMsg::Deposit {
+            flush: false,
+        };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
@@ -718,10 +717,10 @@ mod exec_test {
                     exec_msg: None,
                 })?;
                 assert_eq!(msg, &expected)
-            }
+            },
             _ => {
                 unreachable!("Invalid MSG {:?}", res.messages[1].msg)
-            }
+            },
         }
 
         assert_eq!(res.attributes.len(), 2);
@@ -742,20 +741,20 @@ mod exec_test {
         let msg = ExecuteMsg::Reconcile {};
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[Coin::new(1_000, DENOM_1)]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::ReconcileWithFunds { .. } => {}
+            ContractError::ReconcileWithFunds {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
@@ -767,7 +766,10 @@ mod exec_test {
         //  eprintln!("{:?}", res.messages[0]);
         match &res.messages[0].msg {
             CosmosMsg::Bank(b) => match b {
-                BankMsg::Send { to_address, amount } => {
+                BankMsg::Send {
+                    to_address,
+                    amount,
+                } => {
                     assert_eq!(to_address, "allocation_1_addr");
                     assert_eq!(amount.len(), 2);
                     assert_eq!(
@@ -778,14 +780,14 @@ mod exec_test {
                         amount.iter().find(|c| c.denom == DENOM_2),
                         Some(&coin(500_000, DENOM_2))
                     )
-                }
+                },
                 _ => {
                     panic!("invalid bank message {:?} ", b)
-                }
+                },
             },
             _ => {
                 panic!("invalid message {:?} ", res.messages[0])
-            }
+            },
         }
 
         let allocations = query_allocations(deps.as_ref(), None, None)?;
@@ -796,17 +798,11 @@ mod exec_test {
             assert_eq!(allocations.allocations[1].name, ALLOCATION_2);
             assert_eq!(allocations.allocations[1].balance.len(), 2);
             assert_eq!(
-                allocations.allocations[1]
-                    .balance
-                    .iter()
-                    .find(|c| c.denom == DENOM_2),
+                allocations.allocations[1].balance.iter().find(|c| c.denom == DENOM_2),
                 Some(&coin(500_000, DENOM_2))
             );
             assert_eq!(
-                allocations.allocations[1]
-                    .balance
-                    .iter()
-                    .find(|c| c.denom == DENOM_1),
+                allocations.allocations[1].balance.iter().find(|c| c.denom == DENOM_1),
                 Some(&coin(25_000, DENOM_1))
             );
         } else {
@@ -814,17 +810,11 @@ mod exec_test {
             assert!(allocations.allocations[1].balance.is_empty());
             assert_eq!(allocations.allocations[0].name, ALLOCATION_2);
             assert_eq!(
-                allocations.allocations[0]
-                    .balance
-                    .iter()
-                    .find(|c| c.denom == DENOM_2),
+                allocations.allocations[0].balance.iter().find(|c| c.denom == DENOM_2),
                 Some(&coin(500_000, DENOM_2))
             );
             assert_eq!(
-                allocations.allocations[0]
-                    .balance
-                    .iter()
-                    .find(|c| c.denom == DENOM_1),
+                allocations.allocations[0].balance.iter().find(|c| c.denom == DENOM_1),
                 Some(&coin(25_000, DENOM_1))
             );
         }
@@ -890,17 +880,21 @@ mod exec_test {
 
 #[cfg(test)]
 mod crud_allocations {
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coin, Api, BankMsg, CosmosMsg};
-
+    use cosmwasm_std::{
+        coin,
+        testing::{mock_dependencies, mock_env, mock_info},
+        Api, BankMsg, CosmosMsg,
+    };
     use pfc_fee_split::fee_split_msg::{AllocationHolding, ExecuteMsg, SendType};
 
-    use crate::contract::execute;
-    use crate::error::ContractError;
-    use crate::handler::query::{query_allocation, query_allocations};
-    use crate::test_helpers::{
-        do_instantiate, two_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR, DENOM_1, GOV_CONTRACT,
-        USER_1,
+    use crate::{
+        contract::execute,
+        error::ContractError,
+        handler::query::{query_allocation, query_allocations},
+        test_helpers::{
+            do_instantiate, two_allocation, ALLOCATION_1, ALLOCATION_2, CREATOR, DENOM_1,
+            GOV_CONTRACT, USER_1,
+        },
     };
 
     #[test]
@@ -925,20 +919,20 @@ mod crud_allocations {
         //eprintln!("{}", serde_json::to_string(&msg).unwrap());
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(CREATOR, &[]);
 
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
@@ -952,16 +946,12 @@ mod crud_allocations {
                 receiver: deps.api.addr_validate("rewards")?,
             },
         };
-        let err = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_duplicate.clone(),
-        )
-        .err()
-        .unwrap();
+        let err =
+            execute(deps.as_mut(), env.clone(), info.clone(), msg_duplicate.clone()).err().unwrap();
         match err {
-            ContractError::FeeAlreadyThere { .. } => {}
+            ContractError::FeeAlreadyThere {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
 
@@ -974,7 +964,9 @@ mod crud_allocations {
         assert_eq!(allocations.allocations[1].name, ALLOCATION_2);
         assert_eq!(allocations.allocations[2].name, "line3");
 
-        let msg = ExecuteMsg::Deposit { flush: false };
+        let msg = ExecuteMsg::Deposit {
+            flush: false,
+        };
         let info = mock_info(USER_1, &[coin(1_000_000, DENOM_1)]);
         let env = mock_env();
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
@@ -989,7 +981,9 @@ mod crud_allocations {
         );
         assert_eq!(
             &format!("{:?}", res.messages[1].msg),
-            "Wasm(Execute { contract_addr: \"steak-contract\", msg: {\"bond\":{\"receiver\":\"rewards\",\"exec_msg\":null}}, funds: [Coin { 333333 \"uxyz\" }] })"
+            "Wasm(Execute { contract_addr: \"steak-contract\", msg: \
+             {\"bond\":{\"receiver\":\"rewards\",\"exec_msg\":null}}, funds: [Coin { 333333 \
+             \"uxyz\" }] })"
         );
         let allocations = query_allocation(deps.as_ref(), String::from(ALLOCATION_2))?.unwrap();
 
@@ -1013,36 +1007,33 @@ mod crud_allocations {
         };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(CREATOR, &[]);
 
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
         let msg_does_not_exist = ExecuteMsg::RemoveAllocationDetail {
             name: "does-not-exist".to_string(),
         };
-        let err = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_does_not_exist.clone(),
-        )
-        .err()
-        .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg_does_not_exist.clone())
+            .err()
+            .unwrap();
         match err {
-            ContractError::AllocationNotFound { .. } => {}
+            ContractError::AllocationNotFound {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
 
@@ -1053,7 +1044,9 @@ mod crud_allocations {
         assert_eq!(allocations.allocations.len(), 1);
         assert_eq!(allocations.allocations[0].name, ALLOCATION_1);
 
-        let msg = ExecuteMsg::Deposit { flush: false };
+        let msg = ExecuteMsg::Deposit {
+            flush: false,
+        };
         let info = mock_info(USER_1, &[coin(1_000_000, DENOM_1)]);
         let env = mock_env();
         let res = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())?;
@@ -1093,20 +1086,20 @@ mod crud_allocations {
         //eprintln!("{}", serde_json::to_string(&msg).unwrap());
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(CREATOR, &[]);
 
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
@@ -1118,28 +1111,22 @@ mod crud_allocations {
                 receiver: deps.api.addr_validate("new-contract").unwrap(),
             },
         };
-        let err = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_does_not_exist.clone(),
-        )
-        .err()
-        .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg_does_not_exist.clone())
+            .err()
+            .unwrap();
         match err {
-            ContractError::KeyNotFound { .. } => {}
+            ContractError::KeyNotFound {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
 
-        let msg_deposit = ExecuteMsg::Deposit { flush: false };
+        let msg_deposit = ExecuteMsg::Deposit {
+            flush: false,
+        };
         let info = mock_info(USER_1, &[coin(1_000_000, DENOM_1)]);
         let env = mock_env();
-        let res = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_deposit.clone(),
-        )?;
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg_deposit.clone())?;
         assert_eq!(res.attributes.len(), 2);
         assert_eq!(res.messages.len(), 1);
         assert_eq!(
@@ -1177,15 +1164,12 @@ mod crud_allocations {
             }
         );
 
-        let msg_deposit = ExecuteMsg::Deposit { flush: false };
+        let msg_deposit = ExecuteMsg::Deposit {
+            flush: false,
+        };
         let info = mock_info(USER_1, &[coin(1_000_000, DENOM_1)]);
         let env = mock_env();
-        let res = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_deposit.clone(),
-        )?;
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), msg_deposit.clone())?;
         assert_eq!(res.attributes.len(), 2);
         assert_eq!(res.messages.len(), 2);
         assert_eq!(
@@ -1212,16 +1196,19 @@ mod crud_allocations {
 
 #[cfg(test)]
 mod flush_whitelist {
-    use cosmwasm_std::coin;
-    use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-
+    use cosmwasm_std::{
+        coin,
+        testing::{mock_dependencies, mock_env, mock_info},
+    };
     use pfc_fee_split::fee_split_msg::ExecuteMsg;
 
-    use crate::contract::execute;
-    use crate::error::ContractError;
-    use crate::handler::query::query_flush_whitelist;
-    use crate::test_helpers::{
-        do_instantiate, one_allocation, two_allocation, CREATOR, DENOM_1, GOV_CONTRACT, USER_1,
+    use crate::{
+        contract::execute,
+        error::ContractError,
+        handler::query::query_flush_whitelist,
+        test_helpers::{
+            do_instantiate, one_allocation, two_allocation, CREATOR, DENOM_1, GOV_CONTRACT, USER_1,
+        },
     };
 
     #[test]
@@ -1234,21 +1221,21 @@ mod flush_whitelist {
         };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         // the one creating it has no admin privs
         let info = mock_info(CREATOR, &[]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
 
@@ -1272,22 +1259,22 @@ mod flush_whitelist {
         };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
 
         // the one creating it has no admin privs
         let info = mock_info(CREATOR, &[]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone())
-            .err()
-            .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg.clone()).err().unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
 
@@ -1320,37 +1307,28 @@ mod flush_whitelist {
         };
         let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg_add.clone())?;
         let info_with_funds = mock_info(USER_1, &[coin(1_000_000u128, String::from(DENOM_1))]);
-        let msg_no_flush = ExecuteMsg::Deposit { flush: false };
-        let msg_flush = ExecuteMsg::Deposit { flush: true };
-        let res = execute(
-            deps.as_mut(),
-            env.clone(),
-            info_with_funds.clone(),
-            msg_no_flush,
-        )?;
+        let msg_no_flush = ExecuteMsg::Deposit {
+            flush: false,
+        };
+        let msg_flush = ExecuteMsg::Deposit {
+            flush: true,
+        };
+        let res = execute(deps.as_mut(), env.clone(), info_with_funds.clone(), msg_no_flush)?;
         assert_eq!(res.messages.len(), 1);
 
-        let err = execute(
-            deps.as_mut(),
-            env.clone(),
-            info_with_funds.clone(),
-            msg_flush.clone(),
-        )
-        .err()
-        .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info_with_funds.clone(), msg_flush.clone())
+            .err()
+            .unwrap();
         match err {
-            ContractError::Unauthorized { .. } => {}
+            ContractError::Unauthorized {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info_auth_with_funds =
             mock_info("jimmy", &[coin(1_000_000u128, String::from(DENOM_1))]);
 
-        let res = execute(
-            deps.as_mut(),
-            env.clone(),
-            info_auth_with_funds.clone(),
-            msg_flush,
-        )?;
+        let res = execute(deps.as_mut(), env.clone(), info_auth_with_funds.clone(), msg_flush)?;
         assert_eq!(res.messages.len(), 1);
 
         Ok(())
@@ -1360,12 +1338,13 @@ mod flush_whitelist {
 #[cfg(test)]
 mod ownership_changes {
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-
     use pfc_fee_split::fee_split_msg::ExecuteMsg;
 
-    use crate::contract::execute;
-    use crate::error::ContractError;
-    use crate::test_helpers::{do_instantiate, two_allocation, CREATOR, GOV_CONTRACT, USER_1};
+    use crate::{
+        contract::execute,
+        error::ContractError,
+        test_helpers::{do_instantiate, two_allocation, CREATOR, GOV_CONTRACT, USER_1},
+    };
 
     #[test]
     fn change_owners() -> Result<(), ContractError> {
@@ -1378,35 +1357,30 @@ mod ownership_changes {
         };
         let info = mock_info(USER_1, &[]);
         let env = mock_env();
-        let err = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_gov_transfer.clone(),
-        )
-        .err()
-        .unwrap();
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg_gov_transfer.clone())
+            .err()
+            .unwrap();
         match err {
-            ContractError::AdminError { .. } => {}
+            ContractError::AdminError {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
-        let _res = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_gov_transfer.clone(),
-        )?;
-        let msg_flush = ExecuteMsg::Deposit { flush: true };
+        let _res = execute(deps.as_mut(), env.clone(), info.clone(), msg_gov_transfer.clone())?;
+        let msg_flush = ExecuteMsg::Deposit {
+            flush: true,
+        };
 
         //  not admin yet
         let info = mock_info("new_gov", &[]);
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg_flush.clone())
-            .err()
-            .unwrap();
+        let err =
+            execute(deps.as_mut(), env.clone(), info.clone(), msg_flush.clone()).err().unwrap();
         match err {
-            ContractError::Unauthorized { .. } => {}
+            ContractError::Unauthorized {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
 
@@ -1418,48 +1392,41 @@ mod ownership_changes {
         let msg_accept_gov_transfer = ExecuteMsg::AcceptGovContract {};
         let env = mock_env();
         let info = mock_info(USER_1, &[]);
-        let err = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_accept_gov_transfer.clone(),
-        )
-        .err()
-        .unwrap();
+        let err =
+            execute(deps.as_mut(), env.clone(), info.clone(), msg_accept_gov_transfer.clone())
+                .err()
+                .unwrap();
         match err {
-            ContractError::Unauthorized { .. } => {}
+            ContractError::Unauthorized {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info(GOV_CONTRACT, &[]);
-        let err = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_accept_gov_transfer.clone(),
-        )
-        .err()
-        .unwrap();
+        let err =
+            execute(deps.as_mut(), env.clone(), info.clone(), msg_accept_gov_transfer.clone())
+                .err()
+                .unwrap();
         match err {
-            ContractError::Unauthorized { .. } => {}
+            ContractError::Unauthorized {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
         let info = mock_info("new_gov", &[]);
-        let _res = execute(
-            deps.as_mut(),
-            env.clone(),
-            info.clone(),
-            msg_accept_gov_transfer.clone(),
-        )?;
+        let _res =
+            execute(deps.as_mut(), env.clone(), info.clone(), msg_accept_gov_transfer.clone())?;
 
         // no longer admin
         let info = mock_info(GOV_CONTRACT, &[]);
 
         let env = mock_env();
-        let err = execute(deps.as_mut(), env.clone(), info.clone(), msg_flush.clone())
-            .err()
-            .unwrap();
+        let err =
+            execute(deps.as_mut(), env.clone(), info.clone(), msg_flush.clone()).err().unwrap();
         match err {
-            ContractError::Unauthorized { .. } => {}
+            ContractError::Unauthorized {
+                ..
+            } => {},
             _ => panic!("wrong error {:?}", err),
         }
 

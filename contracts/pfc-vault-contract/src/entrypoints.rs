@@ -1,23 +1,30 @@
-#[cfg(not(feature = "library"))]
-use crate::executions::{bond, migrate_reward, unbond, update_config, withdraw};
-use crate::queries::{query_config, query_staker_info, query_state};
-use crate::states::{Config, ADMIN, NUM_STAKED};
-use cosmwasm_std::{entry_point, to_json_binary};
-use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{
+    entry_point, to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128,
+};
 use cw2::{get_contract_version, set_contract_version};
 use cw20::Cw20ReceiveMsg;
 use pfc_vault::errors::ContractError;
+
+#[cfg(not(feature = "library"))]
+use crate::executions::{bond, migrate_reward, unbond, update_config, withdraw};
+use crate::{
+    queries::{query_config, query_staker_info, query_state},
+    states::{Config, ADMIN, NUM_STAKED},
+};
 /// Contract name that is used for migration.
 const CONTRACT_NAME: &str = "pfc-vault";
 /// Contract version that is used for migration.
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+use pfc_vault::vault::{
+    execute_msgs::{ExecuteMsg, InstantiateMsg, MigrateMsg},
+    query_msgs::QueryMsg,
+};
+
 use crate::executions::{
     execute_accept_gov_contract, execute_set_new_astroport_generator, execute_update_gov_contract,
     recv_reward_token,
 };
-use pfc_vault::vault::execute_msgs::{ExecuteMsg, InstantiateMsg, MigrateMsg};
-use pfc_vault::vault::query_msgs::QueryMsg;
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -61,25 +68,28 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Receive(msg) => receive_cw20(deps, env, info, msg),
-        ExecuteMsg::Unbond { amount } => unbond(deps, env, info, amount),
+        ExecuteMsg::Unbond {
+            amount,
+        } => unbond(deps, env, info, amount),
         ExecuteMsg::Withdraw {} => withdraw(deps, env, info),
         ExecuteMsg::UpdateConfig {
             token,
             name,
             // lp_token,
-        } => update_config(deps, env, info, token, name /*, lp_token*/),
-        ExecuteMsg::MigrateReward { recipient, amount } => {
-            migrate_reward(deps, env, info, recipient, amount)
-        }
+        } => update_config(deps, env, info, token, name /* , lp_token */),
+        ExecuteMsg::MigrateReward {
+            recipient,
+            amount,
+        } => migrate_reward(deps, env, info, recipient, amount),
 
         ExecuteMsg::TransferGovContract {
             gov_contract,
             blocks,
         } => execute_update_gov_contract(deps, env, info, gov_contract, blocks),
         ExecuteMsg::AcceptGovContract {} => execute_accept_gov_contract(deps, env, info),
-        ExecuteMsg::SetAstroportGenerator { generator } => {
-            execute_set_new_astroport_generator(deps, env, info, generator)
-        }
+        ExecuteMsg::SetAstroportGenerator {
+            generator,
+        } => execute_set_new_astroport_generator(deps, env, info, generator),
     }
 }
 
@@ -110,7 +120,9 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
     let result = match msg {
         QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
         QueryMsg::State {} => to_json_binary(&query_state(deps)?),
-        QueryMsg::StakerInfo { staker } => to_json_binary(&query_staker_info(deps, env, staker)?),
+        QueryMsg::StakerInfo {
+            staker,
+        } => to_json_binary(&query_staker_info(deps, env, staker)?),
     }?;
 
     Ok(result)
@@ -122,14 +134,14 @@ pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> Result<Response, C
 
     match contract_version.contract.as_ref() {
         #[allow(clippy::single_match)]
-        "pfc-astroport-lp-staker" => {}
-        "pfc-vault" => {}
+        "pfc-astroport-lp-staker" => {},
+        "pfc-vault" => {},
         _ => {
             return Err(ContractError::MigrationError {
                 current_name: contract_version.contract,
                 current_version: contract_version.version,
-            })
-        }
+            });
+        },
     }
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
 

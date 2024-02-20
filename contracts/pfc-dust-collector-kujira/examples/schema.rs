@@ -1,8 +1,9 @@
+use std::{env::current_dir, fs::create_dir_all};
+
 use cosmwasm_schema::{export_schema, remove_schemas, schema_for};
-use pfc_fee_split::fee_split_msg::{AllocationResponse, OwnershipResponse};
-use pfc_fee_split::fee_split_msg::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use std::env::current_dir;
-use std::fs::create_dir_all;
+use pfc_fee_split::fee_split_msg::{
+    AllocationResponse, ExecuteMsg, InstantiateMsg, OwnershipResponse, QueryMsg,
+};
 fn main() {
     let mut out_dir = current_dir().unwrap();
     out_dir.push("schema");

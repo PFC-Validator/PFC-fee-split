@@ -1,14 +1,17 @@
-use cosmwasm_std::testing::mock_info;
-use cosmwasm_std::{to_json_binary, Addr, Decimal, Env, Uint128, WasmMsg};
+use cosmwasm_std::{testing::mock_info, to_json_binary, Addr, Decimal, Env, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
-use pfc_vault::mock_querier::{custom_deps, CustomDeps};
-use pfc_vault::test_constants::REWARD_TOKEN;
+use pfc_vault::{
+    mock_querier::{custom_deps, CustomDeps},
+    test_constants::REWARD_TOKEN,
+};
 
-use crate::executions::withdraw;
-use crate::states::{NUM_STAKED, USER_CLAIM};
-use crate::tests::{
-    exec_bond, exec_send_reward_token, find_attribute, find_exec, init_default, query_staker_info,
-    SENDER_1, SENDER_2, SENDER_REWARD,
+use crate::{
+    executions::withdraw,
+    states::{NUM_STAKED, USER_CLAIM},
+    tests::{
+        exec_bond, exec_send_reward_token, find_attribute, find_exec, init_default,
+        query_staker_info, SENDER_1, SENDER_2, SENDER_REWARD,
+    },
 };
 
 fn will_success(deps: &mut CustomDeps, env: Env, sender: &Addr) {
@@ -83,10 +86,7 @@ fn succeed() {
     assert_eq!(token_attr.value, "100");
 
     let token_claims1 = USER_CLAIM.load(deps.as_ref().storage, sender1).unwrap();
-    let token_claim1 = token_claims1
-        .into_iter()
-        .find(|p| p.token == REWARD_TOKEN)
-        .unwrap();
+    let token_claim1 = token_claims1.into_iter().find(|p| p.token == REWARD_TOKEN).unwrap();
 
     let num_staked = NUM_STAKED.load(deps.as_ref().storage).unwrap();
 

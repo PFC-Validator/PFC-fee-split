@@ -1,5 +1,4 @@
-use cosmwasm_std::testing::mock_info;
-use cosmwasm_std::MessageInfo;
+use cosmwasm_std::{testing::mock_info, MessageInfo};
 
 pub const DEFAULT_SENDER: &str = "terra1sq9ppsvt4k378wwhvm2vyfg7kqrhtve8p0n3a6";
 pub const CONTRACT_CREATOR: &str = "terra16m3runusa9csfev7ymj62e8lnswu8um29k5zky";
@@ -14,9 +13,9 @@ pub fn contract_creator() -> MessageInfo {
 }
 
 pub mod liquidity {
-    use crate::test_constants::REWARD_TOKEN;
-    use crate::test_utils::mock_env_contract;
     use cosmwasm_std::{Env, Uint128};
+
+    use crate::{test_constants::REWARD_TOKEN, test_utils::mock_env_contract};
 
     pub const LIQUIDITY: &str = "terra1l7xu2rl3c7qmtx3r5sd2tz25glf6jh8ul7aag7";
 

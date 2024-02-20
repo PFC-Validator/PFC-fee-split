@@ -1,15 +1,16 @@
-use cosmwasm_std::testing::mock_info;
-use cosmwasm_std::{Addr, Env, MessageInfo, Response};
+use cosmwasm_std::{testing::mock_info, Addr, Env, MessageInfo, Response};
+use pfc_vault::{
+    errors::ContractError,
+    mock_querier::{custom_deps, CustomDeps},
+    test_constants::{liquidity::*, DEFAULT_SENDER},
+    test_utils::expect_unauthorized_err,
+};
 
-use pfc_vault::errors::ContractError;
-use pfc_vault::mock_querier::{custom_deps, CustomDeps};
-use pfc_vault::test_constants::liquidity::*;
-use pfc_vault::test_constants::DEFAULT_SENDER;
-use pfc_vault::test_utils::expect_unauthorized_err;
-
-use crate::executions::{execute_accept_gov_contract, execute_update_gov_contract, update_config};
-use crate::states::Config;
-use crate::tests::{init_default, SENDER_1};
+use crate::{
+    executions::{execute_accept_gov_contract, execute_update_gov_contract, update_config},
+    states::Config,
+    tests::{init_default, SENDER_1},
+};
 
 pub fn exec(
     deps: &mut CustomDeps,
@@ -90,10 +91,7 @@ fn switch_gov_contract() {
     )
     .unwrap();
     let config = Config::load(&deps.storage).unwrap();
-    assert_eq!(
-        config.change_gov_contract_by_height.unwrap(),
-        env.block.height + 100
-    );
+    assert_eq!(config.change_gov_contract_by_height.unwrap(), env.block.height + 100);
     assert_eq!(config.new_gov_contract.unwrap(), new_admin.sender,);
     let _res = execute_accept_gov_contract(deps.as_mut(), env.clone(), sender1).unwrap_err();
     let _res = execute_accept_gov_contract(deps.as_mut(), env.clone(), new_admin).unwrap();

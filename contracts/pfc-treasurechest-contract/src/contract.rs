@@ -1,24 +1,23 @@
 use std::{collections::HashMap, str::FromStr};
 
 use cosmwasm_std::{
-    Binary, Coin, Decimal, Deps, DepsMut, entry_point, Env, MessageInfo, Response, to_json_binary,
+    entry_point, to_json_binary, Binary, Coin, Decimal, Deps, DepsMut, Env, MessageInfo, Response,
     Uint128,
 };
 use cw2::{get_contract_version, set_contract_version};
-
 use pfc_treasurechest::{
     chest::{ExecuteMsg, InstantiateMsg, MigrateMsg, QueryMsg},
     errors::ContractError,
     tf::tokenfactory::TokenFactoryType,
 };
 
+#[cfg(not(feature = "library"))]
+use crate::executions::withdraw;
 use crate::{
     executions::{change_token_factory, return_dust},
     queries::{query_config, query_state},
     state::{Config, CONFIG, TOTAL_REWARDS},
 };
-#[cfg(not(feature = "library"))]
-use crate::executions::withdraw;
 
 /// Contract name that is used for migration.
 const CONTRACT_NAME: &str = "pfc-treasurechest";

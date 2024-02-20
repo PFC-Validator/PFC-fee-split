@@ -23,9 +23,13 @@ pub enum WhitelistError {
     #[error("List Supplied to Whitelist is not unique")]
     NotUnique(),
     #[error("Whitelist entry {name} already exists")]
-    EntryExists { name: String },
+    EntryExists {
+        name: String,
+    },
     #[error("Whitelist entry {name} does not exist")]
-    EntryDoesntExist { name: String },
+    EntryDoesntExist {
+        name: String,
+    },
 }
 const WHITELIST: Map<String, Option<String>> = Map::new("whitelist");
 
@@ -58,7 +62,9 @@ pub fn add_entry(
     let addr = api.addr_validate(&address)?;
     let entry_exists = WHITELIST.may_load(storage, address.clone())?;
     if entry_exists.is_some() {
-        return Err(WhitelistError::EntryExists { name: address });
+        return Err(WhitelistError::EntryExists {
+            name: address,
+        });
     }
 
     WHITELIST.save(storage, addr.to_string(), &reason)?;
@@ -76,12 +82,17 @@ pub fn remove_entry(
         WHITELIST.remove(storage, addr.to_string());
         Ok(())
     } else {
-        Err(WhitelistError::EntryDoesntExist { name })
+        Err(WhitelistError::EntryDoesntExist {
+            name,
+        })
     }
 }
 pub fn query_entry(storage: &dyn Storage, address: String) -> StdResult<Option<Whitelist>> {
     if let Some(reason) = WHITELIST.may_load(storage, address.clone())? {
-        Ok(Some(Whitelist { address, reason }))
+        Ok(Some(Whitelist {
+            address,
+            reason,
+        }))
     } else {
         Ok(None)
     }
@@ -105,7 +116,9 @@ pub fn query_entries(
             })
         })
         .collect::<StdResult<Vec<Whitelist>>>()?;
-    Ok(WhitelistResponse { entries: res })
+    Ok(WhitelistResponse {
+        entries: res,
+    })
 }
 
 pub fn is_listed(storage: &dyn Storage, address: &Addr) -> StdResult<Option<Whitelist>> {

@@ -1,11 +1,11 @@
+use std::{cmp::Ordering, fmt};
+
 use cosmwasm_std::{Addr, Api, Binary, QuerierWrapper, StdResult, Uint128};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 //use super::errors::ContractError;
 use crate::cw20::query_balance;
-use std::cmp::Ordering;
-use std::fmt;
 
 //pub type ContractResult<T> = core::result::Result<T, ContractError>;
 /*
@@ -38,7 +38,7 @@ impl Denom {
             Denom::Native(denom) => cw20::Denom::Native(denom.to_string()),
             Denom::Token(contract_addr) => {
                 cw20::Denom::Cw20(api.addr_validate(contract_addr).unwrap())
-            }
+            },
         }
     }
 

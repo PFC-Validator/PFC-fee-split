@@ -1,20 +1,29 @@
-use crate::entrypoints::{execute, instantiate, query};
-use crate::executions::{unbond, withdraw};
-use cosmwasm_std::testing::mock_info;
 use cosmwasm_std::{
-    from_json, to_json_binary, Addr, Attribute, CosmosMsg, Deps, Env, MessageInfo, Response,
-    SubMsg, Uint128, WasmMsg,
+    from_json, testing::mock_info, to_json_binary, Addr, Attribute, CosmosMsg, Deps, Env,
+    MessageInfo, Response, SubMsg, Uint128, WasmMsg,
 };
 use cw20::Cw20ReceiveMsg;
-use pfc_vault::errors::ContractError;
-use pfc_vault::mock_querier::CustomDeps;
-use pfc_vault::test_constants::liquidity::{
-    lp_env, LP_DISTRIBUTION_SCHEDULE1, LP_DISTRIBUTION_SCHEDULE2, LP_LIQUIDITY_TOKEN,
-    LP_REWARD_TOKEN,
+use pfc_vault::{
+    errors::ContractError,
+    mock_querier::CustomDeps,
+    test_constants::{
+        default_sender,
+        liquidity::{
+            lp_env, LP_DISTRIBUTION_SCHEDULE1, LP_DISTRIBUTION_SCHEDULE2, LP_LIQUIDITY_TOKEN,
+            LP_REWARD_TOKEN,
+        },
+        DEFAULT_SENDER, REWARD_TOKEN,
+    },
+    vault::{
+        execute_msgs::{Cw20HookMsg, ExecuteMsg, InstantiateMsg},
+        query_msgs::{QueryMsg, StakerInfoResponse},
+    },
 };
-use pfc_vault::test_constants::{default_sender, DEFAULT_SENDER, REWARD_TOKEN};
-use pfc_vault::vault::execute_msgs::{Cw20HookMsg, ExecuteMsg, InstantiateMsg};
-use pfc_vault::vault::query_msgs::{QueryMsg, StakerInfoResponse};
+
+use crate::{
+    entrypoints::{execute, instantiate, query},
+    executions::{unbond, withdraw},
+};
 
 pub mod bond;
 pub mod instantiate;
@@ -34,7 +43,9 @@ pub fn find_attribute<'a>(attributes: &'a [Attribute], name: &str) -> Option<&'a
 pub fn find_exec(message: &SubMsg) -> Option<&WasmMsg> {
     match &message.msg {
         CosmosMsg::Wasm(wasm) => match wasm {
-            WasmMsg::Execute { .. } => Some(wasm),
+            WasmMsg::Execute {
+                ..
+            } => Some(wasm),
             _ => None,
         },
         _ => None,
@@ -145,14 +156,8 @@ pub fn init_default(
     }
 
     deps.querier.plus_token_balances(&[
-        (
-            LP_REWARD_TOKEN,
-            &[(DEFAULT_SENDER, &LP_DISTRIBUTION_SCHEDULE1.2)],
-        ),
-        (
-            LP_REWARD_TOKEN,
-            &[(DEFAULT_SENDER, &LP_DISTRIBUTION_SCHEDULE2.2)],
-        ),
+        (LP_REWARD_TOKEN, &[(DEFAULT_SENDER, &LP_DISTRIBUTION_SCHEDULE1.2)]),
+        (LP_REWARD_TOKEN, &[(DEFAULT_SENDER, &LP_DISTRIBUTION_SCHEDULE2.2)]),
     ]);
 
     (env, info, response)

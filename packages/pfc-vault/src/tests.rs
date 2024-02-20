@@ -1,6 +1,6 @@
+use cosmwasm_std::{testing::MOCK_CONTRACT_ADDR, Addr, Uint128};
+
 use crate::mock_querier::custom_deps;
-use cosmwasm_std::testing::MOCK_CONTRACT_ADDR;
-use cosmwasm_std::{Addr, Uint128};
 
 #[test]
 fn query_cw20_balance() {

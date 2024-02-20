@@ -1,12 +1,12 @@
-use cosmwasm_std::{DepsMut, Response};
-
-use cosmwasm_std::testing::{mock_env, mock_info};
+use cosmwasm_std::{
+    testing::{mock_env, mock_info},
+    DepsMut, Response,
+};
 use kujira::Denom;
 use pfc_dust_collector_kujira::dust_collector::{AssetMinimum, InstantiateMsg};
 use pfc_whitelist::Whitelist;
 
-use crate::contract::instantiate;
-use crate::error::ContractError;
+use crate::{contract::instantiate, error::ContractError};
 
 //pub const GOV_CONTRACT: &str = "gov_contract";
 pub const CREATOR: &str = "creator";

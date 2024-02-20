@@ -1,5 +1,4 @@
-use cosmwasm_std::testing::mock_env;
-use cosmwasm_std::{Addr, Env, Response, StdError};
+use cosmwasm_std::{testing::mock_env, Addr, Env, Response, StdError};
 
 use crate::errors::ContractError;
 
@@ -52,7 +51,10 @@ pub fn set_height(env: &mut Env, height: u64) {
 pub fn expect_generic_err(result: &Result<Response, ContractError>, expect_msg: &str) {
     match result {
         Ok(_) => panic!("Must return error"),
-        Err(ContractError::Std(StdError::GenericErr { msg, .. })) => assert_eq!(msg, expect_msg),
+        Err(ContractError::Std(StdError::GenericErr {
+            msg,
+            ..
+        })) => assert_eq!(msg, expect_msg),
         Err(e) => panic!("Unexpected error: {:?}", e),
     }
 }
@@ -60,9 +62,11 @@ pub fn expect_generic_err(result: &Result<Response, ContractError>, expect_msg: 
 pub fn expect_unauthorized_err(result: &Result<Response, ContractError>) {
     match result {
         Ok(_) => panic!("Must return error"),
-        Err(ContractError::AdminError { .. }) => {
+        Err(ContractError::AdminError {
+            ..
+        }) => {
             // do nothing
-        }
+        },
         Err(e) => panic!("Unexpected error: {:?}", e),
     }
 }
@@ -72,7 +76,7 @@ pub fn expect_already_exists_err(result: &Result<Response, ContractError>) {
         Ok(_) => panic!("Must return error"),
         Err(ContractError::AlreadyExists {}) => {
             // do nothing
-        }
+        },
         Err(e) => panic!("Unexpected error: {:?}", e),
     }
 }
@@ -82,7 +86,7 @@ pub fn expect_not_found_err(result: &Result<Response, ContractError>) {
         Ok(_) => panic!("Must return error"),
         Err(ContractError::NotFound {}) => {
             // do nothing
-        }
+        },
         Err(e) => panic!("Unexpected error: {:?}", e),
     }
 }
@@ -92,7 +96,7 @@ pub fn expect_exceed_limit_err(result: &Result<Response, ContractError>) {
         Ok(_) => panic!("Must return error"),
         Err(ContractError::ExceedLimit {}) => {
             // do nothing
-        }
+        },
         Err(e) => panic!("Unexpected error: {:?}", e),
     }
 }
@@ -102,7 +106,7 @@ pub fn expect_invalid_zero_amount_err(result: &Result<Response, ContractError>) 
         Ok(_) => panic!("Must return error"),
         Err(ContractError::InvalidZeroAmount {}) => {
             // do nothing
-        }
+        },
         Err(e) => panic!("Unexpected error: {:?}", e),
     }
 }
@@ -110,9 +114,11 @@ pub fn expect_invalid_zero_amount_err(result: &Result<Response, ContractError>) 
 pub fn expect_overflow_err(result: &Result<Response, ContractError>) {
     match result {
         Ok(_) => panic!("Must return error"),
-        Err(ContractError::Std(StdError::Overflow { .. })) => {
+        Err(ContractError::Std(StdError::Overflow {
+            ..
+        })) => {
             // do nothing
-        }
+        },
         Err(e) => panic!("Unexpected error: {:?}", e),
     }
 }

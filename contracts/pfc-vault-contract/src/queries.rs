@@ -1,9 +1,13 @@
+use std::{collections::HashMap, ops::Add};
+
 use cosmwasm_std::{Addr, Decimal, Deps, Env, Order, StdResult, Storage};
-use pfc_vault::errors::ContractError;
-use pfc_vault::vault::query_msgs::{ConfigResponse, StakerInfoResponse, StateResponse};
-use pfc_vault::vault::TokenBalance;
-use std::collections::HashMap;
-use std::ops::Add;
+use pfc_vault::{
+    errors::ContractError,
+    vault::{
+        query_msgs::{ConfigResponse, StakerInfoResponse, StateResponse},
+        TokenBalance,
+    },
+};
 
 use crate::states::{
     Config, PendingClaimAmount, StakerInfo, UserTokenClaim, NUM_STAKED, TOTAL_REWARDS, USER_CLAIM,
@@ -47,9 +51,8 @@ pub fn query_staker_info(
 
     let staker_info: StakerInfo = StakerInfo::load_or_default(deps.storage, &staker_raw)?;
 
-    let pending_claim = USER_PENDING_CLAIM
-        .may_load(deps.storage, staker_raw.clone())?
-        .unwrap_or_default();
+    let pending_claim =
+        USER_PENDING_CLAIM.may_load(deps.storage, staker_raw.clone())?.unwrap_or_default();
 
     let rewards_vec = calc_token_claims(deps.storage, &staker_raw)?;
     let pending = pending_claim
@@ -107,9 +110,7 @@ pub(crate) fn calc_token_claims(
         return Ok(vec![]);
     }
 
-    let user_info_vec = USER_CLAIM
-        .may_load(storage, addr.clone())?
-        .unwrap_or_default();
+    let user_info_vec = USER_CLAIM.may_load(storage, addr.clone())?.unwrap_or_default();
     let user_info = user_info_vec
         .iter()
         .map(|ui| (ui.token.clone(), ui))

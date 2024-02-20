@@ -1,12 +1,10 @@
-use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
-
 use cosmwasm_std::Addr;
 use cw_controllers::Admin;
 use cw_item_set::Set;
 use cw_storage_plus::{Item, Map};
-
 use pfc_fee_split::fee_split_msg::AllocationHolding;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 pub(crate) const CONFIG_KEY: &str = "config_002";
 pub(crate) const FEE_KEY: &str = "fees_002";

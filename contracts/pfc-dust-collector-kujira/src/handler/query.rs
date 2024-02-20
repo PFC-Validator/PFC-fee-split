@@ -1,11 +1,12 @@
-use crate::state::{ASSET_HOLDINGS, ASSET_HOLDINGS_MAX, ASSET_STAGES, CONFIG};
-use cosmwasm_std::{Addr, Deps, Order, StdResult, Uint128};
+use std::collections::HashSet;
 
+use cosmwasm_std::{Addr, Deps, Order, StdResult, Uint128};
 use kujira::Denom;
 use pfc_dust_collector_kujira::dust_collector::{
     AssetHolding, CollectorResponse, ConfigResponse, SellStrategy,
 };
-use std::collections::HashSet;
+
+use crate::state::{ASSET_HOLDINGS, ASSET_HOLDINGS_MAX, ASSET_STAGES, CONFIG};
 
 //const DEFAULT_LIMIT: u32 = 10;
 //const MAX_LIMIT: u32 = 30;
@@ -26,19 +27,14 @@ pub(crate) fn query_asset(
     contract_address: &Addr,
     denom: Denom,
 ) -> StdResult<Option<AssetHolding>> {
-    let minimum = ASSET_HOLDINGS
-        .may_load(deps.storage, denom.to_string())?
-        .unwrap_or(Uint128::zero());
-    let maximum = ASSET_HOLDINGS_MAX
-        .may_load(deps.storage, denom.to_string())?
-        .unwrap_or(Uint128::MAX);
+    let minimum =
+        ASSET_HOLDINGS.may_load(deps.storage, denom.to_string())?.unwrap_or(Uint128::zero());
+    let maximum =
+        ASSET_HOLDINGS_MAX.may_load(deps.storage, denom.to_string())?.unwrap_or(Uint128::MAX);
 
-    let strategy = ASSET_STAGES
-        .may_load(deps.storage, denom.to_string())?
-        .unwrap_or(SellStrategy::default());
-    let coin = deps
-        .querier
-        .query_balance(contract_address, denom.to_string())?;
+    let strategy =
+        ASSET_STAGES.may_load(deps.storage, denom.to_string())?.unwrap_or(SellStrategy::default());
+    let coin = deps.querier.query_balance(contract_address, denom.to_string())?;
     Ok(Some(AssetHolding {
         denom,
         minimum,
@@ -81,9 +77,8 @@ pub(crate) fn query_assets(
     for denom in minimums {
         let minimum = ASSET_HOLDINGS.may_load(deps.storage, denom.clone())?;
         let maximum = ASSET_HOLDINGS_MAX.may_load(deps.storage, denom.clone())?;
-        let strategy = ASSET_STAGES
-            .may_load(deps.storage, denom.clone())?
-            .unwrap_or(SellStrategy::default());
+        let strategy =
+            ASSET_STAGES.may_load(deps.storage, denom.clone())?.unwrap_or(SellStrategy::default());
         holdings.push(AssetHolding {
             denom: Denom::from(denom),
             balance: Uint128::zero(),
@@ -93,5 +88,7 @@ pub(crate) fn query_assets(
         });
     }
 
-    Ok(CollectorResponse { entries: holdings })
+    Ok(CollectorResponse {
+        entries: holdings,
+    })
 }

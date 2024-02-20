@@ -32,9 +32,14 @@ pub enum QueryMsg {
     #[returns(ConfigResponse)]
     Config {},
     #[returns(UserResponse)]
-    UserScore { address: String, week: u128 },
+    UserScore {
+        address: String,
+        week: u128,
+    },
     #[returns(SwapsResponse)]
-    TotalSwaps { week: u128 },
+    TotalSwaps {
+        week: u128,
+    },
 }
 
 #[cw_serde]

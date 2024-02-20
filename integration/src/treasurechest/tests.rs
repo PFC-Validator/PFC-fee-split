@@ -1,7 +1,7 @@
 use std::{collections::HashMap, str::FromStr};
 
-use cosmwasm_std::{Addr, assert_approx_eq, Coin, Decimal, Uint128};
-use cw_multi_test::{App, AppBuilder, error::AnyResult, Executor};
+use cosmwasm_std::{assert_approx_eq, Addr, Coin, Decimal, Uint128};
+use cw_multi_test::{error::AnyResult, App, AppBuilder, Executor};
 
 use crate::{get_attribute, get_events, treasurechest::contract::TreasureChestContract};
 

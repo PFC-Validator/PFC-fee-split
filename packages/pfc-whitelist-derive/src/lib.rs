@@ -1,5 +1,4 @@
 use proc_macro::TokenStream;
-
 use quote::quote;
 use syn::{parse_macro_input, AttributeArgs, DataEnum, DeriveInput};
 
@@ -22,9 +21,13 @@ fn merge_variants(metadata: TokenStream, left: TokenStream, right: TokenStream) 
     let right: DeriveInput = parse_macro_input!(right);
 
     if let (
-        Enum(DataEnum { variants, .. }),
         Enum(DataEnum {
-            variants: to_add, ..
+            variants,
+            ..
+        }),
+        Enum(DataEnum {
+            variants: to_add,
+            ..
         }),
     ) = (&mut left.data, right.data)
     {
@@ -61,8 +64,13 @@ fn merge_variants(metadata: TokenStream, left: TokenStream, right: TokenStream) 
 ///
 /// #[cw_serde]
 /// enum ExecuteMsg {
-///     AddToWhiteList {address:String, reason:Option<String>},
-///     RemoveFromWhiteList{address:String},
+///     AddToWhiteList {
+///         address: String,
+///         reason: Option<String>,
+///     },
+///     RemoveFromWhiteList {
+///         address: String,
+///     },
 ///     Foo {},
 ///     Bar {},
 /// }

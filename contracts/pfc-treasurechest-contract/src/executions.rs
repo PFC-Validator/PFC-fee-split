@@ -4,7 +4,6 @@ use cosmwasm_std::{
     Addr, BankMsg, Coin, CosmosMsg, DepsMut, Env, Event, MessageInfo, Order, Response, StdResult,
     Uint128,
 };
-
 use pfc_treasurechest::{errors::ContractError, tf::tokenfactory::TokenFactoryType};
 
 use crate::state::{CONFIG, TOTAL_REWARDS};
