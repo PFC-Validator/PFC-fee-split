@@ -1,5 +1,6 @@
 use cosmwasm_std::{
-    attr, to_binary, Addr, Attribute, QuerierWrapper, QueryRequest, StdResult, Uint128, WasmQuery,
+    attr, to_json_binary, Addr, Attribute, QuerierWrapper, QueryRequest, StdResult, Uint128,
+    WasmQuery,
 };
 use cw20::{Cw20QueryMsg, Denom, TokenInfoResponse};
 
@@ -39,7 +40,7 @@ pub fn query_token_info(
 ) -> StdResult<TokenInfoResponse> {
     let token_info: TokenInfoResponse = querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
         contract_addr,
-        msg: to_binary(&Cw20QueryMsg::TokenInfo {})?,
+        msg: to_json_binary(&Cw20QueryMsg::TokenInfo {})?,
     }))?;
 
     Ok(token_info)

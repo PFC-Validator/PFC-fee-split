@@ -1,18 +1,23 @@
 [package]
 name = "pfc-dust-collector-derive"
-version = "0.1.0"
-authors = ["PFC"]
-edition = "2021"
 description = "Common helpers for other contracts to use pfc-dust-collectors based on DA0 DA0 'dao-macros'"
-license = "Apache-2.0"
-repository = "https://github.com/PFC-Validator/pfc-fee-split"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
+keywords = { workspace = true }
+rust-version = { workspace = true }
+
 [lib]
 proc-macro=true
 
 [dependencies]
-proc-macro2 = "1.0.51"
-quote= "1.0.23"
-syn="1.0.108"
+proc-macro2 = { workspace = true }
+quote= { workspace = true }
+syn={ workspace = true }
 [dev-dependencies]
-cosmwasm-schema = "1.2.7"
-cw-ownable = "0.5.1"
+cosmwasm-schema = { workspace = true }
+cw-ownable = { workspace = true }

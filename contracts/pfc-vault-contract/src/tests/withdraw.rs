@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::mock_info;
-use cosmwasm_std::{to_binary, Addr, CosmosMsg, Decimal, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, SubMsg, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
 use std::str::FromStr;
 
@@ -63,7 +63,7 @@ fn succeed() {
                 amount: Uint128::new(1_000u128),
                 msg: Default::default(),
             })*/
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: Addr::unchecked(SENDER_1).to_string(),
                 amount: Uint128::new(1_000u128),
             })
@@ -108,7 +108,7 @@ fn succeed() {
                        })
 
             */
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: sender1.sender.to_string(),
                 amount: Uint128::new(100u128),
             })
@@ -161,7 +161,7 @@ fn succeed() {
                 amount: Uint128::from(1666u64),
                 msg: Default::default(),
             })*/
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: sender1.sender.to_string(),
                 amount: Uint128::new(1_666u128),
             })
@@ -204,7 +204,7 @@ fn succeed() {
         exec,
         &WasmMsg::Execute {
             contract_addr: LP_REWARD_TOKEN.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: sender2.sender.to_string(),
                 amount: Uint128::from(3_333u64),
                 //msg: Default::default(),
@@ -317,7 +317,7 @@ fn test_4() {
                 amount: Uint128::from(2_200u64),
                 msg: Default::default(),
             })*/
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: sender1.sender.to_string(),
                 amount: Uint128::new(2_200u128),
             })
@@ -347,7 +347,7 @@ fn test_4() {
                 amount: Uint128::from(1_800u64),
                 msg: Default::default(),
             })*/
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: sender2.sender.to_string(),
                 amount: Uint128::from(1_800u128),
             })
@@ -429,7 +429,7 @@ fn test_5() {
                 amount: Uint128::from(3_000u64),
                 msg: Default::default(),
             })*/
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: sender1.sender.to_string(),
                 amount: Uint128::new(3_000u128),
             })
@@ -458,7 +458,7 @@ fn test_5() {
                 amount: Uint128::from(1_000u64),
                 msg: Default::default(),
             })*/
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: sender2.sender.to_string(),
                 amount: Uint128::new(1_000u128),
             })

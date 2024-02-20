@@ -3,8 +3,9 @@ use std::iter::FromIterator;
 use std::ops::Mul;
 
 use cosmwasm_std::{
-    to_binary, Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal, DepsMut,
-    Env, MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdResult, Uint128, WasmMsg,
+    to_json_binary, Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal,
+    DepsMut, Env, MessageInfo, Order, QuerierWrapper, QueryRequest, Response, StdResult, Uint128,
+    WasmMsg,
 };
 use pfc_steak::hub::Cw20HookMsg;
 
@@ -474,29 +475,29 @@ fn generate_cosmos_msg(
             };
             Ok(Some(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: steak.to_string(),
-                msg: to_binary(&msg)?,
+                msg: to_json_binary(&msg)?,
                 funds: coins,
             })))
         }
         SendType::DistributeSteakRewards { steak, receiver } => {
             let msg = pfc_steak::hub::ExecuteMsg::Bond {
                 receiver: Some(receiver.to_string()),
-                exec_msg: Some(to_binary(&Cw20HookMsg::Distribute {})?),
+                exec_msg: Some(to_json_binary(&Cw20HookMsg::Distribute {})?),
             };
             Ok(Some(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: steak.to_string(),
-                msg: to_binary(&msg)?,
+                msg: to_json_binary(&msg)?,
                 funds: coins,
             })))
         }
         SendType::TransferSteakRewards { steak, receiver } => {
             let msg = pfc_steak::hub::ExecuteMsg::Bond {
                 receiver: Some(receiver.to_string()),
-                exec_msg: Some(to_binary(&Cw20HookMsg::Transfer {})?),
+                exec_msg: Some(to_json_binary(&Cw20HookMsg::Transfer {})?),
             };
             Ok(Some(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: steak.to_string(),
-                msg: to_binary(&msg)?,
+                msg: to_json_binary(&msg)?,
                 funds: coins,
             })))
         }
@@ -712,7 +713,7 @@ mod exec_test {
                 assert_eq!(funds.len(), 1);
                 assert_eq!(funds[0].amount, Uint128::new(25_000_000));
                 assert_eq!(funds[0].denom, DENOM_1);
-                let expected = to_binary(&pfc_steak::hub::ExecuteMsg::Bond {
+                let expected = to_json_binary(&pfc_steak::hub::ExecuteMsg::Bond {
                     receiver: Some(String::from("receiver")),
                     exec_msg: None,
                 })?;

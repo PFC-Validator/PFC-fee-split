@@ -1,0 +1,6 @@
+{
+  "denom": "factory/terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902/t1",
+  "owner": "terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902",
+  "notes": "notes go here",
+  "token_factory": "CosmWasm"
+}

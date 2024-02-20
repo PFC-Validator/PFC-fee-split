@@ -3,7 +3,8 @@ use std::iter::FromIterator;
 
 //use crate::contract::{REPLY_RETURN, REPLY_SWAP};
 use cosmwasm_std::{
-    to_binary, Addr, BankMsg, Coin, CosmosMsg, DepsMut, MessageInfo, Response, Uint128, WasmMsg,
+    to_json_binary, Addr, BankMsg, Coin, CosmosMsg, DepsMut, MessageInfo, Response, Uint128,
+    WasmMsg,
 };
 use kujira::Denom;
 
@@ -259,7 +260,7 @@ pub(crate) fn do_deposit(
                         Ok(_) => CosmosMsg::Wasm(WasmMsg::Execute {
                             contract_addr: config.return_contract.to_string(),
                             funds: vec![coin],
-                            msg: to_binary(&pfc_steak::hub_tf::ExecuteMsg::ReturnDenom {})?,
+                            msg: to_json_binary(&pfc_steak::hub_tf::ExecuteMsg::ReturnDenom {})?,
                         }),
                         Err(_) => CosmosMsg::Bank(BankMsg::Send {
                             to_address: config.return_contract.to_string(),
@@ -328,7 +329,7 @@ fn create_manta_swap_message(
     Ok(CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr: router.to_string(),
         funds: vec![coin],
-        msg: to_binary(&swapmsg)?,
+        msg: to_json_binary(&swapmsg)?,
     }))
 }
 /*

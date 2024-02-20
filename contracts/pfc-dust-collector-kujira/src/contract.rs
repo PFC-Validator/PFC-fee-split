@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use cosmwasm_std::entry_point;
+use cosmwasm_std::{entry_point, to_json_binary};
 use cosmwasm_std::{
-    to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
 };
 use cw2::{get_contract_version, set_contract_version};
 use kujira::Denom;
@@ -169,24 +169,22 @@ pub fn execute(
 #[entry_point]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Config {} => to_binary(&QueryHandler::query_config(deps)?),
-        QueryMsg::Ownership {} => to_binary(&cw_ownable::get_ownership(deps.storage)?),
+        QueryMsg::Config {} => to_json_binary(&QueryHandler::query_config(deps)?),
+        QueryMsg::Ownership {} => to_json_binary(&cw_ownable::get_ownership(deps.storage)?),
         QueryMsg::Assets { .. } => {
-            to_binary(&QueryHandler::query_assets(deps, &env.contract.address)?)
+            to_json_binary(&QueryHandler::query_assets(deps, &env.contract.address)?)
         }
 
-        QueryMsg::Asset { denom } => to_binary(&QueryHandler::query_asset(
+        QueryMsg::Asset { denom } => to_json_binary(&QueryHandler::query_asset(
             deps,
             &env.contract.address,
             denom,
         )?),
-        QueryMsg::Whitelist { start_after, limit } => to_binary(&pfc_whitelist::query_entries(
-            deps.storage,
-            start_after,
-            limit,
-        )?),
+        QueryMsg::Whitelist { start_after, limit } => to_json_binary(
+            &pfc_whitelist::query_entries(deps.storage, start_after, limit)?,
+        ),
         QueryMsg::WhitelistEntry { address } => {
-            to_binary(&pfc_whitelist::query_entry(deps.storage, address)?)
+            to_json_binary(&pfc_whitelist::query_entry(deps.storage, address)?)
         }
     }
 }

@@ -4,7 +4,7 @@ use crate::state::{Config, CONFIG};
 use crate::testing::mock_querier::mock_dependencies;
 use astroport::generator_proxy::{CallbackMsg, Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg};
 use cosmwasm_std::testing::{mock_env, mock_info, MOCK_CONTRACT_ADDR};
-use cosmwasm_std::{from_binary, to_binary, Addr, CosmosMsg, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{from_json, to_json_binary, Addr, CosmosMsg, SubMsg, Uint128, WasmMsg};
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
 use pfc_vault::vault::execute_msgs::{Cw20HookMsg as VkrCw20HookMsg, ExecuteMsg as VkrExecuteMsg};
 
@@ -50,7 +50,7 @@ fn test_deposit() {
     let deposit_msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: "generator0000".to_string(),
         amount: Uint128::from(100u128),
-        msg: to_binary(&Cw20HookMsg::Deposit {}).unwrap(),
+        msg: to_json_binary(&Cw20HookMsg::Deposit {}).unwrap(),
     });
 
     let res = execute(deps.as_mut(), mock_env(), info, deposit_msg).unwrap_err();
@@ -64,7 +64,7 @@ fn test_deposit() {
     let deposit_msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: "addr0000".to_string(),
         amount: Uint128::from(100u128),
-        msg: to_binary(&Cw20HookMsg::Deposit {}).unwrap(),
+        msg: to_json_binary(&Cw20HookMsg::Deposit {}).unwrap(),
     });
 
     let res = execute(deps.as_mut(), mock_env(), info, deposit_msg).unwrap_err();
@@ -78,7 +78,7 @@ fn test_deposit() {
     let deposit_msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: "generator0000".to_string(),
         amount: Uint128::from(100u128),
-        msg: to_binary(&Cw20HookMsg::Deposit {}).unwrap(),
+        msg: to_json_binary(&Cw20HookMsg::Deposit {}).unwrap(),
     });
     let res = execute(deps.as_mut(), mock_env(), info, deposit_msg).unwrap();
 
@@ -87,10 +87,10 @@ fn test_deposit() {
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "vkrust0000".to_string(),
             funds: vec![],
-            msg: to_binary(&Cw20ExecuteMsg::Send {
+            msg: to_json_binary(&Cw20ExecuteMsg::Send {
                 contract: "reward0000".to_string(),
                 amount: Uint128::from(100u128),
-                msg: to_binary(&VkrCw20HookMsg::Bond {}).unwrap(),
+                msg: to_json_binary(&VkrCw20HookMsg::Bond {}).unwrap(),
             })
             .unwrap(),
         }))]
@@ -102,11 +102,11 @@ fn test_deposit() {
         Uint128::from(100u128),
     );
     let res = query(deps.as_ref(), mock_env(), QueryMsg::Deposit {}).unwrap();
-    let query_res: Uint128 = from_binary(&res).unwrap();
+    let query_res: Uint128 = from_json(res).unwrap();
     assert_eq!(query_res, Uint128::from(100u128));
 
     let res = query(deps.as_ref(), mock_env(), QueryMsg::PendingToken {}).unwrap();
-    let query_res: Uint128 = from_binary(&res).unwrap();
+    let query_res: Uint128 = from_json(res).unwrap();
     assert_eq!(query_res, Uint128::from(5u128));
 }
 
@@ -149,7 +149,7 @@ fn test_update_rewards() {
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "reward0000".to_string(),
             funds: vec![],
-            msg: to_binary(&VkrExecuteMsg::Withdraw {}).unwrap(),
+            msg: to_json_binary(&VkrExecuteMsg::Withdraw {}).unwrap(),
         }))]
     );
 
@@ -165,12 +165,12 @@ fn test_update_rewards() {
 
     // token balance on contract increases from claim
     let res = query(deps.as_ref(), mock_env(), QueryMsg::Reward {}).unwrap();
-    let query_res: Uint128 = from_binary(&res).unwrap();
+    let query_res: Uint128 = from_json(res).unwrap();
     assert_eq!(query_res, Uint128::from(5u128));
 
     // no pending tokens
     let res = query(deps.as_ref(), mock_env(), QueryMsg::PendingToken {}).unwrap();
-    let query_res: Uint128 = from_binary(&res).unwrap();
+    let query_res: Uint128 = from_json(res).unwrap();
     assert_eq!(query_res, Uint128::from(0u128));
 }
 
@@ -209,7 +209,7 @@ fn test_send_rewards() {
         res.messages,
         vec![SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: "vkr0000".to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: "addr0000".to_string(),
                 amount: Uint128::new(100),
             })
@@ -261,14 +261,14 @@ fn test_withdraw() {
             SubMsg::new(WasmMsg::Execute {
                 contract_addr: "reward0000".to_string(),
                 funds: vec![],
-                msg: to_binary(&VkrExecuteMsg::Unbond {
+                msg: to_json_binary(&VkrExecuteMsg::Unbond {
                     amount: Uint128::new(100),
                 })
                 .unwrap(),
             }),
             SubMsg::new(WasmMsg::Execute {
                 contract_addr: "cosmos2contract".to_string(),
-                msg: to_binary(&ExecuteMsg::Callback(
+                msg: to_json_binary(&ExecuteMsg::Callback(
                     CallbackMsg::TransferLpTokensAfterWithdraw {
                         account: Addr::unchecked("addr0000"),
                         prev_lp_balance: Uint128::new(0),
@@ -323,14 +323,14 @@ fn test_emergency_withdraw() {
             SubMsg::new(WasmMsg::Execute {
                 contract_addr: "reward0000".to_string(),
                 funds: vec![],
-                msg: to_binary(&VkrExecuteMsg::Unbond {
+                msg: to_json_binary(&VkrExecuteMsg::Unbond {
                     amount: Uint128::new(100),
                 })
                 .unwrap(),
             }),
             SubMsg::new(WasmMsg::Execute {
                 contract_addr: "cosmos2contract".to_string(),
-                msg: to_binary(&ExecuteMsg::Callback(
+                msg: to_json_binary(&ExecuteMsg::Callback(
                     CallbackMsg::TransferLpTokensAfterWithdraw {
                         account: Addr::unchecked("addr0000"),
                         prev_lp_balance: Uint128::new(100),
@@ -359,6 +359,6 @@ fn test_query_reward_info() {
     let _res = instantiate(deps.as_mut(), mock_env(), info, msg).unwrap();
 
     let res = query(deps.as_ref(), mock_env(), QueryMsg::RewardInfo {}).unwrap();
-    let query_res: Addr = from_binary(&res).unwrap();
+    let query_res: Addr = from_json(res).unwrap();
     assert_eq!(query_res, Addr::unchecked("vkr0000"));
 }

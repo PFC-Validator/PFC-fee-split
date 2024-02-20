@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    to_binary, Addr, Binary, Coin, CosmosMsg, DepsMut, StdError, StdResult, WasmMsg,
+    to_json_binary, Addr, Binary, Coin, CosmosMsg, DepsMut, StdError, StdResult, WasmMsg,
 };
 //use cw20::Cw20ReceiveMsg;
 use schemars::JsonSchema;
@@ -154,7 +154,7 @@ impl ExecuteMsg {
     /// serializes the message
     pub fn into_binary(self) -> StdResult<Binary> {
         //  let msg = CollectablesExecuteMsg(self);
-        to_binary(&self)
+        to_json_binary(&self)
     }
 
     /// creates a cosmos_msg sending this struct to the named contract

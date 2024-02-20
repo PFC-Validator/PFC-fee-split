@@ -2,8 +2,8 @@
 use crate::executions::{bond, migrate_reward, unbond, update_config, withdraw};
 use crate::queries::{query_config, query_staker_info, query_state};
 use crate::states::{Config, ADMIN, NUM_STAKED};
-use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
+use cosmwasm_std::{entry_point, to_json_binary};
+use cosmwasm_std::{Binary, Deps, DepsMut, Env, MessageInfo, Response, Uint128};
 use cw2::{get_contract_version, set_contract_version};
 use cw20::Cw20ReceiveMsg;
 use pfc_vault::errors::ContractError;
@@ -108,9 +108,9 @@ pub fn receive_cw20(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     let result = match msg {
-        QueryMsg::Config {} => to_binary(&query_config(deps)?),
-        QueryMsg::State {} => to_binary(&query_state(deps)?),
-        QueryMsg::StakerInfo { staker } => to_binary(&query_staker_info(deps, env, staker)?),
+        QueryMsg::Config {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::State {} => to_json_binary(&query_state(deps)?),
+        QueryMsg::StakerInfo { staker } => to_json_binary(&query_staker_info(deps, env, staker)?),
     }?;
 
     Ok(result)

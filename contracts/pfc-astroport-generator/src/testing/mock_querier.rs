@@ -1,8 +1,8 @@
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_binary, from_slice, to_binary, Addr, Coin, ContractResult, Decimal, Empty, OwnedDeps,
-    Querier, QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
+    from_json, to_json_binary, Addr, Coin, ContractResult, Decimal, Empty, OwnedDeps, Querier,
+    QuerierResult, QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
 };
 use cw20::{BalanceResponse as Cw20BalanceResponse, Cw20QueryMsg};
 use pfc_vault::vault::query_msgs::StakerInfoResponse;
@@ -94,7 +94,7 @@ pub enum QueryMsg {
 impl Querier for WasmMockQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
         // MockQuerier doesn't support Custom, so we ignore it completely here
-        let request: QueryRequest<Empty> = match from_slice(bin_request) {
+        let request: QueryRequest<Empty> = match from_json(bin_request) {
             Ok(v) => v,
             Err(e) => {
                 return SystemResult::Err(SystemError::InvalidRequest {
@@ -110,9 +110,9 @@ impl Querier for WasmMockQuerier {
 impl WasmMockQuerier {
     pub fn handle_query(&self, request: &QueryRequest<Empty>) -> QuerierResult {
         match &request {
-            QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => match from_binary(msg) {
+            QueryRequest::Wasm(WasmQuery::Smart { contract_addr, msg }) => match from_json(msg) {
                 Ok(QueryMsg::StakerInfo { staker: _ }) => {
-                    SystemResult::Ok(ContractResult::from(to_binary(&StakerInfoResponse {
+                    SystemResult::Ok(ContractResult::from(to_json_binary(&StakerInfoResponse {
                         staker: "generator0000".to_string(),
                         total_staked: self.reward_querier.deposit_amount,
                         estimated_rewards: vec![TokenBalance {
@@ -126,7 +126,7 @@ impl WasmMockQuerier {
                         last_claimed: None,
                     })))
                 }
-                _ => match from_binary(msg).unwrap() {
+                _ => match from_json(msg).unwrap() {
                     Cw20QueryMsg::Balance { address } => {
                         let balances: &HashMap<String, Uint128> =
                             match self.token_querier.balances.get(contract_addr) {
@@ -146,7 +146,7 @@ impl WasmMockQuerier {
                             Some(v) => *v,
                             None => {
                                 return SystemResult::Ok(ContractResult::Ok(
-                                    to_binary(&Cw20BalanceResponse {
+                                    to_json_binary(&Cw20BalanceResponse {
                                         balance: Uint128::zero(),
                                     })
                                     .unwrap(),
@@ -155,7 +155,7 @@ impl WasmMockQuerier {
                         };
 
                         SystemResult::Ok(ContractResult::Ok(
-                            to_binary(&Cw20BalanceResponse { balance }).unwrap(),
+                            to_json_binary(&Cw20BalanceResponse { balance }).unwrap(),
                         ))
                     }
                     _ => panic!("Query Not Mocked"),

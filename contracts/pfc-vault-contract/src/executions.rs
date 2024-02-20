@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use cosmwasm_std::{
-    to_binary, Addr, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Order, Response, StdError,
+    to_json_binary, Addr, CosmosMsg, Decimal, DepsMut, Env, MessageInfo, Order, Response, StdError,
     StdResult, Storage, Uint128, WasmMsg,
 };
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
@@ -413,7 +413,7 @@ pub(crate) fn gen_claim_messages(
 
                 resp.push(CosmosMsg::Wasm(WasmMsg::Execute {
                     contract_addr: claim_amount.token.to_string(),
-                    msg: to_binary(&msg)?,
+                    msg: to_json_binary(&msg)?,
                     funds: vec![],
                 }))
             }

@@ -7,7 +7,8 @@
  
 *you should still exercise caution, and do your own research. no warranty is given or implied*
 
-
+* astroport reward contracts are not current and deprecated.
+* 
 # PFC-Fee-Splitter protocol contracts
 
 

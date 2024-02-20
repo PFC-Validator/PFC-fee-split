@@ -1,11 +1,17 @@
 [package]
 
 name = "pfc-fee-splitter"
-version = "0.2.12"
-authors = ["PFC <pfc-validator@protonmail.com>"]
-edition = "2018"
-license = "Apache-2.0"
 description = "smart contract to split incoming $ to multiple places"
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+version = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
+keywords = { workspace = true }
+rust-version = { workspace = true }
+
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
   "contract.wasm",
@@ -24,15 +30,16 @@ backtraces = ["cosmwasm-std/backtraces"]
 library=[]
 
 [dependencies]
-cw2 = "1.0.0"
-cw-item-set = "0.7.0"
-pfc-fee-split = { version = "0.2", path = "../../packages/pfc-fee-split" }
-cosmwasm-std = "1.0.0"
+cw2 = { workspace = true }
+
+cw-item-set ={ workspace = true }
+pfc-fee-split ={ workspace = true }
+cosmwasm-std = { workspace = true }
 cw-storage-plus = "1.0.1"
-cw-controllers = "1.0.0"
-schemars = "0.8.10"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-thiserror = "1.0.23"
+cw-controllers = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+thiserror ={ workspace = true }
 pfc-steak="3.0.2"
 
 [build-dependencies]

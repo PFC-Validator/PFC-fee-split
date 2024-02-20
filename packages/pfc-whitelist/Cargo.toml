@@ -1,23 +1,27 @@
 [package]
 name = "pfc-whitelist"
-version = "0.1.0"
-authors = ["PFC",]
-edition = "2021"
 description = "Whitelist helpers"
-license = "Apache-2.0"
-repository = "https://github.com/PFC-Validator/PFC-fee-split"
-homepage = "https://PFC.zone"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
+keywords = { workspace = true }
+rust-version = { workspace = true }
+
 [features]
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cosmwasm-std = "1.0.0"
-schemars = "0.8.10"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
-pfc-whitelist-derive = {version ="0.1.0", path ="../pfc-whitelist-derive"}
-cosmwasm-schema = "1.2.1"
+cosmwasm-std = { workspace = true }
+schemars = { workspace = true }
+serde = { workspace = true }
+pfc-whitelist-derive = { workspace = true }
+cosmwasm-schema = { workspace = true }
 # cw-address-like = "1.0.3"
 cw-storage-plus = "1.0.1"
-thiserror = "1.0.38"
+thiserror = { workspace = true }

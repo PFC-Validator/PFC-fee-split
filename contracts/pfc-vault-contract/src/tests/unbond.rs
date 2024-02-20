@@ -1,5 +1,5 @@
 use crate::states::StakerInfo;
-use cosmwasm_std::{to_binary, Addr, CosmosMsg, Decimal, SubMsg, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, CosmosMsg, Decimal, SubMsg, Uint128, WasmMsg};
 
 use crate::tests::{
     exec_send_reward_token, exec_unbond, exec_withdraw, init_default, query_staker_info,
@@ -79,7 +79,7 @@ fn claim_after_unbond() {
                 amount: Uint128::new(2_000u128),
                 msg: Default::default(),
             })*/
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: info.sender.to_string(),
                 amount: Uint128::from(2_000u128),
             })

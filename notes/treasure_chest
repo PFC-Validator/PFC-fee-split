@@ -1,0 +1,8 @@
+terrad tx wasm store ./artifacts/pfc_treasurechest_contract-aarch64.wasm --from testadmin --yes --fees 300000uluna --gas 2500000
+treasure=13025
+admin=terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902
+
+init=$(cat ./test_files/pisco/treasure.json)
+echo $init|jq
+
+terrad tx wasm instantiate ${treasure} "${init}" --admin terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902 --label t1 --from testadmin  --fees 75000uluna --gas 500000 --amount 10000uluna

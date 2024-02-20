@@ -2,8 +2,8 @@ use astroport::generator_proxy::{
     CallbackMsg, ConfigResponse, Cw20HookMsg, ExecuteMsg, InstantiateMsg, QueryMsg,
 };
 use cosmwasm_std::{
-    entry_point, from_binary, to_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
+    entry_point, from_json, to_json_binary, Addr, Binary, CosmosMsg, Deps, DepsMut, Env,
+    MessageInfo, Response, StdError, StdResult, SubMsg, Uint128, WasmMsg,
 };
 use cw2::set_contract_version;
 use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg, Cw20ReceiveMsg};
@@ -90,7 +90,7 @@ fn receive_cw20(
     let mut response = Response::new();
     let cfg = CONFIG.load(deps.storage)?;
 
-    if let Ok(Cw20HookMsg::Deposit {}) = from_binary(&cw20_msg.msg) {
+    if let Ok(Cw20HookMsg::Deposit {}) = from_json(&cw20_msg.msg) {
         if cw20_msg.sender != cfg.generator_contract_addr || info.sender != cfg.lp_token_addr {
             return Err(ContractError::Unauthorized {});
         }
@@ -99,10 +99,10 @@ fn receive_cw20(
             .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
                 contract_addr: cfg.lp_token_addr.to_string(),
                 funds: vec![],
-                msg: to_binary(&Cw20ExecuteMsg::Send {
+                msg: to_json_binary(&Cw20ExecuteMsg::Send {
                     contract: cfg.reward_contract_addr.to_string(),
                     amount: cw20_msg.amount,
-                    msg: to_binary(&VaultCw20HookMsg::Bond {})?,
+                    msg: to_json_binary(&VaultCw20HookMsg::Bond {})?,
                 })?,
             })));
     } else {
@@ -124,7 +124,7 @@ fn update_rewards(deps: DepsMut, info: MessageInfo) -> Result<Response, Contract
         .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: cfg.reward_contract_addr.to_string(),
             funds: vec![],
-            msg: to_binary(&VaultExecuteMsg::Withdraw {})?,
+            msg: to_json_binary(&VaultExecuteMsg::Withdraw {})?,
         })));
 
     Ok(response)
@@ -150,7 +150,7 @@ fn send_rewards(
         .messages
         .push(SubMsg::new(CosmosMsg::Wasm(WasmMsg::Execute {
             contract_addr: cfg.reward_token_addr.to_string(),
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: account_addr.into(),
                 amount,
             })?,
@@ -189,14 +189,14 @@ fn withdraw(
     response.messages.push(SubMsg::new(WasmMsg::Execute {
         contract_addr: cfg.reward_contract_addr.to_string(),
         funds: vec![],
-        msg: to_binary(&VaultExecuteMsg::Unbond { amount })?,
+        msg: to_json_binary(&VaultExecuteMsg::Unbond { amount })?,
     }));
 
     // Callback function
     response.messages.push(SubMsg::new(WasmMsg::Execute {
         contract_addr: env.contract.address.to_string(),
         funds: vec![],
-        msg: to_binary(&ExecuteMsg::Callback(
+        msg: to_json_binary(&ExecuteMsg::Callback(
             CallbackMsg::TransferLpTokensAfterWithdraw {
                 account: deps.api.addr_validate(&account)?,
                 prev_lp_balance,
@@ -229,7 +229,7 @@ pub fn transfer_lp_tokens_after_withdraw(
     Ok(Response::new().add_message(WasmMsg::Execute {
         contract_addr: cfg.lp_token_addr.to_string(),
         funds: vec![],
-        msg: to_binary(&Cw20ExecuteMsg::Transfer {
+        msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
             recipient: account.to_string(),
             amount,
         })?,
@@ -240,7 +240,7 @@ pub fn transfer_lp_tokens_after_withdraw(
 pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
     let cfg = CONFIG.load(deps.storage)?;
     match msg {
-        QueryMsg::Config {} => to_binary(&ConfigResponse {
+        QueryMsg::Config {} => to_json_binary(&ConfigResponse {
             generator_contract_addr: cfg.generator_contract_addr.to_string(),
             pair_addr: cfg.pair_addr.to_string(),
             lp_token_addr: cfg.lp_token_addr.to_string(),
@@ -255,7 +255,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 },
             )?;
             let deposit_amount = res.total_staked;
-            to_binary(&deposit_amount)
+            to_json_binary(&deposit_amount)
         }
         QueryMsg::Reward {} => {
             let res: Result<BalanceResponse, StdError> = deps.querier.query_wasm_smart(
@@ -266,7 +266,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             );
             let reward_amount = res?.balance;
 
-            to_binary(&reward_amount)
+            to_json_binary(&reward_amount)
         }
         QueryMsg::PendingToken {} => {
             let res: StakerInfoResponse = deps.querier.query_wasm_smart(
@@ -282,11 +282,11 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
                 .map(|tb| tb.amount)
                 .unwrap_or_default();
             let pending_reward_uint128: Uint128 = Uint128::one() * pending_reward;
-            to_binary(&(pending_reward_uint128))
+            to_json_binary(&(pending_reward_uint128))
         }
         QueryMsg::RewardInfo {} => {
             let config = CONFIG.load(deps.storage)?;
-            to_binary(&config.reward_token_addr)
+            to_json_binary(&config.reward_token_addr)
         }
     }
 }

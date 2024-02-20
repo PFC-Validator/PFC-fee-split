@@ -6,9 +6,9 @@ use std::marker::PhantomData;
 //use crate::proxy::execute_msgs::SwapOperation;
 use cosmwasm_std::testing::{MockApi, MockQuerier, MockStorage, MOCK_CONTRACT_ADDR};
 use cosmwasm_std::{
-    from_binary, from_slice, to_binary, Addr, AllBalanceResponse, Api, BankQuery, Binary,
-    CanonicalAddr, Coin, ContractResult, CustomQuery, OwnedDeps, Querier, QuerierResult,
-    QueryRequest, SystemError, SystemResult, Uint128, WasmQuery,
+    from_json, to_json_binary, Addr, AllBalanceResponse, Api, BankQuery, Binary, CanonicalAddr,
+    Coin, ContractResult, CustomQuery, OwnedDeps, Querier, QuerierResult, QueryRequest,
+    SystemError, SystemResult, Uint128, WasmQuery,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
 
@@ -76,7 +76,7 @@ pub(crate) fn balances_to_map(
 impl Querier for WasmMockQuerier {
     fn raw_query(&self, bin_request: &[u8]) -> QuerierResult {
         // MockQuerier doesn't support Custom, so we ignore it completely here
-        let request: QueryRequest<QueryWrapper> = match from_slice(bin_request) {
+        let request: QueryRequest<QueryWrapper> = match from_json(bin_request) {
             Ok(v) => v,
             Err(_) => {
                 return SystemResult::Err(SystemError::InvalidRequest {
@@ -133,14 +133,14 @@ impl WasmMockQuerier {
     }
 
     fn handle_cw20(&self, contract_addr: &String, msg: &Binary) -> Option<QuerierResult> {
-        match from_binary(msg) {
+        match from_json(msg) {
             Ok(Cw20QueryMsg::Balance { address }) => {
                 let default = Uint128::zero();
                 let balance = *self.token_querier.balances[contract_addr]
                     .get(address.as_str())
                     .unwrap_or(&default);
 
-                Some(SystemResult::Ok(ContractResult::from(to_binary(
+                Some(SystemResult::Ok(ContractResult::from(to_json_binary(
                     &cw20::BalanceResponse { balance },
                 ))))
             }
@@ -174,7 +174,7 @@ impl WasmMockQuerier {
         }
 
         Some(SystemResult::Ok(ContractResult::Ok(
-            to_binary(&TokenInfoResponse {
+            to_json_binary(&TokenInfoResponse {
                 name: format!("{}Token", contract_addr),
                 symbol: "TOK".to_string(),
                 decimals: 6,
@@ -222,7 +222,7 @@ impl WasmMockQuerier {
         };
 
         Some(SystemResult::Ok(ContractResult::Ok(
-            to_binary(&balance).unwrap(),
+            to_json_binary(&balance).unwrap(),
         )))
     }
 }
@@ -292,7 +292,7 @@ impl WasmMockQuerier {
     }
 
     pub fn plus_native_balance(&mut self, address: &str, balances: Vec<Coin>) {
-        let mut current_balances = from_binary::<AllBalanceResponse>(
+        let mut current_balances = from_json::<AllBalanceResponse>(
             &self
                 .base
                 .handle_query(&QueryRequest::Bank(BankQuery::AllBalances {
@@ -319,7 +319,7 @@ impl WasmMockQuerier {
     }
 
     pub fn minus_native_balance(&mut self, address: &str, balances: Vec<Coin>) {
-        let mut current_balances = from_binary::<AllBalanceResponse>(
+        let mut current_balances = from_json::<AllBalanceResponse>(
             &self
                 .base
                 .handle_query(&QueryRequest::Bank(BankQuery::AllBalances {

@@ -9,7 +9,8 @@ const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 use cosmwasm_std::entry_point;
 
 use cosmwasm_std::{
-    to_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult, WasmMsg,
+    to_json_binary, Binary, CosmosMsg, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
+    WasmMsg,
 };
 
 use crate::error::ContractError;
@@ -135,13 +136,15 @@ pub fn execute(
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::Ownership {} => to_binary(&QueryHandler::query_gov_contract(deps)?),
+        QueryMsg::Ownership {} => to_json_binary(&QueryHandler::query_gov_contract(deps)?),
         QueryMsg::Allocations { start_after, limit } => {
-            to_binary(&QueryHandler::query_allocations(deps, start_after, limit)?)
+            to_json_binary(&QueryHandler::query_allocations(deps, start_after, limit)?)
         }
 
-        QueryMsg::Allocation { name } => to_binary(&QueryHandler::query_allocation(deps, name)?),
-        QueryMsg::FlushWhitelist {} => to_binary(&QueryHandler::query_flush_whitelist(deps)?),
+        QueryMsg::Allocation { name } => {
+            to_json_binary(&QueryHandler::query_allocation(deps, name)?)
+        }
+        QueryMsg::FlushWhitelist {} => to_json_binary(&QueryHandler::query_flush_whitelist(deps)?),
     }
 }
 

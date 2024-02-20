@@ -2,8 +2,8 @@ use crate::entrypoints::{execute, instantiate, query};
 use crate::executions::{unbond, withdraw};
 use cosmwasm_std::testing::mock_info;
 use cosmwasm_std::{
-    from_binary, to_binary, Addr, Attribute, CosmosMsg, Deps, Env, MessageInfo, Response, SubMsg,
-    Uint128, WasmMsg,
+    from_json, to_json_binary, Addr, Attribute, CosmosMsg, Deps, Env, MessageInfo, Response,
+    SubMsg, Uint128, WasmMsg,
 };
 use cw20::Cw20ReceiveMsg;
 use pfc_vault::errors::ContractError;
@@ -59,14 +59,14 @@ pub fn exec_bond(
     let msg = ExecuteMsg::Receive(Cw20ReceiveMsg {
         sender: sender.to_string(),
         amount,
-        msg: to_binary(&Cw20HookMsg::Bond {}).unwrap(),
+        msg: to_json_binary(&Cw20HookMsg::Bond {}).unwrap(),
     });
 
     execute(deps.as_mut(), env.clone(), info.clone(), msg)
 }
 
 pub fn query_staker_info(deps: Deps, env: &Env, sender: &Addr) -> StakerInfoResponse {
-    from_binary::<StakerInfoResponse>(
+    from_json::<StakerInfoResponse>(
         &query(
             deps,
             env.clone(),

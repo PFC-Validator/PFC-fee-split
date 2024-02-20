@@ -2,7 +2,12 @@
 name = "pfc-astroport-generator"
 version = "0.2.9"
 authors = ["_astromartian"]
-edition = "2021"
+license = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
+keywords = { workspace = true }
+rust-version = { workspace = true }
 
 exclude = [
     # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -23,11 +28,9 @@ backtraces = ["cosmwasm-std/backtraces"]
 cosmwasm-std = "1.0"
 cw-storage-plus = "0.15"
 thiserror = { version = "1.0" }
-cw2 = "0.15"
-cw20 = "0.15"
-#valkyrie = { git = "https://github.com/valkyrieprotocol/contracts.git", rev = "b5fcb666f17d7e291f40365756e50fc0d7b9bf54" }
+cw2 = {workspace=true}
+cw20 = {workspace=true}
 astroport = { git = "https://github.com/astroport-fi/astroport-core.git", tag = "v2.7.1" }
-#ap-valkyrie = { path = "../../packages/valkyrie" }
 cosmwasm-schema = "1.1"
 pfc-vault = { path = "../../packages/pfc-vault" }
 

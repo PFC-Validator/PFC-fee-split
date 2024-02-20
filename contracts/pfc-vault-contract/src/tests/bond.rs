@@ -1,5 +1,5 @@
 use cosmwasm_std::testing::mock_info;
-use cosmwasm_std::{to_binary, Addr, Decimal, Env, Uint128, WasmMsg};
+use cosmwasm_std::{to_json_binary, Addr, Decimal, Env, Uint128, WasmMsg};
 use cw20::Cw20ExecuteMsg;
 use pfc_vault::mock_querier::{custom_deps, CustomDeps};
 use pfc_vault::test_constants::REWARD_TOKEN;
@@ -70,7 +70,7 @@ fn succeed() {
                 amount: Uint128::from(500_000u64),
                 msg: Default::default(),
             })*/
-            msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            msg: to_json_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: sender1.to_string(),
                 amount: Uint128::from(500_000u64),
             })

@@ -1,19 +1,22 @@
 [package]
 name = "pfc-fee-split"
-version = "0.2.13"
-authors = ["PFC"]
-edition = "2021"
 description = "Common helpers for other contracts to use pfc-fee-split"
-license = "Apache-2.0"
-repository = "https://github.com/PFC-Validator/pfc-fee-split"
-#homepage = "https://TBD.example.com"
-#documentation = "https://TBD.example.com"
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+version = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+documentation = { workspace = true }
+keywords = { workspace = true }
+rust-version = { workspace = true }
+
 
 [features]
 backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
-cosmwasm-std = "1.0.0"
-cw20 = "1.0.0"
-schemars = "0.8.10"
-serde = { version = "1.0.103", default-features = false, features = ["derive"] }
+cosmwasm-std = { workspace = true }
+cw20 = { workspace = true }
+schemars ={ workspace = true }
+serde = { workspace = true }
