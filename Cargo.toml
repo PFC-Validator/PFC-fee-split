@@ -17,7 +17,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.4.0"
+version = "1.4.0"
 authors = ["PFC <pfc@pfc.zone>"]
 edition = "2021"
 rust-version = "1.73.0"
@@ -52,11 +52,11 @@ quote = "1.0.23"
 syn = "1.0.108"
 thiserror = "1.0.57"
 kujira = "0.8.2"
-pfc-whitelist-derive = { version = "0.4.0", path = "packages/pfc-whitelist-derive" }
-pfc-whitelist = { version = "0.4.0", path = "packages/pfc-whitelist" }
-pfc-fee-split = { version = "0.4.0", path = "packages/pfc-fee-split" }
-pfc-dust-collector-derive = { version = "0.4.0", path = "packages/pfc-dust-collector-derive" }
-pfc-dust-collector = { version = "0.4.0", path = "packages/pfc-dust-collector" }
+pfc-whitelist-derive = { version = "1.4.0", path = "packages/pfc-whitelist-derive" }
+pfc-whitelist = { version = "1.4.0", path = "packages/pfc-whitelist" }
+pfc-fee-split = { version = "1.4.0", path = "packages/pfc-fee-split" }
+pfc-dust-collector-derive = { version = "1.4.0", path = "packages/pfc-dust-collector-derive" }
+pfc-dust-collector = { version = "1.4.0", path = "packages/pfc-dust-collector" }
 pfc-dust-collector-kujira = { path = "packages/pfc-dust-collector-kujira" }
 pfc-dust-collector-migaloo = { path = "packages/pfc-dust-collector-migaloo" }
 pfc-treasurechest = { path = "packages/pfc-treasurechest" }

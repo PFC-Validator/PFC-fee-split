@@ -1,13 +1,13 @@
 [package]
 name = "pfc-vault-contract"
-version = "0.2.9"
+version ={ workspace = true }
 authors = ["PFC","Valkyrie Protocol"]
-edition = "2021"
+edition = { workspace = true }
 description = "modified by PFC. Originally A Staking contract for Valkyrie Protocol - distribute rewards to stakers"
-license = "Apache-2.0"
-repository = "https://github.com/PFC-Validator/PFC-fee-split"
-homepage = "https://PFC.zone"
-#documentation = "https://docs.valkyrieprotocol.com"
+license ={ workspace = true }
+repository ={ workspace = true }
+homepage = { workspace = true }
+documentation = { workspace = true }
 
 exclude = [
   # Those files are rust-optimizer artifacts. You might want to commit them for convenience but they should not be part of the source code publication.
@@ -44,17 +44,3 @@ thiserror = "1.0.37"
 [dev-dependencies]
 cosmwasm-schema = { version = "1.0.0" }
 cosmwasm-storage = { version = "1.1.6", features = ["iterator"] }
-
-[package.metadata.scripts]
-optimize = """docker run --rm -v "$(pwd)":/code \
-          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-              cosmwasm/rust-optimizer:0.12.10"""
-optimize-w32 = """docker run --rm -v c:\\pfc\\fractional\\fee-split:/code  \
-            --mount type=volume,source=pfc_fee_splitter_cache,target=/code/target \
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-            cosmwasm/rust-optimizer:0.12.10"""
-optimize-arm64 = """docker run --rm -v "$(pwd)":/code \
-          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-              cosmwasm/rust-optimizer-arm64:0.12.10"""

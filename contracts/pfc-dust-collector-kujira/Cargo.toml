@@ -1,7 +1,7 @@
 [package]
 
 name = "pfc-dust-collector-kujira-contract"
-version = "1.1.0"
+version = { workspace = true }
 
 description = "smart contract to convert dust into a single denom via FIN"
 authors = { workspace = true }
@@ -53,17 +53,3 @@ protoc-rust = "2"
 cosmwasm-schema =  { workspace = true }
 serde_json = { workspace = true }
 convert_case = "0.6.0"
-
-[package.metadata.scripts]
-optimize = """docker run --rm -v "$(pwd)":/code \
-          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-              cosmwasm/rust-optimizer:0.12.10"""
-optimize-w32 = """docker run --rm -v c:\\pfc\\fractional\\fee-split:/code  \
-            --mount type=volume,source=pfc_fee_splitter_cache,target=/code/target \
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-            cosmwasm/rust-optimizer:0.12.10"""
-optimize-arm64 = """docker run --rm -v "$(pwd)":/code \
-          --mount type=volume,source="$(basename "$(pwd)")_cache",target=/code/target \
-            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
-              cosmwasm/rust-optimizer-arm64:0.12.10"""
