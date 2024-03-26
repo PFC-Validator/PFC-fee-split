@@ -17,7 +17,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "1.4.0"
+version = "1.5.0"
 authors = ["PFC <pfc@pfc.zone>"]
 edition = "2021"
 rust-version = "1.73.0"
@@ -49,26 +49,29 @@ serde_json = "1.0.113"
 schemars = { version = "0.8.16" }
 proc-macro2 = "1.0.51"
 quote = "1.0.23"
-syn = "1.0.108"
+syn = "2.0.55"
+#syn = "1.0.108"
 thiserror = "1.0.57"
-kujira = "0.8.2"
-pfc-whitelist-derive = { version = "1.4.0", path = "packages/pfc-whitelist-derive" }
-pfc-whitelist = { version = "1.4.0", path = "packages/pfc-whitelist" }
-pfc-fee-split = { version = "1.4.0", path = "packages/pfc-fee-split" }
-pfc-dust-collector-derive = { version = "1.4.0", path = "packages/pfc-dust-collector-derive" }
-pfc-dust-collector = { version = "1.4.0", path = "packages/pfc-dust-collector" }
+kujira = "1.0.1"
+pfc-whitelist-derive = { path = "packages/pfc-whitelist-derive" }
+pfc-whitelist = { path = "packages/pfc-whitelist" }
+pfc-fee-split = { path = "packages/pfc-fee-split" }
+pfc-dust-collector-derive = { path = "packages/pfc-dust-collector-derive" }
+pfc-dust-collector = { path = "packages/pfc-dust-collector" }
 pfc-dust-collector-kujira = { path = "packages/pfc-dust-collector-kujira" }
 pfc-dust-collector-migaloo = { path = "packages/pfc-dust-collector-migaloo" }
 pfc-treasurechest = { path = "packages/pfc-treasurechest" }
+pfc-vault={path="packages/pfc-vault"}
 
-pfc-steak = "3.0.8"
+pfc-steak = "3.0.12"
 getrandom = { version = "0.2", features = ["js"] }
 prost = { version = "0.12.3", default-features = false, features = ["prost-derive"] }
 prost-types = { version = "0.12.3", default-features = false }
+#osmosis-std-derive = "0.20.1"
 osmosis-std-derive = "0.15.3"
 #osmosis-std-derive = {version = "0.20.1", features = ["backtraces"]}
 protobuf = { version = "3.3.0", features = ["with-bytes"] }
-cw-multi-test = { version="0.20.0" , features = ["cosmwasm_1_2"]}
+cw-multi-test = { version = "0.20.0", features = ["cosmwasm_1_2"] }
 [profile.release]
 opt-level = 3
 debug = false

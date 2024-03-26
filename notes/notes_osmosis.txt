@@ -1,0 +1,18 @@
+
+
+osmosisd tx wasm store ./artifacts/pfc_fee_splitter.wasm \
+    --from osmo1ezgx7dhm2zag0lplje68j47cx9e8nft44k9f07r7qp7m7uc5u8ysn482ps \
+     --yes --gas-prices 0.025uosmo --gas-adjustment 1.7 --gas auto --generate-only > prepared-tx.json
+
+osmosisd tx authz exec prepared-tx.json --from pfc-alt --gas auto --gas-adjustment 1.3 --gas-prices 0.02uosmo
+# code-id 549
+
+
+json=$(cat test_files/osmosis_instantiate_feesplit.json)
+
+osmosisd tx wasm instantiate  549 "${json}" --admin osmo1lu92zj8q6cmrptu09rp3343x9969r9qr4w9r7h --label bosmo-feesplit-1 --from boneLunaAdmin --gas-prices 0.025uosmo --gas-adjustment 1.7 --gas auto --amount  1000000uosmo
+
+fee_address="osmo1ctrfxgxdjqgd0usaepzdan2razpd3sge7jvckakh036yzm24ymgsnktjf8"
+
+
+osmosisd query wasm cs smart $fee_address '{"allocations":{}}'

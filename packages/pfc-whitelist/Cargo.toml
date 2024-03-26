@@ -14,7 +14,7 @@ rust-version = { workspace = true }
 [features]
 # for quicker tests, cargo test --lib
 # for more explicit tests, cargo test --features=backtraces
-backtraces = ["cosmwasm-std/backtraces"]
+#backtraces = ["cosmwasm-std/backtraces"]
 
 [dependencies]
 cosmwasm-std = { workspace = true }
@@ -23,5 +23,5 @@ serde = { workspace = true }
 pfc-whitelist-derive = { workspace = true }
 cosmwasm-schema = { workspace = true }
 # cw-address-like = "1.0.3"
-cw-storage-plus = "1.0.1"
+cw-storage-plus = { workspace=true }
 thiserror = { workspace = true }

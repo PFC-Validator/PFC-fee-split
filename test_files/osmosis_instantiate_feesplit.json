@@ -1,0 +1,20 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "osmo1lu92zj8q6cmrptu09rp3343x9969r9qr4w9r7h",
+  "allocation": [
+    {
+      "name": "admin",
+      "allocation": 1,
+      "send_after": {
+        "denom": "uosmo",
+        "amount": "1000000"
+      },
+      "send_type": {
+        "Wallet": {
+          "receiver": "osmo1lu92zj8q6cmrptu09rp3343x9969r9qr4w9r7h"
+        }
+      }
+    }
+  ]
+}
+

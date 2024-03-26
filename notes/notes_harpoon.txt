@@ -4,11 +4,11 @@
 ### FEE SPLIT
 ###
 kujirad tx wasm store ./artifacts/pfc_fee_splitter.wasm --from andromeda-pfc-testnet --yes --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
-# feesplit -2528
+# feesplit -2528/3248
 json=$(cat ./test_files/harpoon_instantiate_feesplit.json)
 kujirad tx wasm instantiate 2528 "${json}" --admin kujira1wpayju4jcn2mhv6yewclf6rcq9fyqzvasa2s9m --label pfc-feesplit --from andromeda-pfc-testnet  --gas-prices 0.00125ukuji --gas-adjustment 1.7  --gas auto
 # kujira1nd3yn5ztn3dl2l7w4h4xelglls08ns5uz6wq8x08t47lh44md7rqvng8h5
-kujirad tx wasm migrate kujira1nd3yn5ztn3dl2l7w4h4xelglls08ns5uz6wq8x08t47lh44md7rqvng8h5 2528 '{}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
+kujirad tx wasm migrate kujira1nd3yn5ztn3dl2l7w4h4xelglls08ns5uz6wq8x08t47lh44md7rqvng8h5 3248 '{}' --from andromeda-pfc-testnet --gas-prices 0.00125ukuji --gas-adjustment 1.7 --gas auto
 
 ###
 ### DUST COLLECTOR
