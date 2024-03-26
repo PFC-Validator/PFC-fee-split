@@ -53,8 +53,8 @@ syn = "2.0.55"
 #syn = "1.0.108"
 thiserror = "1.0.57"
 kujira = "1.0.1"
-pfc-whitelist-derive = { path = "packages/pfc-whitelist-derive" }
-pfc-whitelist = { path = "packages/pfc-whitelist" }
+pfc-whitelist-derive = {version="1.5.0", path = "packages/pfc-whitelist-derive" }
+pfc-whitelist = { version = "1.5.0",path = "packages/pfc-whitelist" }
 pfc-fee-split = { path = "packages/pfc-fee-split" }
 pfc-dust-collector-derive = { path = "packages/pfc-dust-collector-derive" }
 pfc-dust-collector = { path = "packages/pfc-dust-collector" }
