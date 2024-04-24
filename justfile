@@ -7,6 +7,9 @@ clippy:
 test:
   cargo test
 
+format:
+ cargo +nightly fmt
+
 optimize:
   if [[ $(uname -m) =~ "arm64" ]]; then \
     just optimize-arm; else \
