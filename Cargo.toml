@@ -17,7 +17,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "1.5.0"
+version = "1.5.1"
 authors = ["PFC <pfc@pfc.zone>"]
 edition = "2021"
 rust-version = "1.73.0"
@@ -35,8 +35,8 @@ cw-ownable = "0.5.1"
 cw-ownable-derive = "0.5.1"
 cw-controllers = "1.1.2"
 cw-storage-plus = { version = "1.2.0", features = ["iterator"] }
-cosmwasm-schema = "1.5.3"
-cosmwasm-std = { version = "1.5.3", features = [
+cosmwasm-schema = "1.5.4"
+cosmwasm-std = { version = "1.5.4", features = [
     # Kuji is  @ 1.2
     "cosmwasm_1_2",
     # Enable this if you only deploy to chains that have CosmWasm 1.4 or higher
@@ -53,8 +53,8 @@ syn = "2.0.55"
 #syn = "1.0.108"
 thiserror = "1.0.57"
 kujira = "1.0.1"
-pfc-whitelist-derive = {version="1.5.0", path = "packages/pfc-whitelist-derive" }
-pfc-whitelist = { version = "1.5.0",path = "packages/pfc-whitelist" }
+pfc-whitelist-derive = {version="1.5.1", path = "packages/pfc-whitelist-derive" }
+pfc-whitelist = { version = "1.5.1",path = "packages/pfc-whitelist" }
 pfc-fee-split = { path = "packages/pfc-fee-split" }
 pfc-dust-collector-derive = { path = "packages/pfc-dust-collector-derive" }
 pfc-dust-collector = { path = "packages/pfc-dust-collector" }
@@ -63,7 +63,7 @@ pfc-dust-collector-migaloo = { path = "packages/pfc-dust-collector-migaloo" }
 pfc-treasurechest = { path = "packages/pfc-treasurechest" }
 pfc-vault={path="packages/pfc-vault"}
 
-pfc-steak = "3.0.12"
+pfc-steak = "3.0.15"
 getrandom = { version = "0.2", features = ["js"] }
 prost = { version = "0.12.3", default-features = false, features = ["prost-derive"] }
 prost-types = { version = "0.12.3", default-features = false }
