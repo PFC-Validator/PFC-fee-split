@@ -1,14 +1,14 @@
 
 # junod
 junod tx wasm store ./artifacts/pfc_fee_splitter.wasm --from bone-luna --yes --gas-prices 1ujuno --gas-adjustment 1.7 --gas auto
-# 2240
+# 2240|4282
 json=$(cat ./test_files/juno_instantiate_feesplit.json)
 junod tx wasm instantiate 2240 "${json}" --admin juno1lu92zj8q6cmrptu09rp3343x9969r9qrt84g0e --label pfc-fee-split --from bone-luna  --gas-prices 1ujuno  --gas-adjustment 1.7  --gas auto
 # "juno167yrnjppr034exsj940q39kfc3nmdg36jtfv63tymyzlyhxg4a3snesqhv"
 
 
 
-chihuahuad tx wasm migrate juno167yrnjppr034exsj940q39kfc3nmdg36jtfv63tymyzlyhxg4a3snesqhv 834 '{}' --from bone-luna --gas-prices 1uhuahua --gas-adjustment 1.7 --gas auto
+junod tx wasm migrate juno167yrnjppr034exsj940q39kfc3nmdg36jtfv63tymyzlyhxg4a3snesqhv 4282 '{}' --from bone-luna --gas-prices 0.1ujuno --gas-adjustment 1.7 --gas auto
 add_alloc=$(cat ./test_files/add_allocation_phoenix_vault.json)
 migalood tx wasm exec juno167yrnjppr034exsj940q39kfc3nmdg36jtfv63tymyzlyhxg4a3snesqhv "${add_alloc}" --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto
 migalood tx wasm exec juno167yrnjppr034exsj940q39kfc3nmdg36jtfv63tymyzlyhxg4a3snesqhv '{"reconcile":{}}' --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1

@@ -1,13 +1,13 @@
 
 # phoenix
 terrad tx wasm store ./artifacts/pfc_fee_splitter.wasm --from boneLunaAdmin --yes --fees 300000uluna --gas 2500000
-# 572 | 580 | 771 | 834 |1493 |1497|1504 |1508 |1511
+# 572 | 580 | 771 | 834 |1493 |1497|1504 |1508 |1511|2848
 json=$(cat ./test_files/phoenix_instantiate.json)
 terrad tx wasm instantiate 1493 "${json}" --admin terra12097jggxd6q95hq0wt65ejjqsaggu8xeckwgms --label pfc-fee-split --from boneLunaAdmin --fees 75000uluna --gas 500000
 
 # terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m
 
-terrad tx wasm migrate terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m 1506 '{}' --from boneLunaAdmin --fees 30000uluna
+terrad tx wasm migrate terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m 2848 '{}' --from boneLunaAdmin --fees 30000uluna
 
 add_alloc=$(cat ./test_files/add_allocation_phoenix_vault.json)
 terrad tx wasm exec terra19kjsu0cnkptte87j3v0c922r8epn06q7g9m26g4pu64klpf9wgmqtglu3m "${add_alloc}" --from boneLunaAdmin --fees 3000uluna

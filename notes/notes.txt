@@ -1,11 +1,11 @@
 terrad tx wasm store ./artifacts/pfc_fee_splitter.wasm --from testadmin --yes --fees 300000uluna --gas 2500000
 
-# 4361 |4642 | 5154 | 5744 | 5758 | 6049
+# 4361 |4642 | 5154 | 5744 | 5758 | 6049  | 13699
 
 json=$(cat ./test_files/pisco_instantiate.json)
 terrad tx wasm instantiate 4361 "${json}" --admin terra1yt8xwehw3mngc7h2z09utf32cgpdpe09lke902 --label pfc-fee-split --from testadmin  --fees 75000uluna --gas 500000
 # terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k
-terrad tx wasm migrate terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k 6049 '{}' --from testadmin --fees 30000uluna
+terrad tx wasm migrate terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k 13699 '{}' --from testadmin --fees 30000uluna
 terrad query wasm
 
 terrad query bank balances terra1cvjakzx0jv7y0gf9jgekv37xx9vu3rv08dx9yayesk4qk363xpzq77rm5k
