@@ -34,11 +34,11 @@ jobs:
           fetch-depth: 1
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           components: rustfmt
           profile: minimal
           override: true
-      - run: cargo fmt -- --check
+      - run: cargo +nightly fmt -- --check
 
   unit-test:
     name: Actions - unit test
