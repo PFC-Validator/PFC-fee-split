@@ -1,0 +1,33 @@
+FROM=boneLunaAdmin
+FROMADDR=archway1lu92zj8q6cmrptu09rp3343x9969r9qrg72hzj
+GAS_ADJ=1.4
+GAS=$(archwayd q rewards estimate-fees 1 --node 'https://rpc.mainnet.archway.io:443' --output json | jq -r '.gas_unit_price | (.amount + .denom)')
+
+archwayd tx wasm store ./artifacts/pfc_fee_splitter.wasm --from ${FROM} --yes --gas-prices $GAS --gas-adjustment ${GAS_ADJ} --gas auto
+tx=F860276EE40CD09C6CEC63F6292763BE03BA5F635456C0E69EC0F29665338119
+export FEESPLIT=$(archwayd query --output json tx ${tx} |jq -e -r ' .logs[].events[] | select(.type=="store_code").attributes[] | select(.key=="code_id").value ' | tr -d '"')
+echo $FEESPLIT
+FEESPLIT=448
+
+
+
+json=$(cat ./test_files/archway_instantiate_feesplit.json)
+archwayd tx wasm instantiate $FEESPLIT "${json}" --admin $FROMADDR --label pfc-fee-split --from $FROM  --gas-prices $GAS --gas-adjustment $GAS_ADJ  --gas auto
+
+tx_fee_i=684F1016F6F436DE2F65828F2E72210C3C5583A207FEA1E2CE8421150DE62FDA
+
+export FEE_CONTRACT=$(archwayd query --output=json tx $tx_fee_i|jq -r '.logs[].events[]| select(.type=="instantiate").attributes[] |select(.key=="_contract_address").value '|tr -d '"')
+
+echo $FEE_CONTRACT
+FEE_CONTRACT=archway1pzjprqczpn0fvn5kvqzs74mggg4539rt2vpmp07ffp3pufp6cc3qqmhdg3
+
+
+#
+archwayd tx wasm migrate $FEE_CONTRACT $FEESPLIT '{}'  --from $FROM  --gas-prices $GAS --gas-adjustment $GAS_ADJ  --gas auto
+
+
+add_alloc=$(cat ./test_files/add_allocation_phoenix_vault.json)
+migalood tx wasm exec migaloo1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtqvk723g "${add_alloc}" --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto
+migalood tx wasm exec migaloo1wug8sewp6cedgkmrmvhl3lf3tulagm9hnvy8p0rppz9yjw0g4wtqvk723g '{"reconcile":{}}' --from testadmin --gas-prices 0.025ustars --gas-adjustment 1.7 --gas auto --node https://narwhal-rpc.dalnim.finance:443 --chain-id narwhal-1
+
+archwayd query wasm cs smart $FEE_CONTRACT '{"allocations":{}}'

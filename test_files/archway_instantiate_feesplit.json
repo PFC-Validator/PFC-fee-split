@@ -1,0 +1,17 @@
+{
+  "name": "pfc-fee-split",
+  "gov_contract": "archway1lu92zj8q6cmrptu09rp3343x9969r9qrg72hzj",
+  "allocation": [
+    {
+      "name": "testnet",
+      "allocation": 1,
+      "send_after": {"denom": "uarch","amount": "1000000"},
+      "send_type": { "Wallet": {
+        "receiver": "archway1lu92zj8q6cmrptu09rp3343x9969r9qrg72hzj"
+      }
+      }
+    }
+  ]
+
+}
+

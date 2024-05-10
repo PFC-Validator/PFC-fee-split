@@ -1,0 +1,15 @@
+{
+  "add_allocation_detail": {
+    "name": "gravedigger",
+    "allocation": 100,
+    "send_after": {
+      "denom": "uosmo",
+      "amount": "100000"
+    },
+    "send_type": {
+      "Wallet": {
+        "receiver": "osmo1zhlar4sdvar9dqqc29umwarznvap2rrpzqgg66"
+      }
+    }
+  }
+}

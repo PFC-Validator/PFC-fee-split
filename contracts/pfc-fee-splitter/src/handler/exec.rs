@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter::FromIterator, ops::Mul};
+use std::{collections::HashMap, iter::FromIterator, ops::Mul, str::FromStr};
 
 use cosmwasm_std::{
     to_json_binary, Addr, AllBalanceResponse, BankMsg, BankQuery, Coin, CosmosMsg, Decimal,
@@ -349,17 +349,23 @@ pub(crate) fn determine_allocation(
     let funds_sent_alloc: HashMap<String, Uint128> = funds_sent
         .iter()
         .map(|(denom, amount)| {
-            let dec_amt: Decimal = Decimal::from_atomics(amount.u128(), 0).unwrap();
-            let portion = dec_amt.mul(fraction);
-
-            // ignore dust
-            if portion.is_zero() || portion < Decimal::from_ratio(1u32, 10_000u32) {
-                (denom.clone(), Uint128::zero())
+            // if we are just passing ALL $ through... then don't mess with maths
+            if allocation_amt == total_allocation {
+                (denom.clone(), *amount)
             } else {
-                let places = portion.decimal_places();
-                let portion_u128 =
-                    portion.atomics().checked_div(Uint128::from(10u32).pow(places)).unwrap();
-                (denom.clone(), portion_u128)
+                let dec_amt: Decimal = Decimal::from_str(&amount.to_string()).unwrap();
+                let portion = dec_amt.mul(fraction);
+
+                // ignore dust
+                if portion.is_zero() || portion < Decimal::from_ratio(1u32, 10_000u32) {
+                    (denom.clone(), Uint128::zero())
+                } else {
+                    let places = portion.decimal_places();
+                    let portion_u128 =
+                        portion.atomics().checked_div(Uint128::from(10u32).pow(places)).unwrap();
+
+                    (denom.clone(), portion_u128)
+                }
             }
         })
         .collect();

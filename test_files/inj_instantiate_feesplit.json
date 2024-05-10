@@ -7,7 +7,7 @@
       "allocation": 1,
       "send_after": {"denom": "inj","amount": "100000000000000000"},
       "send_type": { "Wallet": {
-        "receiver": "inj1k0sxlweut6nqarhjsd0m52ruepcjp3vvgk3ly5"
+          "receiver": "inj1k0sxlweut6nqarhjsd0m52ruepcjp3vvgk3ly5"
       }
       }
     }

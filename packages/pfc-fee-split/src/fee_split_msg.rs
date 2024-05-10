@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use cosmwasm_std::{
     to_json_binary, Addr, Binary, Coin, CosmosMsg, DepsMut, StdError, StdResult, WasmMsg,
 };
@@ -23,9 +25,9 @@ pub enum SendType {
         receiver: Addr,
     },
 }
-impl ToString for SendType {
-    fn to_string(&self) -> String {
-        match &self {
+impl Display for SendType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let str = match &self {
             SendType::Wallet {
                 receiver,
             } => format!("Wallet -> {}", receiver),
@@ -47,7 +49,8 @@ impl ToString for SendType {
             } => {
                 format!("Steak:{} -> {} Transfer", steak, receiver)
             },
-        }
+        };
+        write!(f, "{}", str)
     }
 }
 impl SendType {

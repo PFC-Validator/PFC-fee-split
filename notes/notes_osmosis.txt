@@ -17,3 +17,7 @@ fee_address="osmo1ctrfxgxdjqgd0usaepzdan2razpd3sge7jvckakh036yzm24ymgsnktjf8"
 
 
 osmosisd query wasm cs smart $fee_address '{"allocations":{}}'
+
+add_alloc=$(cat ./test_files/modify_allocation_osmo_vault.json)
+osmosisd tx wasm exec $fee_address "${add_alloc}" --from boneLunaAdmin --gas-prices 0.025uosmo --gas-adjustment 1.7 --gas auto
+osmosisd tx wasm exec $fee_address '{"reconcile":{}}' --from boneLunaAdmin --gas-prices 0.025uosmo --gas-adjustment 1.7 --gas auto
